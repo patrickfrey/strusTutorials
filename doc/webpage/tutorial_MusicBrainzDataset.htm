@@ -21,7 +21,7 @@
 In this tutorial uses the MusicBrainz dataset downloaded from <a href="https://musicbrainz.org">MusicBrainz</a>.
 The dataset is licenced under the terms described <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download#License">here</a>.
 Thanks to MusicBrainz to make this dataset publicly available.
-The dataset contains a list of about 280'000 records with title, actor and id.
+The dataset contains a list of about 282'000 records with title, actor and id.
 The tutorial will show, how this data can be made retrievable with strus.
 </p>
 
@@ -76,13 +76,19 @@ cat mbdump/release_raw\
 </p>
 <h4>Leave the data directory and inspect the result</h4>
 <p class="description">
-You have now preprocessed the MusicBrainz example collection with about 280'000 records.
+You have now preprocessed the MusicBrainz example collection with about 282'000 records.
 we go back to the upper directory and inpect what we got. There should be about 3200 files
 and each file should contain about 100 items.
 <pre>
 cd ..
 ls -l data/doc/*.xml
 cat data/doc/999.xml
+</pre>
+</p>
+<h4>Example input file prepared</h4>
+<p class="description">Here is an except of an example input file for strus:
+<pre>
+
 </pre>
 </p>
 </div>
