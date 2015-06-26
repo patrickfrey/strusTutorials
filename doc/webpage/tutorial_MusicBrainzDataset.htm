@@ -28,7 +28,9 @@ The tutorial will show, how this data can be made retrievable with strus.
 <h2>Build the search index</h2>
 <h3>First step: Download and prepare the data</h3>
 <p class="description">
-You have to fetch the data from <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download">MusicBrainz</a>.
+If you want to skip this section, you can simply execute the script <a href="https://github.com/patrickfrey/strusTutorials/blob/master/scripts/musicbrainz/step1_fetchData.sh">step_fetchData.sh</a>.
+This script will execute the steps described here.<br/>
+Otherwise you have to manually fetch the data from <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download">MusicBrainz</a>.
 The dump of the record releases will be dumped and converted into a proprietary XML we will use.
 Because there are many items to process, we will put up to 100 entries into one file. The analyzer
 will be configured to handle one item of these 100 entries as one document.
