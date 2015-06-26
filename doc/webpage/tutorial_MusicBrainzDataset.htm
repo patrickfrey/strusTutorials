@@ -1,0 +1,90 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 2.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+	<link rel="icon" type="image/ico" href="images/strus.ico" />
+	<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+	<meta name="description" content="Tutorial for strus, a collection of C++ libraries for building a full-text search engine." />
+	<meta name="keywords" content="fulltext search engine C++" />
+	<meta name="author" content="Patrick Frey &lt;patrickpfrey (a) yahoo (dt) com&gt;" />
+	<link rel="stylesheet" type="text/css" href="text-profile.css" title="Text Profile" media="all" />
+	<title>Strus tutorial</title>
+</head>
+
+<body>
+<script type="text/javascript">
+</script>
+<div id="wrap">
+<div id="content">
+<h1>Strus tutorial (with the MusicBrainz dataset)</h1>
+<h2>Introduction</h2>
+<p class="description">
+In this tutorial uses the MusicBrainz dataset downloaded from <a href="https://musicbrainz.org">MusicBrainz</a>.
+The dataset is licenced under the terms described <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download#License">here</a>.
+Thanks to MusicBrainz to make this dataset publicly available.
+The dataset contains a list of about 280'000 records with title, actor and id.
+The tutorial will show, how this data can be made retrievable with strus.
+</p>
+
+<h2>Build the search index</h2>
+<h3>First step: Download and prepare the data</h3>
+<p class="description">
+You have to fetch the data from <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download">MusicBrainz</a>.
+The dump of the record releases will be dumped and converted into a proprietary XML we will use.
+Because there are many items to process, we will put up to 100 entries into one file. The analyzer
+will be configured to handle one item of these 100 entries as one document.
+Download and decompress the data with the following commands:
+<br\>
+<h4>Prepare data directory</h4>
+<p class="description">We create a directory for the data because the MusicBrainz files are all unpacked in current directory.
+<pre>
+mkdir data
+cd data
+</pre>
+</p>
+<h4>Download and uppack the data dump</h4>
+<p class="description">
+<pre>
+wget http://ftp.musicbrainz.org/pub/musicbrainz/data/fullexport/20150624-002847/mbdump-cdstubs.tar.bz2
+bzip2 -d mbdump-cdstubs.tar.bz2
+tar -xvf mbdump-cdstubs.tar
+</pre>
+</p>
+<h4>Create the documents</h4>
+<p class="description">We count the maximum document identifier that will be assigned and we 
+set $ndocs as the maximum number of documents we will get. In every document will be 100 items to insert.
+For every document identifier we create a document with the XML header.
+<pre>
+ndocs=`cat mbdump/release_raw | awk -F"\t" '{if(min=="")min=max=$1; if($1>max) {max=$1}; if($1< min) {min=$1}; } END {print int(max/100)}'`
+mkdir doc
+idoc=0
+while [ $idoc -lt $ndocs ]
+do
+    echo "&lt;?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?&gt;" > doc/$idoc.xml
+    idoc=`expr $idoc + 1`
+done
+</pre>
+</p>
+<h4>Fill the documents with the content of the dump</h4>
+<p class="description">For every entry we want to process, we create an own XML tag. Every record
+is marked with an '&lt;item&gt;...&lt;/itemgt;' tag.
+<pre>
+cat mbdump/release_raw\
+  | awk -F"\t" '{FNAME=int($1/100); print "&lt;item&gt;&lt;id&gt;" $1 "&lt;/id&gt;&lt;title&gt;" $2 "&lt;/title&gt;&lt;artist&gt;" $3 "&lt;/artist&gt;&lt;upc&gt;" $9 "&lt;/upc&gt;&lt;note&gt;" $10 "&lt;/note&gt;&lt;/item&gt;" >> "doc/"FNAME".xml" }'
+</pre>
+</p>
+<h4>Leave the data directory and inspect the result</h4>
+<p class="description">
+You have now preprocessed the MusicBrainz example collection with about 280'000 records.
+we go back to the upper directory and inpect what we got. There should be about 3200 files
+and each file should contain about 100 items.
+<pre>
+cd ..
+ls -l data/doc/*.xml
+cat data/doc/999.xml
+</pre>
+</p>
+</div>
+</div>
+</body>
+</html>
+
