@@ -28,8 +28,9 @@ The tutorial will show, how this data can be made retrievable with strus.
 <h2>Build the search index</h2>
 <h3>First step: Download and prepare the data</h3>
 <p class="description">
-If you want to skip this section, you can simply execute the script <a href="https://github.com/patrickfrey/strusTutorials/blob/master/scripts/musicbrainz/step1_fetchData.sh">step_fetchData.sh</a>.
-This script will execute the steps described here.<br/>
+If you want to skip this section, you can simply execute the script <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/scripts/musicbrainz/step1_fetchData.sh">step_fetchData.sh</a>.
+This script will execute the steps described here in about half a minute on a convenient developer machine.
+<br/>
 Otherwise you have to manually fetch the data from <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download">MusicBrainz</a>.
 The dump of the record releases will be dumped and converted into a proprietary XML we will use.
 Because there are many items to process, we will put up to 100 entries into one file. The analyzer
@@ -53,8 +54,8 @@ tar -xvf mbdump-cdstubs.tar
 </p>
 <h4>Create the documents</h4>
 <p class="description">We count the maximum document identifier that will be assigned and we 
-set $ndocs as the maximum number of documents we will get. In every document will be 100 items to insert.
-For every document identifier we create a document with the XML header.
+set $ndocs as the maximum number of documents we will get. In every document will be at maximum 100
+items to insert. For every document identifier we create a document with the XML header.
 <pre>
 ndocs=`cat mbdump/release_raw | awk -F"\t" '{if(min=="")min=max=$1; if($1>max) {max=$1}; if($1< min) {min=$1}; } END {print int(max/100)}'`
 mkdir doc
@@ -71,7 +72,7 @@ done
 is marked with an '&lt;item&gt;...&lt;/itemgt;' tag.
 <pre>
 cat mbdump/release_raw\
-  | awk -F"\t" '{FNAME=int($1/100); print "&lt;item&gt;&lt;id&gt;" $1 "&lt;/id&gt;&lt;title&gt;" $2 "&lt;/title&gt;&lt;artist&gt;" $3 "&lt;/artist&gt;&lt;upc&gt;" $9 "&lt;/upc&gt;&lt;note&gt;" $10 "&lt;/note&gt;&lt;/item&gt;" >> "doc/"FNAME".xml" }'
+  | awk -F"\t" '{FNAME=int($1/100); print "&lt;item&gt;&lt;id&gt;" $1 "&lt;/id&gt;&lt;title&gt;" $2 "&lt;/title&gt;&lt;artist&gt;" $3 "&lt;/artist&gt;&lt;date&gt;" $4 "&lt;/date&gt;&lt;upc&gt;" $9 "&lt;/upc&gt;&lt;note&gt;" $10 "&lt;/note&gt;&lt;/item&gt;" >> "doc/"FNAME".xml" }'
 </pre>
 </p>
 <h4>Leave the data directory and inspect the result</h4>
@@ -88,8 +89,24 @@ cat data/doc/999.xml
 <h4>Example input file prepared</h4>
 <p class="description">Here is an except of an example input file for strus:
 <pre>
-
+&lt;?xml version="1.0" encoding="UTF-8" standalone="yes" ?&gt;
+&lt;item&gt;&lt;id&gt;99929&lt;/id&gt;&lt;title&gt;Flutterstrut&lt;/title&gt;&lt;artist&gt;Hundred Year Flood&lt;/artist&gt;&lt;upc&gt;881387000018&lt;/upc&gt;&lt;note&gt;CD Baby id:hyf2&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;99999&lt;/id&gt;&lt;title&gt;The Hanging Garden&lt;/title&gt;&lt;artist&gt;Hypnotique&lt;/artist&gt;&lt;upc&gt;634479159961&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnotique&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;99994&lt;/id&gt;&lt;title&gt;Hypnopilot&lt;/title&gt;&lt;artist&gt;Hypnopilot&lt;/artist&gt;&lt;upc&gt;088907200068&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnopilot&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;99995&lt;/id&gt;&lt;title&gt;The Sphinx of Imagination&lt;/title&gt;&lt;artist&gt;Hypnotica&lt;/artist&gt;&lt;upc&gt;634479143427&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnotica&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;99924&lt;/id&gt;&lt;title&gt;hydrophonics usa&lt;/title&gt;&lt;artist&gt;the hydrotones&lt;/artist&gt;&lt;upc&gt;639441013425&lt;/upc&gt;&lt;note&gt;CD Baby id:hydrotones&lt;/note&gt;&lt;/item&gt;
+...
 </pre>
+</p>
+<h3>Second step: Create a configuration for the document analyzer</h3>
+<p class="description">Will will use the <h href="utilities.htm">utility programs of strus</a> to
+create the storage and insert the documents into the search index. This tutorial will use the
+standard levelDB key/value store database and it will use the standard document segmenter based on
+textwolf. This will involve the following
+steps:
+</p>
+<h4>Create the storage</h4>
+<p class="description">
 </p>
 </div>
 </div>

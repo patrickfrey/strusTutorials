@@ -18,7 +18,7 @@ do
 done
 echo "Fill the documents with the content of the dump ..."
 cat mbdump/release_raw\
-  | awk -F"\t" '{FNAME=int($1/100); print "<item><id>" $1 "</id><title>" $2 "</title><artist>" $3 "</artist><upc>" $9 "</upc><note>" $10 "</note></item>" >> "doc/"FNAME".xml" }'
+  | awk -F"\t" '{FNAME=int($1/100); print "<item><id>" $1 "</id><title>" $2 "</title><artist>" $3 "</artist><date>" $4 "</date><upc>" $9 "</upc><note>" $10 "</note></item>" >> "doc/"FNAME".xml" }'
 
 cd ..
 echo "Leave the data directory and inspect the result ..."
