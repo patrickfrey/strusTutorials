@@ -18,15 +18,28 @@
 <h1>Strus tutorial (with the MusicBrainz dataset)</h1>
 <h2>Introduction</h2>
 <p class="description">
-In this tutorial uses the MusicBrainz dataset downloaded from <a href="https://musicbrainz.org">MusicBrainz</a>.
+In this docker based tutorial uses the MusicBrainz dataset downloaded from <a href="https://musicbrainz.org">MusicBrainz</a>.
 The dataset is licenced under the terms described <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download#License">here</a>.
 Thanks to MusicBrainz to make this dataset publicly available.
 The dataset contains a list of about 282'000 records with title, actor and id.
 The tutorial will show, how this data can be made retrievable with strus.
 </p>
 
+<h2>Prerequisites</h2>
+<p class="description">This tutorial is based on <h href="https://www.docker.com/">docker</a>.
+In order to run it you need to <a href="https://docs.docker.com/installation">install docker</a> on your machine.
+This tutorial has been written for Linux. For other platforms the shell commands may look different.
+
 <h2>Build the search index</h2>
-<h3>First step: Download and prepare the data</h3>
+<h3>First step: Start the strus docker container</h3>
+<p class="description">
+The following command runs the docker container from the strus image with a terminal using bash:
+<pre>
+docker run -t -i patrickfrey/strus-ub1404-bind /bin/bash
+</pre>
+</p>
+
+<h3>Second step: Download and prepare the data</h3>
 <p class="description">
 If you want to skip this section, you can simply execute the script <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/scripts/musicbrainz/step1_fetchData.sh">step_fetchData.sh</a>.
 This script will execute the steps described here in about half a minute on a convenient developer machine.
@@ -47,7 +60,9 @@ cd data
 <h4>Download and uppack the data dump</h4>
 <p class="description">
 <pre>
-wget http://ftp.musicbrainz.org/pub/musicbrainz/data/fullexport/20150624-002847/mbdump-cdstubs.tar.bz2
+wget http://ftp.musicbrainz.org/pub/musicbrainz/data/fullexport/LATEST
+LATEST=`cat LATEST`
+wget http://ftp.musicbrainz.org/pub/musicbrainz/data/fullexport/$LATEST/mbdump-cdstubs.tar.bz2
 bzip2 -d mbdump-cdstubs.tar.bz2
 tar -xvf mbdump-cdstubs.tar
 </pre>
@@ -63,6 +78,7 @@ idoc=0
 while [ $idoc -lt $ndocs ]
 do
     echo "&lt;?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?&gt;" > doc/$idoc.xml
+    echo "&lt;list&gt;" &gt;&gt; doc/$idoc.xml
     idoc=`expr $idoc + 1`
 done
 </pre>
@@ -73,6 +89,12 @@ is marked with an '&lt;item&gt;...&lt;/itemgt;' tag.
 <pre>
 cat mbdump/release_raw\
   | awk -F"\t" '{FNAME=int($1/100); print "&lt;item&gt;&lt;id&gt;" $1 "&lt;/id&gt;&lt;title&gt;" $2 "&lt;/title&gt;&lt;artist&gt;" $3 "&lt;/artist&gt;&lt;date&gt;" $4 "&lt;/date&gt;&lt;upc&gt;" $9 "&lt;/upc&gt;&lt;note&gt;" $10 "&lt;/note&gt;&lt;/item&gt;" >> "doc/"FNAME".xml" }'
+idoc=0
+while [ $idoc -lt $ndocs ]
+do
+    echo "&lt;/list&gt;" &gt;&gt; doc/$idoc.xml
+    idoc=`expr $idoc + 1`
+done
 </pre>
 </p>
 <h4>Leave the data directory and inspect the result</h4>
@@ -82,31 +104,151 @@ we go back to the upper directory and inpect what we got. There should be about 
 and each file should contain about 100 items.
 <pre>
 cd ..
-ls -l data/doc/*.xml
-cat data/doc/999.xml
+ls doc/
+</pre>
+You get:
+<pre>
+0.xml     1267.xml  1536.xml  1805.xml  2074.xml  2343.xml  2612.xml  2882.xml  3150.xml  461.xml  730.xml
+1.xml     1268.xml  1537.xml  1806.xml  2075.xml  2344.xml  2613.xml  2883.xml  3151.xml  462.xml  731.xml
+... (more)
 </pre>
 </p>
-<h4>Example input file prepared</h4>
-<p class="description">Here is an except of an example input file for strus:
+<p class="description">Here is an except of an example input file for strus. You can inspect the first 5 lines with:
+<pre>
+head -n 7 doc/999.xml 
+</pre>
+</p>
+<p class="description">You get:
 <pre>
 &lt;?xml version="1.0" encoding="UTF-8" standalone="yes" ?&gt;
-&lt;item&gt;&lt;id&gt;99929&lt;/id&gt;&lt;title&gt;Flutterstrut&lt;/title&gt;&lt;artist&gt;Hundred Year Flood&lt;/artist&gt;&lt;upc&gt;881387000018&lt;/upc&gt;&lt;note&gt;CD Baby id:hyf2&lt;/note&gt;&lt;/item&gt;
-&lt;item&gt;&lt;id&gt;99999&lt;/id&gt;&lt;title&gt;The Hanging Garden&lt;/title&gt;&lt;artist&gt;Hypnotique&lt;/artist&gt;&lt;upc&gt;634479159961&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnotique&lt;/note&gt;&lt;/item&gt;
-&lt;item&gt;&lt;id&gt;99994&lt;/id&gt;&lt;title&gt;Hypnopilot&lt;/title&gt;&lt;artist&gt;Hypnopilot&lt;/artist&gt;&lt;upc&gt;088907200068&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnopilot&lt;/note&gt;&lt;/item&gt;
-&lt;item&gt;&lt;id&gt;99995&lt;/id&gt;&lt;title&gt;The Sphinx of Imagination&lt;/title&gt;&lt;artist&gt;Hypnotica&lt;/artist&gt;&lt;upc&gt;634479143427&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnotica&lt;/note&gt;&lt;/item&gt;
-&lt;item&gt;&lt;id&gt;99924&lt;/id&gt;&lt;title&gt;hydrophonics usa&lt;/title&gt;&lt;artist&gt;the hydrotones&lt;/artist&gt;&lt;upc&gt;639441013425&lt;/upc&gt;&lt;note&gt;CD Baby id:hydrotones&lt;/note&gt;&lt;/item&gt;
-...
+&lt;list&gt;
+&lt;item&gt;&lt;id&gt;99929&lt;/id&gt;&lt;title&gt;Flutterstrut&lt;/title&gt;&lt;artist&gt;Hundred Year Flood&lt;/artist&gt;&lt;date&gt;2009-06-18 01:37:51.35028+00&lt;/date&gt;&lt;upc&gt;881387000018&lt;/upc&gt;&lt;note&gt;CD Baby id:hyf2&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;99999&lt;/id&gt;&lt;title&gt;The Hanging Garden&lt;/title&gt;&lt;artist&gt;Hypnotique&lt;/artist&gt;&lt;date&gt;2009-06-18 01:37:52.548532+00&lt;/date&gt;&lt;upc&gt;634479159961&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnotique&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;99994&lt;/id&gt;&lt;title&gt;Hypnopilot&lt;/title&gt;&lt;artist&gt;Hypnopilot&lt;/artist&gt;&lt;date&gt;2009-06-18 01:37:52.49057+00&lt;/date&gt;&lt;upc&gt;088907200068&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnopilot&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;99995&lt;/id&gt;&lt;title&gt;The Sphinx of Imagination&lt;/title&gt;&lt;artist&gt;Hypnotica&lt;/artist&gt;&lt;date&gt;2009-06-18 01:37:52.503809+00&lt;/date&gt;&lt;upc&gt;634479143427&lt;/upc&gt;&lt;note&gt;CD Baby id:hypnotica&lt;/note&gt;&lt;/item&gt;
+</pre>
+Every file created contains about 100 items to insert as document. The grouping of multiple items
+has been done to reduce the number of files created.
+</p>
+<h3>Third step: Create the storage</h3>
+<h4>Initialize the storage database</h4>
+<p class="description">Will will use the <h href="utilities.htm">utility programs of strus</a> to
+create the storage and insert the documents into the search index.<br/>
+We have one data element we would like to use for meta data restrictions the publication data we call 'date'.
+The meta data used restrictions are put into the meta data table. You can at any time alter the
+meta data table or add new elements with the command <a href="utilities.htm#strusAlterMetaData">strusAlterMetaData</a>. But we can also define 
+some meta data within the <a href="utilities.htm#strusCreate">strusCreate</a> command.<br/>
+We also would like to attach the 'title' field of every item as document attribute. 
+The storage is created with the command <a href="utilities.htm#strusCreate">strusCreate</a> and looks as follows.
+<pre>
+strusCreate "path=storage; metadata=date UINT32"
+</pre>
+The path argument defines the directory the key/value store database based on leveldb 
+will write its files to.
+</p>
+<h3>Fourth step: Create a configuration for the document analyzer</h3>
+<p class="description">
+We will use the standard document segmenter based on textwolf as we will process XML documents. 
+The analyzer configuration describes, what elements will be extracted from the items and how items
+are defined. It also describes how these items are transformed into the form they are stored.
+The analyzer configuration defines different sections that describe what type of elements are 
+created. For creating an analyzer configuration we create a file
+with the extension ".ana" and start to edit it:
+<pre>
+touch tutorial.ana
+vi tutorial.ana
+</pre>
+The following sub sections show what we define in this configuration file. 
+You can also download it from <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/config/musicbrainz/tutorial.ana">tutorial.ana</a>.
+The textwolf segmenter used in this tutorial defines XML selection expressions is the
+abbreviated syntax of XPath with 2 exceptions:
+<ol>
+<li>Tag selections like "/list/item/title" do not select a subtree but just the tag.</li>
+<li>Contect selections like "/list/item/title::text()" are written as "/list/item/title()" 
+(the "::text" is omitted).</li>
+</ol>
+</p>
+<h4>Define the items to index (collection usits aka documents)</h4>
+<p class="description">As we saw in the preparation of the documents there are about 100 items 
+inserted into one file. For separating these items as documents to insert we have to define a
+section document that defines what selection expression defines a document in an input file:
+<pre>
+[Document]
+	doc = /list/item;
 </pre>
 </p>
-<h3>Second step: Create a configuration for the document analyzer</h3>
-<p class="description">Will will use the <h href="utilities.htm">utility programs of strus</a> to
-create the storage and insert the documents into the search index. This tutorial will use the
-standard levelDB key/value store database and it will use the standard document segmenter based on
-textwolf. This will involve the following
-steps:
-</p>
-<h4>Create the storage</h4>
+<h4>Define the the search index (retrievable items)</h4>
 <p class="description">
+The elements that are subject of retrieval are put into the section [SearchIndex]. 
+We decide to make words in the tags "title","artist" and "note" retrievable.<br/>
+All of them we tokenize the same way (as words) and we use the snowball stemmer ("stem")
+followed by a lowercase conversion ("lc") and a diacritical character conversion ("convdia")
+to normalize them.<br/>
+Our language we instrument the stemmer and the diacritical characer
+conversion with is English ("en").<br/>
+The feature type name we assign to the produced search index features is for all features "word".
+<pre>
+[SearchIndex]
+	word = convdia(en):stem(en):lc  word  /list/item/title();
+	word = convdia(en):stem(en):lc  word  /list/item/artist();
+	word = convdia(en):stem(en):lc  word  /list/item/note();
+</pre>
+Intuitively this configuration can be understod if you read every feature assignment from
+right to left: Select an element, select the tokens from an element selection, normalize the tokens: "lc -&gt; stem -&gt; convdia"
+and assign them to a feature type "word".
+</p>
+
+<h4>Define the elements the forward index (for summarization)</h4>
+<p class="description">
+The elements that are used for summarization are put into the section [ForwardIndex].
+We decide to use the retrievable words in the tags "title","artist" and "note"
+also for summarization to show what query features matched in the document. 
+Because the summary should show the original content of the document without markup, 
+we use a whitespace tokenizer ("split") and no normalizer ("orig") to convert them for insert.
+<pre>
+[ForwardIndex]
+	orig = orig split /list/item/title();
+	orig = orig split /list/item/artist();
+	orig = orig split /list/item/note();
+</pre>
+Intuitively this configuration can be understod as the search index definition by reading the
+processing steps from right to left.
+</p>
+<h4>Define the attributes</h4>
+<p class="description">
+Now assign some attributes to each document inserted. Attributes are used in the representation
+of the result. There is one reserved attribute name that is very important for our case. It is
+the attribute "<b>docid</b>". When defining it, the strusInsert program will define the content
+of this attribute as document identifier. If you do not define it, the input file path will be
+used as document identifier. Because the document identifier has to be unique, we have to create
+one when there are multiple documents grouped in one input file as we did before. 
+For all four elements we will use a tokenization ("content") and normalization ("orig"),
+that keeps the elements in their original state:
+<pre>
+[Attribute]
+	<b>docid</b> = orig content /list/item/id();
+	title = orig content /list/item/title();
+	upc = orig content /list/item/upc();
+	note = orig content /list/item/note();
+</pre>
+The definitions of the section attribute can be read intuitively from right to left as the
+elements introduced before with the exception that the leftmost identifier specifies the
+name of the attribute the value is assigned to.
+</p>
+
+<h4>Define the meta data</h4>
+<p class="description">
+As final step we assign the meta data element 'date' we want to use for restrictions but also
+in the representation of the result. For converting the date into a format we can use as
+meta data table element we use the 'datenum' normalizer. The tokenization is just forwarding
+the tag content.
+<pre>
+[MetaData]
+	date = datenum content /list/item/date();
+</pre>
+The definitions of the section attribute can be read intuitively from right to left as the
+elements introduced before with the exception that the leftmost identifier specifies the
+name of the meta data element the value is assigned to. 
 </p>
 </div>
 </div>

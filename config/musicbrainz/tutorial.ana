@@ -1,0 +1,22 @@
+[Document]
+	doc = /list/item;
+
+[SearchIndex]
+	word = convdia(en):stem(en):lc  word  /list/item/title();
+	word = convdia(en):stem(en):lc  word  /list/item/artist();
+	word = convdia(en):stem(en):lc  word  /list/item/note();
+
+[ForwardIndex]
+	orig = orig split /list/item/title();
+	orig = orig split /list/item/artist();
+	orig = orig split /list/item/note();
+
+[Attribute]
+	docid = orig content /list/item/id();
+	title = orig content /list/item/title();
+	upc = orig content /list/item/upc();
+	note = orig content /list/item/note();
+
+[MetaData]
+	date = datenum content /list/item/date();
+
