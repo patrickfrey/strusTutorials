@@ -240,15 +240,31 @@ name of the attribute the value is assigned to.
 <p class="description">
 As final step we assign the meta data element 'date' we want to use for restrictions but also
 in the representation of the result. For converting the date into a format we can use as
-meta data table element we use the 'datenum' normalizer. The tokenization is just forwarding
-the tag content.
+meta data table element we use the 'date2int' normalizer. As start date of the date as integer
+calculation we chose the year of the invention of the phonograph by Thomas Edison 
+and we define the unit as number of days since then. The input format we deduce by looking 
+at an input sample (bravely assuming here that all dates have the same format): 
+<pre>
+2009-06-18 01:37:52.503809+00
+</pre>
+The tokenization is just forwarding the tag content. Here is the configuration of the date:
 <pre>
 [MetaData]
-	date = datenum content /list/item/date();
+	date = date2int("d 1877-01-01", "%Y-%m-%d %H:%M:%s *") content /list/item/date();
 </pre>
 The definitions of the section attribute can be read intuitively from right to left as the
 elements introduced before with the exception that the leftmost identifier specifies the
 name of the meta data element the value is assigned to. 
+</p>
+
+<h4>Check the configuration</h4>
+<p class="description">
+The be sure that we got everything right, we now test what we got with one candidate input file.
+We can do this by calling the program <a href="utilities.htm#strusAnalyze">strusAnalyze</a>
+with our configuration and an input file:
+<pre>
+strusAnalyze doc
+</pre>
 </p>
 </div>
 </div>

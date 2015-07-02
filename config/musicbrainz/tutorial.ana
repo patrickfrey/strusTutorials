@@ -18,5 +18,5 @@
 	note = orig content /list/item/note();
 
 [MetaData]
-	date = datenum content /list/item/date();
+	date = date2int("d 1877-01-01", "%Y-%m-%d %H:%M:%s *") content /list/item/date();
 
