@@ -31,6 +31,7 @@ In order to run it you need to <a href="https://docs.docker.com/installation">in
 This tutorial has been written for Linux. For other platforms the shell commands may look different.
 
 <h2>Build the search index</h2>
+<a name="docker"> </a>
 <h3>First step: Start the strus docker container</h3>
 <p class="description">
 The following command runs the docker container from the strus image with a terminal using bash:
@@ -39,6 +40,7 @@ docker run -t -i patrickfrey/strus-ub1404-bind /bin/bash
 </pre>
 </p>
 
+<a name="data"> </a>
 <h3>Second step: Download and prepare the data</h3>
 <p class="description">
 If you want to skip this section, you can simply execute the script <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/scripts/musicbrainz/step1_fetchData.sh">step_fetchData.sh</a>.
@@ -72,7 +74,8 @@ tar -xvf mbdump-cdstubs.tar
 set $ndocs as the maximum number of documents we will get. In every document will be at maximum 100
 items to insert. For every document identifier we create a document with the XML header.
 <pre>
-ndocs=`cat mbdump/release_raw | awk -F"\t" '{if(min=="")min=max=$1; if($1>max) {max=$1}; if($1< min) {min=$1}; } END {print int(max/100)}'`
+cat mbdump/release_raw | sed 's/\&amp;/\&amp;amp;/g' | sed 's/&lt;/\&amp;lt;/g' | sed 's/&gt;/\&amp;gt;/g' > dump.txt
+ndocs=`cat dump.txt | awk -F"\t" '{if(min=="")min=max=$1; if($1>max) {max=$1}; if($1< min) {min=$1}; } END {print int(max/100)}'`
 mkdir doc
 idoc=0
 while [ $idoc -lt $ndocs ]
@@ -87,7 +90,7 @@ done
 <p class="description">For every entry we want to process, we create an own XML tag. Every record
 is marked with an '&lt;item&gt;...&lt;/itemgt;' tag.
 <pre>
-cat mbdump/release_raw\
+cat dump.txt \
   | awk -F"\t" '{FNAME=int($1/100); print "&lt;item&gt;&lt;id&gt;" $1 "&lt;/id&gt;&lt;title&gt;" $2 "&lt;/title&gt;&lt;artist&gt;" $3 "&lt;/artist&gt;&lt;date&gt;" $4 "&lt;/date&gt;&lt;upc&gt;" $9 "&lt;/upc&gt;&lt;note&gt;" $10 "&lt;/note&gt;&lt;/item&gt;" >> "doc/"FNAME".xml" }'
 idoc=0
 while [ $idoc -lt $ndocs ]
@@ -130,6 +133,7 @@ head -n 7 doc/999.xml
 Every file created contains about 100 items to insert as document. The grouping of multiple items
 has been done to reduce the number of files created.
 </p>
+<a name="create"> </a>
 <h3>Third step: Create the storage</h3>
 <h4>Initialize the storage database</h4>
 <p class="description">Will will use the <h href="utilities.htm">utility programs of strus</a> to
@@ -139,13 +143,20 @@ The meta data used restrictions are put into the meta data table. You can at any
 meta data table or add new elements with the command <a href="utilities.htm#strusAlterMetaData">strusAlterMetaData</a>. But we can also define 
 some meta data within the <a href="utilities.htm#strusCreate">strusCreate</a> command.<br/>
 We also would like to attach the 'title' field of every item as document attribute. 
-The storage is created with the command <a href="utilities.htm#strusCreate">strusCreate</a> and looks as follows.
+The storage is created with the command <a href="utilities.htm#strusCreate">strusCreate</a> 
+and looks as follows.
 <pre>
 strusCreate "path=storage; metadata=date UINT32"
 </pre>
-The path argument defines the directory the key/value store database based on leveldb 
-will write its files to.
+The first argument is a string passed to the storage. It describes the properties of the storage
+created with a semicolon-separated list of configuration assigments. The path argument of it
+defines the directory the key/value store database based on leveldb will write its files to.
+The storage configuration string is dependend on the storage and key/value store database we use.
+All following commands introduced in this tutorial later that refer to a storage will 
+have a configuration string parameter with the same syntax, but depending on the case 
+with different parameters.
 </p>
+<a name="analyzer"> </a>
 <h3>Fourth step: Create a configuration for the document analyzer</h3>
 <p class="description">
 We will use the standard document segmenter based on textwolf as we will process XML documents. 
@@ -158,6 +169,8 @@ with the extension ".ana" and start to edit it:
 touch tutorial.ana
 vi tutorial.ana
 </pre>
+</p>
+<p class="description">
 The following sub sections show what we define in this configuration file. 
 You can also download it from <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/config/musicbrainz/tutorial.ana">tutorial.ana</a>.
 The textwolf segmenter used in this tutorial defines XML selection expressions is the
@@ -193,7 +206,9 @@ The feature type name we assign to the produced search index features is for all
 	word = convdia(en):stem(en):lc  word  /list/item/artist();
 	word = convdia(en):stem(en):lc  word  /list/item/note();
 </pre>
-Intuitively this configuration can be understod if you read every feature assignment from
+</p>
+<p class="description">
+Intuitively this configuration is understod if you read every feature assignment from
 right to left: Select an element, select the tokens from an element selection, normalize the tokens: "lc -&gt; stem -&gt; convdia"
 and assign them to a feature type "word".
 </p>
@@ -211,7 +226,9 @@ we use a whitespace tokenizer ("split") and no normalizer ("orig") to convert th
 	orig = orig split /list/item/artist();
 	orig = orig split /list/item/note();
 </pre>
-Intuitively this configuration can be understod as the search index definition by reading the
+</p>
+<p class="description">
+Intuitively this configuration is understod as the search index definition by reading the
 processing steps from right to left.
 </p>
 <h4>Define the attributes</h4>
@@ -231,7 +248,9 @@ that keeps the elements in their original state:
 	upc = orig content /list/item/upc();
 	note = orig content /list/item/note();
 </pre>
-The definitions of the section attribute can be read intuitively from right to left as the
+</p>
+<p class="description">
+The definitions of the section attribute is read intuitively from right to left as the
 elements introduced before with the exception that the leftmost identifier specifies the
 name of the attribute the value is assigned to.
 </p>
@@ -252,7 +271,9 @@ The tokenization is just forwarding the tag content. Here is the configuration o
 [MetaData]
 	date = date2int("d 1877-01-01", "%Y-%m-%d %H:%M:%s *") content /list/item/date();
 </pre>
-The definitions of the section attribute can be read intuitively from right to left as the
+</p>
+<p class="description">
+The definitions of the section attribute is read intuitively from right to left as the
 elements introduced before with the exception that the leftmost identifier specifies the
 name of the meta data element the value is assigned to. 
 </p>
@@ -263,9 +284,311 @@ The be sure that we got everything right, we now test what we got with one candi
 We can do this by calling the program <a href="utilities.htm#strusAnalyze">strusAnalyze</a>
 with our configuration and an input file:
 <pre>
-strusAnalyze doc
+strusAnalyze tutorial.ana doc/2333.xml  | less
 </pre>
 </p>
+<p class="description">
+We have a look at the first document analyzed and see that all went well
+(Multi part document results of the strusAnalyze program are separated by '-- document ' 
+followed by the identifier assigned to it in the [Document] section):
+<pre>
+-- document doc
+
+search index terms:
+1 word 'live'
+2 word 'in'
+3 word 'milan'
+5 word '27'
+6 word '9'
+7 word '1956'
+8 word 'maria'
+9 word 'calla'
+
+forward index terms:
+1 orig 'Live'
+2 orig 'in'
+3 orig 'Milan'
+4 orig '(27,9,1956)'
+8 orig 'Maria'
+9 orig 'Callas'
+
+metadata:
+date '48527'
+
+attributes:
+docid '233372'
+title 'Live in Milan (27,9,1956)'
+</pre>
+</p>
+<h4>Check single steps of the analyzer configuration</h4>
+<p class="description">
+What do we do when something went wrong when checking a document with strusAnalyze ?<br/>
+Let's assume that our output was empty. There are tools to check the different steps of
+document analysis. The first program is <a href="utilities.htm#strusSegment">strusSegment</a>
+that allows us to check wheter a selection expression matched. Let's take the document title
+as example:
+<pre>
+strusSegment -e '/list/item/title()' doc/2333.xml  | head -n 2
+</pre>
+The output looks as follows:
+<pre>
+'Live in Milan (27,9,1956)'
+'Greatest Hits'
+</pre>
+</p>
+<p class="description">
+This looks good as expected. The second program for checking analyzer steps is
+<a href="utilities.htm#strusAnalyzePhrase">strusAnalyzePhrase</a>. This program
+allows us to check tokenizers and normalizers used in the configuration.
+Let's check if words are tokenized and normalized correctly:
+<pre>
+cat 'Live in Milan (27,9,1956)' | strusAnalyzePhrase -n "convdia(en):stem(en):lc" -t "word" -
+</pre>
+This leads to the following output:
+<pre>
+1 'live'
+2 'in'
+3 'milan'
+4 '27'
+5 '9'
+6 '1956'
+</pre>
+</p>
+<p class="description">
+At the first glance this looks good. But why are the positions assigned different 
+compared with the analyzer run ?
+The word '27' has position 5 when passed through the analyzer with our configuration
+and 4 when calling strusAnalyzePhrase. The reason is that the positions are assigned
+globally to all elements of the configuration. Every by byte position in the document
+defined by any tokenizer configured is respected when assigning the word positions.
+The strusAnalyzePhrase does not have this information, so it assigns the positions ascending.
+Because we have added in the analyzer configuration a method that produces a token '(27,9,1956)'  
+that has a byte position between "Milan" and "27", this token gets the word position 4.
+The token '27' gets the following position assigned, in our example 5. The reason for 
+this is that the positions of all the features in the forward index and the search index
+have to be in sync to define their occurrence relation by their word position.
+</p>
+<a name="insert"> </a>
+<h3>Fifth step: Insert the documents into the storage</h3>
+<p class="description">
+We got now the analysis of the documents done. Now we would like to insert the documents
+into the storage created. The program <a href="utilities.htm#strusInsert">strusInsert</a>. 
+helps us to do that. It has several options to boost the insert process. It depends very 
+much on the collection and the hardware used which parameters are best.<br/>
+If we know that all documents inserted are new, then we should specify the option '-n' ('--new').
+In this case the inserter can assume that all files inserted are new and thus it can allocate
+document numbers in ranges. Otherwise the storage issues an immediate write for every
+new document inserted and this slows down the insert process dramatically because
+we have only new documents now.<br/>
+Another important option is '-c' ('--commit') that sets the number of documents inserted
+within one transaction. Because out documents are very small (less than a dozen terms),
+the default of 1000 is not very reasonable. Better is 50000.<br/>
+Here is our insert command with the proposed options for this collection:
+<pre>
+strusInsert -n -c 50000 -f 100 -s "path=storage" tutorial.ana doc
+</pre>
+</p>
+<p class="description">
+that does not use multiple inserter threads (default), commits an open transaction 
+after 50000 documents inserted, preallocates document numbers in ranges and fills the 
+storage in the folder 'storage' with XML documents analyzed with the configuration tutorial.ana.
+This should output the following 2 lines after roughly a minute or half a minute:
+<pre>
+inserted 282291 documents (total 282291), 0 transactions open     
+done
+</pre>
+</p>
+
+<a name="inspect"> </a>
+<h3>Sixth step: Inspect the storage</h3>
+<p class="description">Now as we have inserted all documents we are curious to see
+if everything went right. There is a program
+<a href="utilities.htm#strusDumpStorage">strusInspect</a> that lets us inspect
+some properties of the storage. We chose the document with the document id
+'10009'. First we find out what internal document number this docid got:
+<pre>
+strusInspect -s "path=storage" docno 10009
+</pre>
+we get
+<pre>
+123
+</pre>
+</p>
+<p class="description">
+Then we do some calls to inspect this document
+<pre>
+strusInspect -s "path=storage" attribute docid 123
+
+strusInspect -s "path=storage" content orig 123
+strusInspect -s "path=storage" attribute title 123
+
+strusInspect -s "path=storage" pos word danc 123
+strusInspect -s "path=storage" ff word danc 123
+strusInspect -s "path=storage" df word danc 
+
+strusInspect -s "path=storage" metatable
+strusInspect -s "path=storage" metadata date 123
+</pre>
+</p>
+<p class="description">
+and we get
+<pre>
+10009
+
+Absolute Let's dance 13 Various
+Absolute Let's dance 13
+
+4
+1
+1575
+
+date UInt32
+48253
+</pre>
+</p>
+<p class="description">
+If we want to see more at once we can also use the dumpers 
+<a href="utilities.htm#strusDumpStorage">strusDumpStorage</a> and 
+<a href="utilities.htm#strusDumpStatistics">strusDumpStatistics</a> to get more
+info. But for understanding the storage dump there is knowledge about the internal
+block structure required. The programs <a href="utilities.htm#strusCheckStorage">strusCheckStorage</a>
+and <a href="utilities.htm#strusCheckInsert">strusCheckInsert</a> are also useful, if
+you want to perform some checks on the storage created.
+</p>
+<p class="description">
+It is important to know that the dump program <a href="utilities.htm#strusDumpStorage">strusDumpStorage</a>
+does not output any data format that you can rely on or that you can import again. This dump is not
+for backup or for further processing.
+</p>
+
+<a name="cmdquery"> </a>
+<h3>Seventh step: Example query by command line</h3>
+<p class="description">
+In this section we examine the possibility to issue queries by the command line tools.
+The command line tool for query has 3 different languages defined.
+One for <a href="grammar_analyzerprg_qry.htm">analyzing query phrases</a> that is similar to the analyzer configuration, one for
+defining the <a href="grammar_queryevalprg.htm">query evaluation scheme</a>
+and one for the <a href="grammar_query.htm">query</a>. 
+This is quite a lot for a tutorial. You can alterntively skip this section and go to the 
+section explaining <a name="phpquery">how to issue a query with PHP</a>. The mechanisms there do not
+involve any of the languages indroduced here.
+<br/>
+For issuing a query by command line we use the program <a href="utilities.htm#strusQuery">strusQuery</a>.
+</p>
+<h5>Query phrase analyzer configuration</h5>
+<p class="description">
+First we need to create an analyzer configuration for query phrases. We name the file <u>query.ana</u>:
+<pre>
+word = convdia(en):stem(en):lc word;
+</pre>
+</p>
+<p class="description">
+It looks like an excerpt of the document analyzer configuration we wrote before.
+And this similarity is wished because we intent to normalize and name the query features
+in the same way as the document features, so that they match each other. As in the
+document analyzer configuration the lines are intuitively understood by reading them
+from right to left: Tokenize by selecting the words and normalize it by applying lower case,
+stemming with snowball and conversion of diacritical characters to get elements of the
+feature type word.
+</p>
+<h5>Query evaluation scheme configuration</h5>
+<p class="description">
+In a second step we define a simple query evaluation scheme. We name the file of the
+query evaluation scheme <u>query.eva</u>:
+<pre>
+SELECT qry;
+EVAL tf( .match=qry );
+
+SUMMARIZE docid = attribute( name=docid );
+SUMMARIZE title = attribute( name=title );
+</pre>
+</p>
+<p class="description">
+The language has only 4 commands. TERM to define structural terms that are not defined in
+the query, but that are subject to query evaluation like for example sentence delimiters.
+SELECT to define the set of query features that define what documents are weighted.
+EVAL to define a query evaluation scheme to use. SUMMARIZE to define a summarization
+step that is done to accumulate attributes of the documents presented as result.<br/>
+One thing that might puzzle is the name 'qry' for the feature sets. Why not 'word'
+as we indexed the terms in the query and in the document. Strus distinguishes between
+term types, that classify a term and the feature set, that defines a name to address
+a group of features. In this tutorial where we have just a simple document struture
+and one list of query terms, this distinction might not be justified. But in more
+complex cases where we have expressions involved, many levels of evaluation, a selection
+of features that is different to the features weighted and a
+summarization that works on different sets of features than weighting and selection,
+you need another level on which elements of the query are grouped and addressed with.<br/>
+This query evaluation scheme is read as follows:
+<br/>
+Take the documents that contain any matches of the features of the set 'qry' and evaluate
+the simple scheme 'tf' (count query features matching ~ feature weight * ff).
+Show the document id and the title attribute of the document in the result.
+</p>
+<h5>Query source file</h5>
+<p class="description">As third element we need a query. We name the file with the query
+<u>query.qln</u>:
+<pre>
+[Feature qry :word]
+  dance
+</pre>
+</p>
+<p class="description">
+A query has two type of sections [Feature] and [Condition].
+The later one that defines restriction expressions on meta data is not used in our simple
+example query. The first one [Feature qry:word] defines an expression and assings it to
+the feature set 'qry', that is the feature set we referenced in query evaluation.
+The default phrase type used for analyze phrases is 'word'. This selects the method to be used to
+analyze a phrase that has not explicit specification of the phrase type. This is the
+case in our query that just contains one term 'dance'.
+</p>
+<h5>Issue the query on command line</h5>
+<p class="description">For issuing our query, we call:
+<pre>
+strusQuery -s "path=storage" query.ana query.eva query.qln
+</pre>
+</p>
+<p class="description">and we get our first search result with strus:</p>
+<pre>
+ranked list (starting with rank 0, maximum 10 results):
+[1] 25357 score 3
+        docid (124428)
+        title (Dance Dance Dance)
+[2] 36620 score 3
+        docid (135366)
+        title (Dance Dance Dance)
+[3] 199006 score 3
+        docid (313932)
+        title (Dance - Dance - Dance)
+[4] 172756 score 3
+        docid (283564)
+        title (Time for Dancing Ballroom Dance & Latin Ballroom Dance, Volume 4)
+[5] 255422 score 3
+        docid (73977)
+        title (Dance, Dance, Dance)
+[6] 203579 score 3
+        docid (318916)
+        title (Dance!)
+[7] 199597 score 3
+        docid (314534)
+        title (Good Friends, a fifth selection of dances from Calculated Figures)
+[8] 152754 score 3
+        docid (259327)
+        title (Russian Folk Dances of the Moiseyev Dance Company)
+[9] 2630 score 2
+        docid (102456)
+        title (Israel Dances - Greatest Folk Dances)
+[10] 280052 score 2
+        docid (97811)
+        title (Hannah & Mariah Dancing)
+</pre>
+</p>
+<a name="phpquery"> </a>
+<h3>Eighth step: Example query with PHP</h3>
+<p class="description">
+In this section we examine the possibility to issue queries in a scripting language.
+As example we use the PHP bindings to query out strus storage built.
+</p>
+
 </div>
 </div>
 </body>

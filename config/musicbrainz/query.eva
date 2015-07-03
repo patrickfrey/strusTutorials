@@ -1,0 +1,6 @@
+SELECT qry;
+EVAL tf( .match=qry );
+
+SUMMARIZE docid = attribute( name=docid );
+SUMMARIZE title = attribute( name=title );
+
