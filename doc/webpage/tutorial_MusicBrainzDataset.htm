@@ -18,9 +18,13 @@
 <h1>Strus tutorial (with the MusicBrainz dataset)</h1>
 <h2>Introduction</h2>
 <p class="description">
-<font color="red">NOTE: This tutorial is not complete yet and is not completely tested. It is work
-in progress. The Download and the insertion of the data should work though.</font><br/>
-In this docker based tutorial uses the MusicBrainz dataset downloaded from <a href="https://musicbrainz.org">MusicBrainz</a>.
+This is a tutorial we show how documents can be inserted into a strus index and how they can
+be queried with a command line tools. Unfortunately the part using other clients for query (like PHP)
+is not finished yet.
+</p>
+<h2>Dataset</h2>
+<p class="description">
+We use the MusicBrainz dataset downloaded from <a href="https://musicbrainz.org">MusicBrainz</a>.
 The dataset is licenced under the terms described <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download#License">here</a>.
 Thanks to MusicBrainz to make this dataset publicly available.
 The dataset contains a list of about 282'000 records with title, actor and id.
@@ -150,6 +154,8 @@ and looks as follows.
 <pre>
 strusCreate "path=storage; metadata=date UINT32"
 </pre>
+</p>
+<p class="description">
 The first argument is a string passed to the storage. It describes the properties of the storage
 created with a semicolon-separated list of configuration assigments. The path argument of it
 defines the directory the key/value store database based on leveldb will write its files to.
@@ -268,6 +274,8 @@ at an input sample (bravely assuming here that all dates have the same format):
 <pre>
 2009-06-18 01:37:52.503809+00
 </pre>
+</p>
+<p class="description">
 The tokenization is just forwarding the tag content. Here is the configuration of the date:
 <pre>
 [MetaData]
