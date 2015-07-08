@@ -495,7 +495,7 @@ One for <a href="grammar_analyzerprg_qry.htm">analyzing query phrases</a> that i
 defining the <a href="grammar_queryevalprg.htm">query evaluation scheme</a>
 and one for the <a href="grammar_query.htm">query</a>. 
 This is quite a lot for a tutorial. You can alterntively skip this section and go to the 
-section explaining <a name="phpquery">how to issue a query with PHP</a>. The mechanisms there do not
+section explaining <a href="#phpquery">how to issue a query with PHP</a>. The mechanisms there do not
 involve any of the languages indroduced here.
 <br/>
 For issuing a query by command line we use the program <a href="utilities.htm#strusQuery">strusQuery</a>.
@@ -619,9 +619,10 @@ as program <a href="utilities.htm#strusRpcServer">strusRpcServer</a>.
 Because we started the image with a shell, the docker CMD starting the strus server
 was ignored. So we have to start it by hand in the background:
 <pre>
-strusRpcServer -s "path=/srv/storage" &
+strusRpcServer -s "path=storage" &
 </pre>
 </p>
+<h4>Test execution chain</h4>
 <p class="description">
 We start with a simple PHP script that asks the strus storage for the number of documents
 inserted. We call the script <u>status.php</u>:
@@ -629,28 +630,25 @@ inserted. We call the script <u>status.php</u>:
 &lt;!DOCTYPE html&gt;
 &lt;html&gt;
 &lt;body&gt;
-
 &lt;?php
 require "strus.php";
-
 try {
-	&lt;!-- Create the strus context as proxy redirecting the 
-		commands to the strus server listening on port 7181: --&gt;
+	// Create the strus context as proxy redirecting the 
+	//	commands to the strus server listening on port 7181:
 	$context = new StrusContext( "localhost:7181" );
-	&lt;!-- Create the storage client: --&gt;
+	// Create the storage client:
 	$storage = $context-&gt;createStorageClient( "" );
 
 	echo '&lt;p&gt;';
-	&lt;!-- Print the number of documents inserted: --&gt;
+	// Print the number of documents inserted:
 	echo "Number of documents inserted: " . $storage-&gt;nofDocumentsInserted() . "!";
 	echo '&lt;/p&gt;';
 }
 catch ( Exception $e) {
-	&lt;!-- Handle possible error: --&gt;
-	echo '&lt;p&gt;&lt;font color="red"&gt;Caught exception: ' . "$e-&gt;getMessage()&lt;/font&gt;&lt;/p&gt;";
+	// Handle possible error:
+	echo '&lt;p&gt;&lt;font color="red"&gt;Caught exception: ' . "{$e-&gt;getMessage()}&lt;/font&gt;&lt;/p&gt;";
 }
 ?&gt;
-
 &lt;/body&gt;
 &lt;/html&gt; 
 </pre>
@@ -661,6 +659,7 @@ root directory and give it the right permissions:
 <pre>
 cp status.php /usr/share/nginx/html/
 chown www-data:www-data /usr/share/nginx/html/status.php
+chmod +x /usr/share/nginx/html/status.php
 </pre>
 </p>
 <p class="description">
@@ -672,10 +671,22 @@ http://127.0.0.1:40080/status.php
 </pre>
 </p>
 <p class="description">
-and we get
+and we get:
+</p>
+<img src="numberOfDocuments.jpg" alt="Number of documents" height="100"> 
+<p class="description">
 <pre>
+as HTML source
+<pre>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+&lt;p&gt;Number of documents inserted: 282306!&lt;/p&gt;&lt;/body&gt;
+&lt;/html&gt; 
 </pre>
 </p>
+<h4>Issue a query</h4>
+
 </div>
 </div>
 </body>
