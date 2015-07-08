@@ -38,11 +38,11 @@ This tutorial has been written for Linux. For other platforms the shell commands
 
 <h2>Build the search index</h2>
 <a name="docker"> </a>
-<h3>First step: Start the strus docker container</h3>
+<h3>First step: Start the strus docker container in a shell</h3>
 <p class="description">
-The following command runs the docker container from the strus image with a terminal using bash:
+The following command runs the docker container with strus and nginx as webserver from the strus image with a terminal using bash:
 <pre>
-docker run -t -i patrickfrey/strus-ub1404-bind /bin/bash
+docker run -p 40080:80 -t -i patrickfrey/strus-ub1404-nginx /bin/bash
 </pre>
 </p>
 
@@ -112,7 +112,6 @@ You have now preprocessed the MusicBrainz example collection with about 282'000 
 we go back to the upper directory and inpect what we got. There should be about 3200 files
 and each file should contain about 100 items.
 <pre>
-cd ..
 ls doc/
 </pre>
 You get:
@@ -162,7 +161,18 @@ defines the directory the key/value store database based on leveldb will write i
 The storage configuration string is dependend on the storage and key/value store database we use.
 All following commands introduced in this tutorial later that refer to a storage will 
 have a configuration string parameter with the same syntax, but depending on the case 
-with different parameters.
+with different parameters.<br/>
+With this call the storage has been created in the subdirectory 'storage'. Type
+</p>
+<pre>
+ls storage
+</pre>
+</p>
+<p class="description">
+and you will see (LevelDB files)
+<pre>
+000005.log  CURRENT  LOCK  LOG  LOG.old  MANIFEST-000004
+</pre>
 </p>
 <a name="analyzer"> </a>
 <h3>Fourth step: Create a configuration for the document analyzer</h3>
@@ -352,7 +362,7 @@ This looks good as expected. The second program for checking analyzer steps is
 allows us to check tokenizers and normalizers used in the configuration.
 Let's check if words are tokenized and normalized correctly:
 <pre>
-cat 'Live in Milan (27,9,1956)' | strusAnalyzePhrase -n "convdia(en):stem(en):lc" -t "word" -
+echo 'Live in Milan (27,9,1956)' | strusAnalyzePhrase -n "convdia(en):stem(en):lc" -t "word" -
 </pre>
 This leads to the following output:
 <pre>
@@ -411,7 +421,12 @@ done
 
 <a name="inspect"> </a>
 <h3>Sixth step: Inspect the storage</h3>
-<p class="description">Now as we have inserted all documents we are curious to see
+<p class="description">
+The following examples use the dump from 29th of June 2015. You might get different
+results with another dump.<br/>
+</p>
+<p class="description">
+Now as we have inserted all documents we are curious to see
 if everything went right. There is a program
 <a href="utilities.htm#strusDumpStorage">strusInspect</a> that lets us inspect
 some properties of the storage. We chose the document with the document id
@@ -596,10 +611,71 @@ ranked list (starting with rank 0, maximum 10 results):
 <h3>Eighth step: Example query with PHP</h3>
 <p class="description">
 In this section we examine the possibility to issue queries in a scripting language.
-As example we use the PHP bindings to query out strus storage built.
+As example we use the PHP bindings to query our strus storage built.
+The PHP scripts running in the webserver context can not directly access the storage
+files. The strus PHP commands issued are using a proxy implementation of the strus
+interface that redirect the calls to be executed on a server. This server is implemented
+as program <a href="utilities.htm#strusRpcServer">strusRpcServer</a>. 
+Because we started the image with a shell, the docker CMD starting the strus server
+was ignored. So we have to start it by hand in the background:
+<pre>
+strusRpcServer -s "path=/srv/storage" &
+</pre>
 </p>
-<p class="description"><font color=red>UNFORTUNATELY THIS TUTORIAL IS WORK IN PROGRESS AND 
-CURRENTLY ENDS HERE. I AM WORKING ON COMPLETING IT.</font></p>
+<p class="description">
+We start with a simple PHP script that asks the strus storage for the number of documents
+inserted. We call the script <u>status.php</u>:
+<pre>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+
+&lt;?php
+require "strus.php";
+
+try {
+	&lt;!-- Create the strus context as proxy redirecting the 
+		commands to the strus server listening on port 7181: --&gt;
+	$context = new StrusContext( "localhost:7181" );
+	&lt;!-- Create the storage client: --&gt;
+	$storage = $context-&gt;createStorageClient( "" );
+
+	echo '&lt;p&gt;';
+	&lt;!-- Print the number of documents inserted: --&gt;
+	echo "Number of documents inserted: " . $storage-&gt;nofDocumentsInserted() . "!";
+	echo '&lt;/p&gt;';
+}
+catch ( Exception $e) {
+	&lt;!-- Handle possible error: --&gt;
+	echo '&lt;p&gt;&lt;font color="red"&gt;Caught exception: ' . "$e-&gt;getMessage()&lt;/font&gt;&lt;/p&gt;";
+}
+?&gt;
+
+&lt;/body&gt;
+&lt;/html&gt; 
+</pre>
+</p>
+<p class="description">
+In order to make it accessible for nginx, we have to copy it to the web servers html pages 
+root directory and give it the right permissions:
+<pre>
+cp status.php /usr/share/nginx/html/
+chown www-data:www-data /usr/share/nginx/html/status.php
+</pre>
+</p>
+<p class="description">
+Now we can call it via HTTP, say we can enter the following URL into a web browsers address bar.
+We have specified port 40080 when starting the strus docker container, so we also specify it here:
+</p>
+<pre>
+http://127.0.0.1:40080/status.php
+</pre>
+</p>
+<p class="description">
+and we get
+<pre>
+</pre>
+</p>
 </div>
 </div>
 </body>
