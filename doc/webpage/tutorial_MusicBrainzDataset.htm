@@ -94,7 +94,7 @@ done
 </p>
 <h4>Fill the documents with the content of the dump</h4>
 <p class="description">For every entry we want to process, we create an own XML tag. Every record
-is marked with an '&lt;item&gt;...&lt;/itemgt;' tag.
+is marked with an '&lt;item&gt;...&lt;/item&gt;' tag.
 <pre>
 cat dump.txt \
   | awk -F"\t" '{FNAME=int($1/100); print "&lt;item&gt;&lt;id&gt;" $1 "&lt;/id&gt;&lt;title&gt;" $2 "&lt;/title&gt;&lt;artist&gt;" $3 "&lt;/artist&gt;&lt;date&gt;" $4 "&lt;/date&gt;&lt;upc&gt;" $9 "&lt;/upc&gt;&lt;note&gt;" $10 "&lt;/note&gt;&lt;/item&gt;" >> "doc/"FNAME".xml" }'
@@ -677,7 +677,159 @@ and we get:
 <p class="description">
 </p>
 <h4>Issue a query</h4>
+<p class="description">Now we try to create a simple page showing a ranked list of best matches
+to a query passed as GET parameters. We call the PHP source file <u>search.php</u>:
+<pre>
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+&lt;?php
+require "strus.php";
+<font color=green>
+// The following helper function will be used to evaluate a query:</font>
+function evalQuery( $queryString, $minRank, $maxNofRanks)
+{	<font color=green>
+	// We create the strus context as proxy to the strusRpcServer
+	// started in our docker container listening on port 7181:</font>
+	$context = new StrusContext( "localhost:7181" );
+	<font color=green>
+	// We create the storage proxy interface refering to the storage 
+	// served by the server by passing an empty storage configuration:</font>
+	$storage = $context-&gt;createStorageClient( "" );
+	<font color=green>
+	// We create the analyzer proxy interface:</font>
+	$analyzer = $context-&gt;createQueryAnalyzer();
+	<font color=green>
+	// We create the query evaluation proxy interface:</font>
+	$queryeval = $context-&gt;createQueryEval();
+	<font color=green>
+	// Here we define how the query is analyzed. In our example we will introduce
+	// only one phrase type and call it "qry". The produced feature type "word" matches
+	// to the feature type in the search index of the document. The tokenizer used
+	// is the same as for the features in the document ("word"). So is the normalizer
+	// defined. Note that the execution of the normalizer is read from left to
+	// right and not as in the analyzer configuration language from right to left.</font>
+	$analyzer-&gt;definePhraseType( "qry", "word"/*feat type*/, "word"/*tokenizer*/, 
+			["lc", ["stem", "en"], ["convdia", "en"] ] /*normalizer*/);
+	<font color=green>
+	// Now we define our weighting function, that counts the number of query
+	// feature matches in the document. Weighting function attribute names,
+	// that reference features, start with a dot '.'. Others referencing
+	// number or string constants not:</font>
+	$queryeval-&gt;addWeightingFunction( 1.0, "tf", [".match" =&gt; "qry" ]);
+	<font color=green>
+	// Next we define what is presented as attribute of the result.
+	// We would like to see the document identifier and the document title:</font>
+	$queryeval-&gt;addSummarizer( "DOCID", "attribute", [ "name" =&gt; "docid" ] );
+	$queryeval-&gt;addSummarizer( "TITLE", "attribute", [ "name" =&gt; "title" ] );
+	<font color=green>
+	// For the documents to match we have to define a selection expression.
+	// The selected features will be addressed by the feature set identifier "sel":</font>
+	$queryeval-&gt;addSelectionFeature( "sel");
+	<font color=green>
+	// Now we have finished the query evaluation scheme definition and we create
+	// the query to issue. First we define the query object to instantiate:</font>
+	$query = $queryeval-&gt;createQuery( $storage);
+	<font color=green>
+	// Next we take the query string as phrase and analyze it. In a more complex
+	// system we would parse the query language first and the elements of the
+	// query language would be the queryphrases to analyze. In our simple example
+	// setting, we have just a single phrase query:</font>
+	$terms = $analyzer-&gt;analyzePhrase( "qry", $queryString);
 
+	if (count( $terms) &gt; 0)
+	{	<font color=green>
+		// Now we create the query expressions. The selection feature "sel" will
+		// be represented as selection of documents that contain all query features.
+		// The weighted features "qry" will be the set of terms in the query.
+		// The query is constructed with operations on a stack:</font>
+		foreach ($terms as &$term)
+		{
+			$query-&gt;pushTerm( "word", $term-&gt;value);
+			<font color=green>// ... The term pushed is now the topmost element on the stack
+			</font>
+			$query-&gt;pushDuplicate();<font color=green>
+			// ... We push another instance of the term
+			</font>
+			$query-&gt;defineFeature( "qry");<font color=green>
+			// ... One we take from the stack and create a feature 
+			// the other copy remains on the stack and will be used to create
+			// the selection expression ("sel").</font>
+		}
+		$query-&gt;pushExpression( "within", count($terms), 100);<font color=green>
+		// ... all copied features (pushDuplicate) are taken from the stack and an
+		// expression is constructed that matches if all features are within a 
+		// range of 100. The expression is pushed on the stack.
+		</font>
+		$query-&gt;defineFeature( "sel");<font color=green>
+		// ... Define the selection feature "sel" from the expression on the top of the stack.</font>
+	}
+	<font color=green>
+	// At last we define the number of documents to retrieve and the first rank to show:</font>
+	$query-&gt;setMaxNofRanks( $maxNofRanks);
+	$query-&gt;setMinRank( $minRank);
+	<font color=green>
+	// And we evaluate the query and return it as result:</font>
+	return $query-&gt;evaluate();
+}
+
+<font color=green>
+// Parse the query parameters:</font>
+parse_str( getenv('QUERY_STRING'), $_GET);
+$queryString = $_GET['q'];
+$nofRanks = 20;
+$minRank = 0;
+if (array_key_exists( 'n', $_GET))
+{
+	$nofRanks = intval( $_GET['n']);
+}
+if (array_key_exists( 'i', $_GET))
+{
+	$minRank = intval( $_GET['i']);
+}
+<font color=green>
+// Call the defined subroutine to evaluate the query:</font>
+$results = evalQuery( $queryString, $minRank, $nofRanks);
+<font color=green>
+// Display the result:</font>
+echo '&lt;table border=1&gt;';
+foreach ($results as &$result)
+{
+	echo '&lt;tr&gt;&lt;td&gt;' . $result-&gt;DOCID . '&lt;/td&gt;&lt;td&gt;' . $result-&gt;TITLE . '&lt;/td&gt;&lt;/tr&gt;' . "\n";
+}
+echo '&lt;/table&gt;';
+?&gt;
+&lt;/body&gt;
+&lt;/html&gt; 
+</pre>
+</p>
+<p class="description">
+Now we copy the file into the webservers document area and set the permissions correctly:
+<pre>
+cp search.php /usr/share/nginx/html/
+chown www-data:www-data /usr/share/nginx/html/search.php
+chmod +x /usr/share/nginx/html/search.php
+</pre>
+</p>
+<p class="description">
+Now we can call the search page via HTTP, say we can enter the following URL into a web browsers address bar
+as we did it with the <u>status.php</u> page. We search for "party dance", and retrieve the
+first 10 ranks starting with the best match:
+<pre>
+http://127.0.0.1:40080/search.php?q=party%20dance&amp;i=0&amp;n=10
+</pre>
+<p class="description">
+and we get:
+</p>
+<img src="searchResult.jpg" alt="Search Result" height="400"> 
+</p>
+
+<h3>Ninth step: Think about build your own search application</h3>
+<p class="description">
+This tutorial hopefully showed that it is simple to create a search engine for a simple data set.
+Unfortunately search applications are normally not simple at all. But if you have ideas or
+questions about the strus search engine, please contact us by mail.
+</p>
 </div>
 </div>
 </body>
