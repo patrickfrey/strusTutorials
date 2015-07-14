@@ -81,7 +81,7 @@ set $ndocs as the maximum number of documents we will get. In every document wil
 items to insert. For every document identifier we create a document with the XML header.
 <pre>
 cat mbdump/release_raw | sed 's/\&amp;/\&amp;amp;/g' | sed 's/&lt;/\&amp;lt;/g' | sed 's/&gt;/\&amp;gt;/g' > dump.txt
-ndocs=`cat dump.txt | awk -F"\t" '{if(min=="")min=max=$1; if($1>max) {max=$1}; if($1< min) {min=$1}; } END {print int(max/100)}'`
+ndocs=`cat dump.txt | awk -F"\t" '{if(min=="")min=max=$1; if($1>max) {max=$1}; if($1< min) {min=$1}; } END {print int((max+1)/100)}'`
 mkdir doc
 idoc=0
 while [ $idoc -lt $ndocs ]
@@ -190,7 +190,7 @@ vi tutorial.ana
 </p>
 <p class="description">
 The following sub sections show what we define in this configuration file. 
-You can also download it from <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/config/musicbrainz/tutorial.ana">tutorial.ana</a>.
+The complete analyzer configuration is defined in <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/config/musicbrainz/tutorial.ana">tutorial.ana</a>.
 The textwolf segmenter used in this tutorial defines XML selection expressions is the
 abbreviated syntax of XPath with 2 exceptions:
 <ol>
