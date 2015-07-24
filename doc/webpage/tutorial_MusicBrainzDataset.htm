@@ -36,7 +36,7 @@ The tutorial will show, how this data can be made retrievable with strus.
 In order to run it you need to <a href="https://docs.docker.com/installation">install docker</a> on your machine.
 This tutorial has been written for Linux. For other platforms the shell commands may look different.
 
-<h2>Build the search index</h2>
+<h2>Go</h2>
 <a name="docker"> </a>
 <h3>First step: Start the strus docker container in a shell</h3>
 <p class="description">
@@ -50,7 +50,7 @@ docker run -p 40080:80 -t -i patrickfrey/strus-ub1404-nginx /bin/bash
 <h3>Second step: Download and prepare the data</h3>
 <p class="description">
 If you want to skip this section, you can simply execute the script <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/scripts/musicbrainz/step1_fetchData.sh">step_fetchData.sh</a>.
-This script will execute the steps described here in about half a minute on a convenient developer machine.
+This script will execute the steps described here in about a minute on a convenient developer machine.
 <br/>
 Otherwise you have to manually fetch the data from <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download">MusicBrainz</a>.
 The dump of the record releases will be dumped and converted into a proprietary XML we will use.
@@ -108,25 +108,25 @@ done
 </p>
 <h4>Leave the data directory and inspect the result</h4>
 <p class="description">
-You have now preprocessed the MusicBrainz example collection with about 282'000 records.
-we go back to the upper directory and inpect what we got. There should be about 3200 files
+We have now preprocessed the MusicBrainz example collection with about 282'000 records.
+We go back to the upper directory and inpect what we got. There should be about 3200 files
 and each file should contain about 100 items.
 <pre>
 ls doc/
 </pre>
-You get:
+We get:
 <pre>
 0.xml     1267.xml  1536.xml  1805.xml  2074.xml  2343.xml  2612.xml  2882.xml  3150.xml  461.xml  730.xml
 1.xml     1268.xml  1537.xml  1806.xml  2075.xml  2344.xml  2613.xml  2883.xml  3151.xml  462.xml  731.xml
 ... (more)
 </pre>
 </p>
-<p class="description">Here is an except of an example input file for strus. You can inspect the first 5 lines with:
+<p class="description">Here is an except of an example input file for strus. We can inspect the first 5 lines with:
 <pre>
 head -n 7 doc/999.xml 
 </pre>
 </p>
-<p class="description">You get:
+<p class="description">We get:
 <pre>
 &lt;?xml version="1.0" encoding="UTF-8" standalone="yes" ?&gt;
 &lt;list&gt;
@@ -143,20 +143,18 @@ has been done to reduce the number of files created.
 <h4>Initialize the storage database</h4>
 <p class="description">Will will use the <h href="utilities.htm">utility programs of strus</a> to
 create the storage and insert the documents into the search index.<br/>
-We have one data element we would like to use for meta data restrictions the publication data we call 'date'.
-The meta data used restrictions are put into the meta data table. You can at any time alter the
+We have one data element 'date' we would like to use for meta data restrictions.
+The meta data used for restrictions are put into the meta data table. We can at any time alter the
 meta data table or add new elements with the command <a href="utilities.htm#strusAlterMetaData">strusAlterMetaData</a>. But we can also define 
 some meta data within the <a href="utilities.htm#strusCreate">strusCreate</a> command.<br/>
-We also would like to attach the 'title' field of every item as document attribute. 
-The storage is created with the command <a href="utilities.htm#strusCreate">strusCreate</a> 
-and looks as follows.
+The command to create the storage looks as follows:
 <pre>
-strusCreate "path=storage; metadata=date UINT32"
+strusCreate -s "path=storage; metadata=date UINT32"
 </pre>
 </p>
 <p class="description">
-The first argument is a string passed to the storage. It describes the properties of the storage
-created with a semicolon-separated list of configuration assigments. The path argument of it
+The first argument describes the properties of the storage created with a semicolon-separated list of 
+configuration assigments. The path argument of it
 defines the directory the key/value store database based on leveldb will write its files to.
 The storage configuration string is dependend on the storage and key/value store database we use.
 All following commands introduced in this tutorial later that refer to a storage will 
@@ -169,13 +167,13 @@ ls storage
 </pre>
 </p>
 <p class="description">
-and you will see (LevelDB files)
+and we will see (LevelDB files)
 <pre>
 000005.log  CURRENT  LOCK  LOG  LOG.old  MANIFEST-000004
 </pre>
 </p>
 <a name="analyzer"> </a>
-<h3>Fourth step: Create a configuration for the document analyzer</h3>
+<h3>Fourth step: Configure the document analyzer</h3>
 <p class="description">
 We will use the standard document segmenter based on textwolf as we will process XML documents. 
 The analyzer configuration describes, what elements will be extracted from the items and how items
@@ -199,7 +197,7 @@ abbreviated syntax of XPath with 2 exceptions:
 (the "::text" is omitted).</li>
 </ol>
 </p>
-<h4>Define the items to index (collection usits aka documents)</h4>
+<h4>Define the items to index (collection units aka documents)</h4>
 <p class="description">As we saw in the preparation of the documents there are about 100 items 
 inserted into one file. For separating these items as documents to insert we have to define a
 section document that defines what selection expression defines a document in an input file:
@@ -226,7 +224,7 @@ The feature type name we assign to the produced search index features is for all
 </pre>
 </p>
 <p class="description">
-Intuitively this configuration is understod if you read every feature assignment from
+Intuitively this configuration is understod if we read every feature assignment from
 right to left: Select an element, select the tokens from an element selection, normalize the tokens: "lc -&gt; stem -&gt; convdia"
 and assign them to a feature type "word".
 </p>
@@ -254,7 +252,7 @@ processing steps from right to left.
 Now assign some attributes to each document inserted. Attributes are used in the representation
 of the result. There is one reserved attribute name that is very important for our case. It is
 the attribute "<b>docid</b>". When defining it, the strusInsert program will define the content
-of this attribute as document identifier. If you do not define it, the input file path will be
+of this attribute as document identifier. If we do not define it, the input file path will be
 used as document identifier. Because the document identifier has to be unique, we have to create
 one when there are multiple documents grouped in one input file as we did before. 
 For all four elements we will use a tokenization ("content") and normalization ("orig"),
@@ -392,7 +390,7 @@ have to be in sync to define their occurrence relation by their word position.
 <h3>Fifth step: Insert the documents into the storage</h3>
 <p class="description">
 We got now the analysis of the documents done. Now we would like to insert the documents
-into the storage created. The program <a href="utilities.htm#strusInsert">strusInsert</a>. 
+into the storage created. The program <a href="utilities.htm#strusInsert">strusInsert</a>
 helps us to do that. It has several options to boost the insert process. It depends very 
 much on the collection and the hardware used which parameters are best.<br/>
 If we know that all documents inserted are new, then we should specify the option '-n' ('--new').
@@ -422,7 +420,7 @@ done
 <a name="inspect"> </a>
 <h3>Sixth step: Inspect the storage</h3>
 <p class="description">
-The following examples use the dump from 29th of June 2015. You might get different
+The following examples use the dump from 29th of June 2015. We might get different
 results with another dump.<br/>
 </p>
 <p class="description">
@@ -477,12 +475,12 @@ If we want to see more at once we can also use the dumpers
 <a href="utilities.htm#strusDumpStatistics">strusDumpStatistics</a> to get more
 info. But for understanding the storage dump there is knowledge about the internal
 block structure required. The programs <a href="utilities.htm#strusCheckStorage">strusCheckStorage</a>
-and <a href="utilities.htm#strusCheckInsert">strusCheckInsert</a> are also useful, if
-you want to perform some checks on the storage created.
+and <a href="utilities.htm#strusCheckInsert">strusCheckInsert</a> are also useful for performing
+some checks on the storage created.
 </p>
 <p class="description">
 It is important to know that the dump program <a href="utilities.htm#strusDumpStorage">strusDumpStorage</a>
-does not output any data format that you can rely on or that you can import again. This dump is not
+does not output any data format that we can rely on or that we can import again. This dump is not
 for backup or for further processing.
 </p>
 
@@ -494,7 +492,7 @@ The command line tool for query has 3 different languages defined.
 One for <a href="grammar_analyzerprg_qry.htm">analyzing query phrases</a> that is similar to the analyzer configuration, one for
 defining the <a href="grammar_queryevalprg.htm">query evaluation scheme</a>
 and one for the <a href="grammar_query.htm">query</a>. 
-This is quite a lot for a tutorial. You can alterntively skip this section and go to the 
+This is quite a lot for a tutorial. We can alterntively skip this section and go to the 
 section explaining <a href="#phpquery">how to issue a query with PHP</a>. The mechanisms there do not
 involve any of the languages indroduced here.
 <br/>
@@ -542,7 +540,7 @@ and one list of query terms, this distinction might not be justified. But in mor
 complex cases where we have expressions involved, many levels of evaluation, a selection
 of features that is different to the features weighted and a
 summarization that works on different sets of features than weighting and selection,
-you need another level on which elements of the query are grouped and addressed with.<br/>
+we need another level on which elements of the query are grouped and addressed with.<br/>
 This query evaluation scheme is read as follows:
 <br/>
 Take the documents that contain any matches of the features of the set 'qry' and evaluate
@@ -756,10 +754,10 @@ function evalQuery( $queryString, $minRank, $maxNofRanks)
 			// the other copy remains on the stack and will be used to create
 			// the selection expression ("sel").</font>
 		}
-		$query-&gt;pushExpression( "within", count($terms), 100);<font color=green>
+		$query-&gt;pushExpression( "contains", count($terms), 0);<font color=green>
 		// ... all copied features (pushDuplicate) are taken from the stack and an
-		// expression is constructed that matches if all features are within a 
-		// range of 100. The expression is pushed on the stack.
+		// expression is constructed that matches all documents that
+		// contain all the features. The expression is pushed on the stack.
 		</font>
 		$query-&gt;defineFeature( "sel");<font color=green>
 		// ... Define the selection feature "sel" from the expression on the top of the stack.</font>
