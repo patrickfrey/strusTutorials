@@ -1,0 +1,113 @@
+<p>
+Information retrieval has various facets. In general one can say that information retrieval is
+the attempt to satisfy an information need, described with a query. This query may include some
+context information like data from a user profile or assessments of previous attempts to
+answer the query. Strus introduces 3 type of bricks to program a query evaluation:
+<ol>
+<li><b>Query expressions</b>: Query expressions are either terms or a n-ary join operation of
+argument expressions. Internally any query expression is implemented as iterator on the set of
+pairs (d,p), where d is an internal document number and p a discrete position number.
+Query expressions can have variables attached. Variables can be referenced by summarizers
+to extract data from documents.
+</li>
+<li><b>Weighting functions</b>: Weighting functions are parameterised functions on sets of query
+expression that assign a numeric weight to a document.
+</li>
+<li><b>Summarizers</b>: Summarizers are parameterised functions on sets of query
+expressions that return weighted items extracted from documents.
+</li>
+</ol>
+</p>
+
+
+
+This tutorial will first show how a classical statistical search of the search term is done with 'BM25' as
+weighting scheme on this collection.
+In a second step we show the capabilities of strus to do information extraction. We extract an item
+('continent') from each matching document, accumulate the weights and present a statistical ranking of these items
+extracted.
+
+
+<h3>The analyzer configuration</h3>
+<p>The document analyzer configuration (in the file countries.ana of the docker image) 
+used for indexing the documents looks as follows:</p>
+<pre>
+[Document]
+        doc = /list/doc;
+
+[SearchIndex]
+        word = convdia(en):stem(en):lc  word  /list/doc//();
+        sent = empty punctuation(en,".") /list/doc//();
+        country_var = empty content {position=succ} /list/doc/country@id;
+        capital_var = empty content {position=succ} /list/doc/capital@id;
+        continent_var = empty content {position=succ} /list/doc/continent@id;
+
+[ForwardIndex]
+        orig = orig split /list/doc//();
+        country = text content {position=succ} /list/doc/country@id;
+        capital = text content {position=succ} /list/doc/capital@id;
+        continent = text content {position=succ} /list/doc/continent@id;
+
+[Attribute]
+        docid = text content /list/doc@id;
+
+[Aggregator]
+        doclen = count(word);
+</pre>
+<p>The configuration has the following sections:</p>
+<ul>
+<li><b>Document</b> <p> All documents inserted for this tutorial are in one file. The section <b>Document</b>
+declares what declares with a selection expression, what entity declares one document in such a file.</p>
+</li>
+<li><b>SearchIndex</b> <p> The search index section declares the terms inserted into the 
+<a href="https://en.wikipedia.org/wiki/Inverted_index">inverted index</a>. 
+To each term we assign a type (left side of the assignment). On the right side of the assignment we
+declare how the values are produced that are inserted into the storage. You can read this chain of 
+declarations from right to left. The rightmost expression selects the entities from the document.
+Then we optionally specify for items that do not get their own position assigned, to which term 
+(succeeding 'succ' or preceeding 'pred') the position is bound, e.g. "{position=succ}". 
+Then the tokenizer is specified, e.g. 'content', 'word', 'punctuation'.
+The leftmost expression specifies how the tokens are normalized before they are inserted,
+e.g. 'text', 'empty', 'convdia(en):stem(en):lc'.
+In our example we have 5 term types declared:</p>
+<ol>
+<li><b>word</b> <p> The words for search.</p></li>
+<li><b>sent</b> <p> End of sentence markers.</p></li>
+<li><b>country_var</b> <p> Placeholder to reference for extraction of country names.</p></li>
+<li><b>capital_var</b> <p> Placeholder to reference for extraction of capital names.</p></li>
+<li><b>continent_var</b> <p> Placeholder to reference for extraction of continent names.</p></li>
+</ol>
+</li>
+<li><b>ForwardIndex</b> <p> The <a href="https://en.wikipedia.org/w/index.php?title=Search_engine_indexing&redirect=no#The_forward_index">forward index</a>
+section declares the features that can be extracted by summarizers. We declare 4 of them:</p>
+<ol>
+<li><b>orig</b> <p> The original terms of the document for abstracting in the result ranklist.<p></li>
+<li><b>country</b> <p> The countries referenced by variables.<p></li>
+<li><b>capital</b> <p> The capitals referenced by variables.<p></li>
+<li><b>continent</b> <p> The continent referenced by variables.<p></li>
+</ol>
+</li>
+<li><b>Attribute</b> <p> The document attributes. Here we have only docid identifying the document.</p></li>
+<li><b>Aggregator</b> <p> The aggregators for statistical values. We have to declare <b>doclen</b> because
+BM25 requires it.</p></li>
+</ul>
+</p>
+
+
+
+
+
+<h3>Insert the documents</h3>
+<p>
+The command to insert the documents looks as follows.
+</p>
+<pre>
+strusInsert -s "path=storage" countries.ana countries.xml
+</pre>
+<p>
+you get
+</p>
+<pre>
+inserted 195 documents (total 195), 0 transactions open     
+done
+</pre>

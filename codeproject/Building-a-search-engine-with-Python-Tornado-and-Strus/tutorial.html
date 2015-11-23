@@ -1,0 +1,969 @@
+<html>
+<head>
+<title>Building a search engine with Python, Tornado and Strus</title>
+</head>
+<body>
+<h2>Goals</h2>
+<p>
+The goal of this tutorial is to show how to build a search engine web service for non trivial information
+needs beyond simple keyword search with <a href="https://www.python.org/">Python</a>, <a href="http://www.tornadoweb.org/en/stable">Tornado</a>
+and <a href="http://www.project-strus.net">Strus</a>.
+<br/>
+All prerequisites you need are delivered as <a href="http://www.docker.com">docker</a> image.
+The tutorial will take less than an hour to complete.
+</p>
+
+<h2>Background</h2>
+<p><a href="http://www.project-strus.net">Strus</a> is a set of libraries and tools
+to build search engines. This article presents its Python bindings in the ensemble with the
+<a href="http://www.tornadoweb.org/en/stable">Tornado web framework</a>.
+<br/>
+</p>
+
+<h2>Prerequisites</h2>
+<p>
+You need <a href="http://www.docker.com">docker</a> installed.<br/>
+At least for downloading the docker image for this tutorial, when you run it the first time,
+you need an internet connection.
+</p>
+
+<h2>Knowledge requirements</h2>
+<p>
+To execute and understand the steps of this tutorial some intermediate knowledge about programming 
+<a href="http://www.python.org/">Python</a> is helpful. 
+But the language concepts used are not very sophisticated. You can probably also understand the
+code if you know <a href="http://www.php.net">PHP</a>.
+<br/>
+To understand the rendering of the web server results, you should know the very basic constructs of HTML.
+<br/>
+You don't need to know <a href="http://www.tornadoweb.org/en/stable">Tornado</a> yet. 
+This tutorial will give you the starting hooks to get into it.
+<br/>
+This tutorial addresses a public with some previous knowledge about basic concepts of
+<a href="http://en.wikipedia.org/wiki/Information_retrieval">information retrieval</a>.
+You can complete this tutorial also without any knowledge, but it will hardly be convincing. There are
+much more mature out of the box solutions available for you in this case.
+</p>
+
+<h2>Introduction</h2>
+<p>
+The artificial collection for this tutorial is a list of 201 countries and the languages spoken there.
+Additionaly every country is assigned to a continent.
+First we will inspect an information retrieval query with
+<a href="http://en.wikipedia.org/wiki/Okapi_BM25">BM25</a> as query evaluation scheme,
+searching for languages and getting a ranked list of countries.
+Then we will have a look at an example of weighting entities appearing in matching documents,
+searching for languages and getting a ranked list of continents.
+<br/>
+The Strus demo project, a search on the
+<a href="http://demo.project-strus.net">complete Wikipedia collection (English)</a>
+will get you an idea of the real information need behind these examples. The second weighting scheme
+ranking entities appearing in matching documents, that is introduced in this tutorial, is called 
+NBLNK there. The NBLNK retrieval method of the Wikipedia demo ranks links in documents that are 
+occurring in sentences that match to the query.
+Try <a href="http://demo.project-strus.net/evalQuery.php?q=hypertext&n=20&s=NBLNK">the example query "hypertext"</a>.
+<br/>
+The weighting scheme for extracting entities will look very complicated for the example task
+(extracting continents). For illustrating the power of Strus in term of extracting and weighting
+entities in expressions, the full Wikipedia NBLNK weighting method is introduced.
+Looking at the example collection and the query, this is like using a sledge-hammer to crack a nut.
+</p>
+
+<h2>Glossary</h2>
+<p>In this tutorial you will encounter several terms that have a specific definition in Strus:
+<ol>
+<li><b>Posting</b>: Contrary to most other search engines postings describe pairs <i>(d,p)</i>
+of cardinal numbers, where <i>d</i> refers to a document and <i>p</i> to a position
+(word count, not byte position). The model of set operations is described on the boolean algebra of
+sets of pairs <i>(d,p)</i> rather than the boolean algebra of sets of document numbers with position
+information as related information.
+The implementation is of course very similar to other engines. You cannot do things too differently
+without falling into performance holes, that are the same for all implementing such engines.
+</li>
+<li><b>Weighting function</b>: Function that assigns a numerical weight (double precision floating point number)
+to documents. Weighing functions are parameterized and use iterators on the postings of query expressions
+to calculate the weight.
+</li>
+<li><b>Summarizer</b>: A function to extract content of a document for presentation of further processing.
+</li>
+<li><b>Term expression</b>: An arbitrary complex expression represented as tree with typed terms as leaves.
+An expression is built from typed terms and n-ary functions on the postings of term sub expressions.
+</li>
+<li><b>Feature</b>: A feature (or query feature) is associating some <i>term expression</i> with a weight and 
+a name of a set to address it. Objects that reference features are for example <i>weighting functions</i>
+and <i>summarizers</i>.
+</li>
+</ol>
+</p>
+
+<h2>Step 1: Start the docker container</h2>
+<p>
+To start the docker image typing the following command in your shell:
+<pre>
+docker run -p 40080:80 -t -i patrickfrey/strus-ub1404-torntuto:v2_0 /bin/bash
+</pre>
+</p>
+<p>
+and you will get a prompt like this
+</p>
+<pre>
+root@8cbc7f49f3cf:/home/strus#
+</pre>
+<p>
+All following shell commands of this tutorial are executed in this shell.
+</p>
+
+
+<h2>Step 2: Understanding the example document collection</h2>
+<h3>The document structure</h3>
+<p>
+In this tutorial all example documents are in one file, a multipart document. It has
+a &lt;list&gt; root tag and &lt;doc&gt; tags for the items to insert as documents.
+Each item contains one sentence that relates country, continent and languages spoken together.
+Continent is marked as entity that can be extracted. 
+The following example shows an example multipart document with two items in the list:
+<pre>
+&lt;?xml version='1.0' encoding='UTF-8' standalone='yes'?&gt;
+&lt;list&gt;
+&lt;doc id='Sweden'&gt;
+In the country Sweden on the &lt;continent id='Europe'&gt;Europe&lt;/continent&gt; 
+are the following languages spoken: Swedish, Sami,  Finnish;  
+small Sami- and Finnish-speaking minorities.
+&lt;/doc&gt;
+&lt;doc id='Switzerland'&gt;
+In the country Switzerland
+on the &lt;continent id='Europe'&gt;Europe&lt;/continent&gt; 
+ are the following languages spoken: German French, Italian, Romansch
+&lt;/doc&gt;
+&lt;/list&gt;
+</pre>
+</p>
+
+<h2>Step 3: Create the storage</h2>
+<h3>Initialize the storage database</h3>
+<p>
+We will use an utility program of Strus to create the storage. 
+The <a href="http://www.project-strus.net/utilities.htm">command line utilities of Strus</a>
+are helpful programs for accessing the storage. In this tutorial we will only use them for the
+initial creation of the storage.<br/>
+Creating the storage from the web service and thus managing different storages in the web service
+would make the example a lot more complicated because of synchronization issues.
+But you could also use the Strus Python API to create or destroy a storage. 
+The command line command to create the storage we use for now looks as follows:
+</p>
+<pre>
+strusCreate -s "path=storage; metadata=doclen UINT16"
+</pre>
+<p>
+you get
+</p>
+<pre>
+storage successfully created.
+</pre>
+<p>
+The meta data element <i>doclen</i> was declared because it is required by the query evaluation scheme <i>BM25</i>
+we will use.
+</p>
+
+<h2>Step 4: Define the web server skeleton with Tornado</h2>
+<h3>Define the server skeleton</h3>
+<p>We design the web server top down and define the skeleton of the server with Tornado
+without implementing the request handlers needed yet. It looks like follows:
+</p>
+<pre>
+#!/usr/bin/python
+
+import tornado.ioloop
+import tornado.web
+import os
+import sys
+
+# [1] Request handlers:
+class InsertHandler(tornado.web.RequestHandler):
+	def post(self):
+		pass;
+		#... insert handler implementation
+
+class QueryHandler(tornado.web.RequestHandler):
+	def get(self):
+		pass;
+		#... query handler implementation
+
+# [2] Dispatcher:
+application = tornado.web.Application([
+	# /insert in the URL triggers the handler for inserting documents:
+	(r"/insert", InsertHandler),
+	# /query in the URL triggers the handler for answering queries:
+	(r"/query", QueryHandler),
+	# /static in the URL triggers the handler for accessing static 
+	# files like images referenced in tornado templates:
+	(r"/static/(.*)",tornado.web.StaticFileHandler,
+		{"path": os.path.dirname(os.path.realpath(sys.argv[0]))},)
+])
+
+# [3] Server main:
+if __name__ == "__main__":
+	try:
+		print( "Starting server ...\n");
+		application.listen(80)
+		print( "Listening on port 80\n");
+		tornado.ioloop.IOLoop.current().start()
+		print( "Terminated\n");
+	except Exception as e:
+		print( e);
+</pre>
+<p>
+It consists of three parts: The main program that runs the server [3].
+The application dispacher that selects a handler based on URL patterns [2]
+and a list or request handlers used in the application [1].
+If we start this program in a source file <u>strusServer.py</u> with the following command:
+</p>
+<pre>
+python strusServer.py 
+</pre>
+<p>the we get a listening we server:
+</p>
+<pre>
+Starting server ...
+
+Listening on port 80
+</pre>
+<p>... But it does not react to any command yet.
+</p>
+
+<h2>Step 5: Define the Tornado HTML templates to render the result</h2>
+<p>Tornado has a <a href="http://www.tornadoweb.org/en/stable/template.html">template engine</a>
+with a substitution language that allows the execution of arbitrary Python commands in the template scope.
+It also has a concept of inheritance. 
+We declare for our example one basic template <a href="#search_base_html">search_base_html.tpl</a> and 
+three templates <a href="#search_nblnk_html">search_nblnk_html.tpl</a>,
+<a href="#search_bm25_html">search_bm25_html.tpl</a> and <a href="#search_error_html">search_error_html.tpl</a>
+implementing the block with the result called <i>resultblock</i> differently:
+</p>
+<a name="search_base_html"> </a>
+<h4>The base template search_base_html.tpl</h4>
+<p>This is the base template with the frame of the page. All other templates are derived from this,
+implementing the block with the result differently.</p>
+<pre>
+&lt;html&gt;
+  &lt;head&gt;
+  &lt;title&gt;A search engine with Python, Tornado and Strus&lt;/title&gt;
+  &lt;meta http-equiv="content-type" content="text/html; charset=utf-8" /&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+  &lt;h1&gt;A search engine with Python, Tornado and Strus&lt;/h1&gt;
+
+  {% block resultblock %}
+  {% end %}
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+<a name="search_bm25_html"> </a>
+<h4>The template for the BM25 search search_bm25_html.tpl</h4>
+<p>This is the template used for the ordinary BM25 query. 
+For each result document we map the document number
+<i>docno</i>, the <i>weight</i>, the <i>title</i> and the <i>abstract</i>.
+</p>
+<pre>
+{% extends "search_base_html.tpl" %}
+
+{% block resultblock %}
+&lt;table border=1&gt;
+&lt;tr&gt;
+&lt;th align='left'&gt;Docno&lt;/th&gt;
+&lt;th align='left'&gt;Weight&lt;/th&gt;
+&lt;th align='left'&gt;Title&lt;/th&gt;
+&lt;th align='left'&gt;Abstract&lt;/th&gt;
+&lt;/tr&gt;
+{% for result in results %}
+&lt;tr&gt;
+&lt;td&gt;{{ result['docno'] }}&lt;/td&gt;
+&lt;td&gt;{{ "%.4f" % result['weight'] }}&lt;/td&gt;
+&lt;td&gt;{{ result['title'] }}&lt;/td&gt;
+&lt;td&gt;{% raw result['abstract'] %}&lt;/td&gt;
+&lt;/tr&gt;
+{% end %}
+&lt;/table&gt;
+{% end %}
+</pre>
+<a name="search_nblnk_html"> </a>
+<h4>The template for the entity weighting search_nblnk_html.tpl</h4>
+<p>This is the template used for the ranked list we get when weighting
+entities extracted from matching documents. For each result document,
+we map the <i>weight</i> and the <i>title</i>.</p>
+<pre>
+{% extends "search_base_html.tpl" %}
+
+{% block resultblock %}
+  &lt;table border=1&gt;
+  &lt;tr&gt;
+  &lt;th align='left'&gt;Weight&lt;/th&gt;
+  &lt;th align='left'&gt;Title&lt;/th&gt;
+  &lt;/tr&gt;
+  {% for result in results %}
+	&lt;tr&gt;
+	&lt;td&gt;{{ "%.4f" % result['weight'] }}&lt;/td&gt;
+	&lt;td&gt;{{ result['title'] }}&lt;/td&gt;
+	&lt;/tr&gt;
+  {% end %}
+  &lt;/table&gt;
+{% end %}
+</pre>
+<a name="search_error_html"> </a>
+<h4>The template for errors search_error_html.tpl</h4>
+<p>This is the template used for errors caught. We just map the error message here.</p>
+<pre>
+{% extends "search_base_html.tpl" %}
+
+{% block resultblock %}
+&lt;p&gt;&lt;font color="red"&gt;Error: {{message}}&lt;/font&gt;&lt;/p&gt;
+{% end %}
+&lt;/body&gt;
+&lt;/html&gt;
+</pre>
+
+
+<h2>Step 6: Define the request handlers</h2>
+<h3>The information retrieval engine backend (dummy implementation)</h3>
+<p>We try now to define a dummy version of the request handlers needed, to fill our skeleton with life.
+We do this in a source file <u>strusIR.py</u>. Later in this tutorial we will replace this module with a real 
+information retrieval engine:
+</p>
+<pre>
+class Backend:
+	# Constructor creating a local Strus context with the storage configuration 
+	# string passed as argument:
+	def __init__(self, config):
+		pass
+
+	# Insert a multipart document as described in step 2
+	# (doing nothing for the moment):
+	def insertDocuments( self, content):
+		return 0
+
+	# Query evaluation scheme for a classical information retrieval query
+	# with BM25 (returning a dummy ranked list with one element for now):
+	def evaluateQueryText( self, querystr, firstrank, nofranks):
+		rt = []
+		rt.append( {
+			'docno': 1,
+			'title': "test document",
+			'weight': 1.0,
+			'abstract': "Neque porro quisquam est qui dolorem ipsum ..."
+		})
+		return rt
+
+	# Query evaluation method that builds a ranked list from the best weighted entities
+	# extracted from sentences with matches (returning an dummy list for with
+	# one element now):
+	def evaluateQueryEntities( self, querystr, firstrank, nofranks):
+		rt = []
+		rt.append( {
+			'title': "test document",
+			'weight': 1.0
+		})
+		return rt
+</pre>
+<p>In our skeleton we can now insert the following lines after the import directives that declare the
+information retrieval backend used.
+</p>
+<pre>
+#!/usr/bin/python
+
+import tornado.ioloop
+import tornado.web
+import os
+import sys
+import time
+<font color='green'>import strusIR
+
+# Declare the information retrieval engine:
+backend = strusIR.Backend( "path=storage; cache=512M")
+</font>
+</pre>
+<p>After these changes we can replace the request handlers in our skeleton.
+</p>
+
+<h3>The insert request handler</h3>
+<p>The insert request handler accepts POST requests with a multipart document as body
+and calls the insertDocuments method of the backend with it. It returns a plain text
+string with OK or ERR as header depending on the result:</p>
+<pre>
+# Declare the insert document handler (POST request with the multipart document as body):
+class InsertHandler(tornado.web.RequestHandler):
+	def post(self):
+		try:
+			content = self.request.body
+			nofDocuments = backend.insertDocuments( content)
+			self.write( "OK %u\n" % (nofDocuments))
+		except Exception as e:
+			self.write( "ERR %s\n" % (e))
+</pre>
+
+<h3>The query request handler</h3>
+<p>The query request handler accepts GET requests with the following parameters:
+<ol>
+<li><b>q</b>: query string</li>
+<li><b>s</b>: query evaluation scheme (either BM25 or NBLNK)</li>
+<li><b>i</b>: Index of first result rank to return</li>
+<li><b>n</b>: Maximum number of result rank to return</li>
+</ol>
+</p>
+<p>It returns a HTML page with the result rendered with the Tornado template engine:
+</p>
+<pre>
+# Declare the query request handler:
+class QueryHandler(tornado.web.RequestHandler):
+	def get(self):
+		try:
+			# q = query terms:
+			querystr = self.get_argument( "q", None)
+			# i = first rank of the result to display (for scrolling):
+			firstrank = int( self.get_argument( "i", 0))
+			# n = maximum number of ranks of the result to display on one page:
+			nofranks = int( self.get_argument( "n", 20))
+			# c = query evaluation scheme to use:
+			scheme = self.get_argument( "s", "BM25")
+			if scheme == "BM25":
+				# The evaluation scheme is a classical BM25 (Okapi):
+				results = backend.evaluateQueryText(
+						querystr, firstrank, nofranks)
+				self.render(
+					"search_html.tpl",
+					scheme=scheme, querystr=querystr,
+					firstrank=firstrank, nofranks=nofranks,
+					results=results)
+			elif scheme == "NBLNK":
+				# The evaluation scheme is weighting the entity
+				# reference in the matching documents:
+				results = backend.evaluateQueryEntities(
+						querystr, firstrank, nofranks)
+				self.render(
+					"search_nblnk_html.tpl",
+					scheme=scheme, querystr=querystr,
+					firstrank=firstrank, nofranks=nofranks,
+					results=results)
+			else:
+				raise Exception( "unknown query evaluation scheme", scheme)
+		except Exception as e:
+			self.render(
+				"search_error_html.tpl",
+				message=e, scheme=scheme, querystr=querystr,
+				firstrank=firstrank, nofranks=nofranks)
+</pre>
+
+<h2>Step 7: Call the server</h2>
+<p>Our server definition is now complete. Have a look at the <a href="./show_strusServer.php">complete server source</a>.
+<br/>
+Now we can start the server and issue a query. We started the docker image with the port 40000 
+mapped to the docker image port 80. So we can issue the GET request 
+<pre>
+http://127.0.0.1:40000/query?q=german&i=0&n=12&s=BM25
+</pre>
+</p>
+<p>
+with our favorite web browser. You get the following results from our dummy implementation of the
+retrieval engine:
+<img border=2 style="display:block;" width="60%" src="dummy_result_bm25.jpg" alt="dummy result BM25"/>
+</p>
+<p>or if you search with NBLNK with this query string:
+<pre>
+http://127.0.0.1:40000/query?q=german&i=0&n=12&s=NBLNK
+</pre>
+</p>
+<p>you get
+<img border=2 style="display:block;" width="60%" src="dummy_result_nblnk.jpg" alt="dummy result NBLNK"/>
+</p>
+
+<h2>Step 8: Define the real information retrieval engine with Strus</h2>
+<p>Now we take a look at the <u>strusIR.py</u> module and the <i>Backend</i> class it implements.
+We replace step by step the dummy implementation by a real one.
+</p>
+<h3>The analyzer configuration</h3>
+<p>If we want to insert and retrieve documents, we have to describe the mapping of information 
+items in the document to their normalized form. The same normalization has to be done with
+items in a query, so that items in the query can be matched against items in the document
+with help of an index.
+<br/>
+This example analyzer configuration is kept as simple as possible. 
+Not all steps are explained in detail, but you will find all document and query analyzer
+methods in the Python interface documentation of Strus: 
+<a href="http://patrickfrey.github.io/strusBindings/doc/python/doxygen/html/classstrus_1_1DocumentAnalyzer.html">DocumentAnalyzer</a>,
+ <a href="http://patrickfrey.github.io/strusBindings/doc/python/doxygen/html/classstrus_1_1QueryAnalyzer.html">QueryAnalyzer</a>,
+.
+<br/>
+The strusIR.Backend methods to create the document and the query analyzers look as follows:
+</p>
+<pre>
+# Create the document analyzer for our test collection:
+def createDocumentAnalyzer(self):
+	rt = self.context.createDocumentAnalyzer()
+	# Define the sections that define a document (for multipart documents):
+	rt.defineDocument( "doc", "/list/doc")
+	# Define the terms to search for (inverted index or search index):
+	rt.addSearchIndexFeature(
+			"word", "/list/doc//()",
+			"word", ("lc",("stem","en"),("convdia","en")))
+	# Define the end of sentence markers:
+	rt.addSearchIndexFeature(
+			"sent", "/list/doc//()",
+			("punctuation","en","."), "empty")
+	# Define the placeholders that are referencable by variables:
+	rt.addSearchIndexFeature(
+			"continent_var", "/list/doc/continent@id",
+			"content", "empty", "BindPosSucc")
+	# Define the original terms in the document used for abstraction:
+	rt.addForwardIndexFeature( "orig", "/list/doc//()", "split", "orig")
+	# Define the contents that extracted by variables:
+	rt.addForwardIndexFeature(
+			"continent", "/list/doc/continent@id",
+			"content", "text", "BindPosSucc")
+	# Define the document identifier:
+	rt.defineAttribute( "docid", "/list/doc@id", "content", "text")
+	# Define the doclen attribute needed by BM25:
+	rt.defineAggregatedMetaData( "doclen", ("count", "word"))
+	return rt
+
+# Create the query analyzer according to the document analyzer configuration:
+def createQueryAnalyzer(self):
+	rt = self.context.createQueryAnalyzer()
+	rt.definePhraseType(
+		"text", "word", "word", 
+		["lc", ["stem", "en"], ["convdia", "en"]]
+	)
+	return rt
+</pre>
+<p>The following constructs need further explanation:
+<ol>
+<li>The document text selector expressions (2nd parameter of defineDocument, addSearchIndexFeature,
+addForwardIndexFeature, defineAttribute) are used to address the parts of the document to process. The syntax
+and semantics of selector expressions is dependend of the document segmenter you use. The
+default document segmenter used is an XML segmenter based on the <a href="http://www.textwolf.net">textwolf library</a>.
+It uses an expression syntax derived from <a href="https://en.wikipedia.org/wiki/XPath#Abbreviated_syntax">abbreviated syntax of XPath</a>.
+Another segmenter for another document format might define selection expressions differently.
+</li>
+<li>Expressions describing functions for list of functions for normalizers, tokenizers, aggregators 
+as arrays in Python. For example
+<pre>
+("lc",("stem","en"),("convdia","en"))
+</pre>
+describes a list of the normalizer functions: lowercase followed by stemming in English and diacritical character
+conversion in English, applied in this order. The notation of arrays for complex trees or lists is used for
+having compact initializers of the functions of the core you need. The first argument of an array is the
+function name and the rest are describing the arguments of the function. A similar initializer notation 
+is also used in describing query expression, we will encounter later on in this tutorial.
+</li>
+<li>The "BindPosSucc" argument in some feature declarations. This option tells the analyzer, that this element
+has no own position in the document, but the same position assigned as the next element with an own position
+assigned. "BindPosPred" references the previous position accordingly. These options help to declare 
+annotations in the document, that are bound to another item. Positions are very important for describing
+positional neighbour relationships in structured features like A is immediately followed by B.
+</li>
+</ol>
+</p>
+<h3>The weighting scheme configuration for BM25</h3>
+<p>Here we declare the strusIR.Backend method to create the weighting scheme for BM25 including the 
+summarizers to present the results. Not all steps are explained in detail, but you will find all 
+query evaluation methods in the Python interface documentation of 
+Strus: <a href="http://patrickfrey.github.io/strusBindings/doc/python/doxygen/html/classstrus_1_1QueryEval.html">QueryEval</a>. 
+The definition of the weighting scheme configuration for BM25 in our case look as follows:
+</p>
+<pre>
+# Create a simple BM25 query evaluation scheme with fixed 
+# a,b,k1 and avg document lenght and title with abstract 
+# as summarization attributes:
+def createQueryEvalBM25(self):
+	rt = self.context.createQueryEval()
+	# Declare sentence marker feature needed for summarization:
+	rt.addTerm( "sentence", "sent", "")
+	# Declare the feature used for selecting result candidates:
+	rt.addSelectionFeature( "selfeat")
+
+	# Query evaluation scheme:
+	rt.addWeightingFunction(
+		1.0, "BM25", {
+			"k1": 0.75, "b": 2.1, "avgdoclen": 20,
+			".match": "docfeat"
+		})
+	# Summarizer for getting the document title:
+	rt.addSummarizer(
+		"TITLE", "attribute", {
+			"name": "docid"
+		})
+	# Summarizer for abstracting:
+	rt.addSummarizer(
+		"CONTENT", "matchphrase", {
+			"type": "orig", "len": 40, "nof": 3,
+			"structseek": 30, "mark": '<b>$</b>',
+			".struct": "sentence", ".match": "docfeat"
+		})
+	return rt
+</pre>
+<p>The following constructs need further explanation:
+<ol>
+<li>addTerm method: This method is used to add terms to the query, that are not part of
+the query itself, but they are used as context information by weighting functions or summarizers.
+A good example are structural markers like end of sentence. These markers are not part of the query
+but they might play a role in weighting or summarization.
+</li>
+<li>addSelectionFeature method: In Strus the what you weight is strictly separated from the how.
+You always have to declare a set of features that declare, what set of documents is considered
+for the result. This separation is something you need in big document collections to avoid to
+expansive scans of result candidates.
+</li>
+<li>Some keys in function descriptions are starting with a dot '.' like for example ".match".
+The dot is used as marker to declare arguments that address features (term expressions) 
+and not strings. The array or dictionary initializer syntax is very limited. So the
+marker is introduced for this case. It is the only marker used in summarizer or
+weighting function arguments.
+</li>
+</ol>
+</p>
+
+<h3>The weighting scheme configuration for weighting entities in matching documents</h3>
+<p>The strusIR.Backend method to create the weighting scheme for NBLNK including the 
+summarizers to present the results look as follows:
+</p>
+<pre>
+# Create a simple BM25 query evaluation scheme with fixed
+# a,b,k1 and avg document lenght and the weighted extracted
+# entities in the same sentence as matches as query evaluation result:
+def createQueryEvalNBLNK(self):
+	rt = self.context.createQueryEval()
+	# Declare sentence marker feature needed for the 
+	# summarization features extracting the entities:
+	rt.addTerm( "sentence", "sent", "")
+	# Declare the feature used for selecting result candidates:
+	rt.addSelectionFeature( "selfeat")
+	
+	# Query evaluation scheme for entity extraction candidate selection:
+	rt.addWeightingFunction(
+		1.0, "BM25", {
+			"k1": 0.75, "b": 2.1, "avgdoclen": 500,
+			".match": "docfeat"
+		})
+	# Summarizer to extract the weighted entities:
+	rt.addSummarizer(
+		"ENTITY", "accuvariable", {
+			".match": "sumfeat",
+			"var": "CONTINENT",
+			"type": "continent"
+		})
+	return rt
+</pre>
+<p>We have nothing more to explain here. The declarations look similar to BM25.
+We have a different summarizer for the 'continent' extraction defined.
+</p>
+
+<h3>The strusIR.Backend constructor</h3>
+<p>We have now all helper methods declared we need to create a strusIR.Backend object.
+The constructor of strusIR.Backend looks like follows:
+</p>
+<pre>
+# Constructor. Initializes the query evaluation schemes and the query and document analyzers:
+def __init__(self, config):
+	if isinstance( config, ( int, long ) ):
+		self.context = strus.Context( "localhost:%u" % config)
+		self.storage = self.context.createStorageClient()
+	else:
+		self.context = strus.Context()
+		self.context.addResourcePath("./resources")
+		self.storage = self.context.createStorageClient( config )
+
+	self.queryAnalyzer = self.createQueryAnalyzer()
+	self.documentAnalyzer = self.createDocumentAnalyzer()
+	self.queryeval = {}
+	self.queryeval["BM25"] = self.createQueryEvalBM25()
+	self.queryeval["NBLNK"] = self.createQueryEvalNBLNK()
+</pre>
+
+<h3>The method to insert a multipart document</h3>
+<p>The method for inserting a multipart document as described in step 2 looks like follows:
+</p>
+<pre>
+# Insert a multipart document:
+def insertDocuments( self, content):
+	rt = 0
+	docqueue = self.documentAnalyzer.createQueue()
+	docqueue.push( content)
+	while (docqueue.hasMore()):
+		doc = docqueue.fetch()
+		self.storage.insertDocument( doc.docid(), doc)
+		rt += 1
+	self.storage.flush()
+	return rt
+</pre>
+<p>The method creates a queue with all analyzed document parts in it and fetches them one by one to
+insert them into the storage. This transaction is completed with a call of flush.
+</p>
+
+<h3>The method evaluate a BM25 query</h3>
+<p>The method for evaluating a BM25 query looks like follows:
+</p>
+<pre>
+# Query evaluation scheme for a classical information retrieval query with BM25:
+def evaluateQueryText( self, querystr, firstrank, nofranks):
+	queryeval = self.queryeval[ "BM25"]
+	query = queryeval.createQuery( self.storage)
+	terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
+
+	if len( terms) > 0:
+		selexpr = ["contains"]
+		for term in terms:
+			selexpr.append( [term.type(), term.value()] )
+			query.defineFeature( "docfeat", [term.type(), term.value()], 1.0)
+
+		query.defineFeature( "selfeat", selexpr, 1.0 )
+
+	query.setMaxNofRanks( nofranks)
+	query.setMinRank( firstrank)
+	# Evaluate the query:
+	results = query.evaluate()
+	# Rewrite the results:
+	rt = []
+	for result in results:
+		content = ""
+		title = ""
+		for attribute in result.attributes():
+			if attribute.name() == 'CONTENT':
+				if content != "":
+					content += ' ... '
+				content += attribute.value()
+			elif attribute.name() == 'TITLE':
+				title = attribute.value()
+		rt.append( {
+			'docno':result.docno(),
+			'title':title,
+			'weight':result.weight(),
+			'abstract':content
+		})
+	return rt;
+</pre>
+<p>The method analyzes the query text and builds one query feature of each term.
+The selection feature is an expression, that selects only the documents, where 
+all query terms appear in ("contains"). The biggest part of this method rewrites
+the resulting ranked list to get to a list of flat structures for not letting
+implementation specific structures intrude into the presentation layer (the
+tornado templates).
+</p>
+
+<h3>The method evaluate a query weighting matching document entities</h3>
+<p>The method for extracting and weighting entities from our example documents 
+and its helper methods look as follows:
+</p>
+<pre>
+# Helper method to define the query features created from terms 
+# of the query string, that are following susequently in the query:
+def __defineSubsequentQueryTermFeatures( self, query, term1, term2):
+	# Pairs of terms appearing subsequently in the query are 
+	# translated into 3 query expressions:
+	#	1+2) search for sequence inside a sentence in documents.
+	#		The summarizer extracts entities within 
+	#		a distance of 50 in the same sentence
+	#	3) search for the terms in a distance smaller than 5 in a sentence.
+	#		The summarizer extracts entities within a distance
+	#		of 50 in the same sentence
+	#	4) search for the terms in a distance smaller than 20 in a sentence.
+	#		The summarizer extracts entities within
+	#		a distance of 50 in the same sentence
+	expr = [
+			[ "sequence_struct", 3,
+				["sent"],
+				[term1.type(), term1.value()],
+				[term2.type(), term2.value()]
+			],
+			[ "sequence_struct", 3,
+				["sent"],
+				[term2.type(), term2.value()],
+				[term1.type(), term1.value()]
+			],
+			[ "within_struct", 5,
+				["sent"],
+				[term1.type(), term1.value()],
+				[term2.type(), term2.value()]
+			],
+			[ "within_struct", 20,
+				["sent"],
+				[term1.type(), term1.value()],
+				[term2.type(), term2.value()]
+			]
+	]
+	weight = [ 3.0, 2.0, 2.0, 1.5 ]
+	ii = 0
+	while ii < 4:
+		# The summarization expression attaches a variable referencing an
+		# the entity to extract.
+		# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
+		sumexpr = [ "inrange_struct", 50, ["sent"],
+				["=CONTINENT", "continent_var"], expr[ ii] ]
+		query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+		ii += 1
+
+# Helper method to define the query features created from terms 
+# of the query string, that are not following subsequently in the query:
+def __defineNonSubsequentQueryTermFeatures( self, query, term1, term2):
+	# Pairs of terms not appearing subsequently in the query are 
+	# translated into two query expressions:
+	#	1) search for the terms in a distance smaller than 5 inside
+	#		a sentence, weight 1.6,
+	#		where d ist the distance of the terms in the query.
+	#		The summarizer extracts entities within a distance
+	#		of 50 in the same sentence
+	#	2) search for the terms in a distance smaller than 20 inside
+	#		a sentence, weight 1.2,
+	#		where d ist the distance of the terms in the query.
+	#		The summarizer extracts entities within a distance
+	#		of 50 in the same sentence
+	expr = [
+			[ "within_struct", 5,
+				["sent"],
+				[term1.type(), term1.value()],
+				[term2.type(), term2.value()]
+			],
+			[ "within_struct", 20,
+				["sent"],
+				[term1.type(), term1.value()],
+				[term2.type(), term2.value()]
+			]
+	]
+	weight = [ 1.6, 1.2 ]
+	ii = 0
+	while ii &lt; 2:
+		# The summarization expression attaches a variable referencing an
+		# the entity to extract.
+		# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
+		sumexpr = [ "inrange_struct", 50, ["sent"],
+				["=CONTINENT", "continent_var"], expr[ ii] ]
+		query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+		ii += 1
+
+# Helper method to define the query features created from a single
+# term query:
+def __defineSingleTermQueryFeatures( self, query, term):
+	# Single term query:
+	expr = [ term.type(), term.value() ]
+	# The summarization expression attaches a variable referencing an
+	# the entity to extract.
+	# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
+	sumexpr = [ "inrange_struct", 50, ["sent"],
+			["=CONTINENT", "continent_var"] ]
+	query.defineFeature( "sumfeat", sumexpr, 1.0 )
+
+# Query evaluation method that builds a ranked list from the best weighted entities
+# extracted from sentences with matches:
+def evaluateQueryEntities( self, querystr, firstrank, nofranks):
+	queryeval = self.queryeval[ "NBLNK"]
+	query = queryeval.createQuery( self.storage)
+	terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
+
+	if len( terms) == 0:
+		# Return empty result for empty query:
+		return []
+
+	# Build the weighting features. Queries with more than one term are building
+	# the query features from pairs of terms:
+	if len( terms) > 1:
+		# Iterate on all permutation pairs of query features and create
+		# combined features for summarization:
+		for pair in itertools.permutations(
+				itertools.takewhile(
+					lambda x: x&lt;len(terms), itertools.count()), 2):
+			if pair[0] + 1 == pair[1]:
+				self.__defineSubsequentQueryTermFeatures(
+					query, terms[pair[0]], terms[pair[1]])
+			elif pair[0] &lt; pair[0]:
+				self.__defineNonSubsequentQueryTermFeatures(
+					query, terms[pair[0]], terms[pair[1]] )
+	else:
+		self.__defineSingleTermQueryFeatures( query, terms[0] )
+
+	# Define the selector ("selfeat") as the set of documents that contain all query terms:
+	# and define the single term features for weighting and candidate evaluation ("docfeat"):
+	selexpr = ["contains"]
+	for term in terms:
+		selexpr.append( [term.type(), term.value()] )
+		query.defineFeature( "docfeat", [term.type(), term.value()], 1.0 )
+	query.defineFeature( "selfeat", selexpr, 1.0 )
+
+	# Evaluate the ranked list for getting the documents to inspect for entities close to matches:
+	query.setMaxNofRanks( (firstrank + nofranks) * 50 + 50)
+	query.setMinRank( 0)
+	results = query.evaluate()
+
+	# Build the table of all entities with weight of the top ranked documents:
+	entitytab = {}
+	for result in results:
+		for attribute in result.attributes():
+			if attribute.name() == 'ENTITY':
+				weight = 0.0
+				if attribute.value() in entitytab:
+					weight = entitytab[ attribute.value()]
+				entitytab[ attribute.value()] = weight + attribute.weight()
+
+	# Extract the top weighted documents in entitytab as result:
+	heap = []
+	for key, value in entitytab.iteritems():
+		heapq.heappush( heap, {'entity':key, 'weight':value})
+	topEntities = heapq.nlargest( firstrank + nofranks, heap, lambda k: k['weight'])
+	rt = []
+	idx = 0
+	maxrank = firstrank + nofranks
+	for elem in topEntities[firstrank:maxrank]:
+		rt.append({
+			'title':elem['entity'],
+			'weight':elem['weight']
+		})
+	return rt
+</pre>
+
+<h3>The complete strusIR module</h3>
+<p>We can now have a look at the <a href="./show_strusIR.php">complete sources of our strusIR module</a>. 
+</p>
+
+<h2>Step 9: Restart the server and insert the documents with CURL</h2>
+<p>Now as we have replaced our information retrieval module with a real implementation, we can insert the documents.
+First we have to restart the server, so that it loads our new strusIR module:
+</p>
+<pre>
+python strusServer.py
+</pre>
+<p>and we get
+</p>
+<pre>
+Starting server ...
+
+Listening on port 8080
+</pre>
+<p>Then we can insert the document with a CURL command:
+</p>
+<pre>
+curl -X POST -d @countries.xml localhost:8080/insert --header "Content-Type:text/xml" 
+</pre>
+<p>and we get
+</p>
+<pre>
+OK 201
+</pre>
+
+<h2>Step 10: Check the query results</h2>
+<p>Now as we have a real search engine with an inserted document collection running, lets
+issue some queries with our favorite browser:
+</p>
+<pre>
+http://127.0.0.1:40000/query?q=spanish&i=0&n=12&s=BM25
+</pre>
+</p>
+<p>we get:
+<img border=2 style="display:block;" width="90%" src="result_bm25_spanish.jpg" alt="result BM25"/>
+</p>
+<p>or if you search with NBLNK with this query string:
+<pre>
+http://127.0.0.1:40000/query?q=spanish&i=0&n=12&s=NBLNK
+</pre>
+</p>
+<p>you get
+<img border=2 style="display:block;" width="60%" src="result_nblnk_spanish.jpg" alt="dummy result NBLNK"/>
+</p>
+</body>
+</html>
+
