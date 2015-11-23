@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html style="height: 100%;"><head>
+	<title>Building a search engine with Strus (tutorial) - CodeProject</title> 
+	<link type="text/css" rel="stylesheet" href="article_files/Main.css">
+
+	
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="Description" content="This tutorial based on a docker image will guide through the development of a simple search engine based on Strus (project-strus.net), a collection of libraries and line tools for building a search engine.; Author: Patrick P. Frey; Updated: 15 Nov 2015; Section: Libraries; Chapter: Platforms, Frameworks &amp; Libraries; Updated: 15 Nov 2015">
+<meta name="Keywords" content="C++, Architect, Dev, Linux, PHP, search,Libraries,Platforms, Frameworks &amp; Libraries,Free source code, tutorials">
+<meta name="Author" content="Patrick P. Frey">
+<meta name="Rating" content="General">
+<meta name="Revisit-After" content="1 days">
+<meta name="application-name" content="CodeProject">
+<meta name="google-translate-customization" content="d908bb7ce7aff658-4c2f3a504525c916-g629383f736781a8a-13">
+
+<link rel="dns-prefetch" href="http://ajax.googleapis.com/"> 
+<link rel="canonical" href="article_files/Building-a-search-engine-with-Strus-tutorial.html">
+
+
+<link rel="alternate" type="application/rss+xml" title="CodeProject Latest articles - All Topics" href="http://www.codeproject.com/WebServices/ArticleRSS.aspx?cat=1">
+<link rel="alternate" type="application/rss+xml" title="CodeProject Latest articles - Android" href="http://www.codeproject.com/WebServices/ArticleRSS.aspx?cat=22">
+<link rel="alternate" type="application/rss+xml" title="CodeProject Latest articles - iOS" href="http://www.codeproject.com/WebServices/ArticleRSS.aspx?cat=25">
+<link rel="alternate" type="application/rss+xml" title="CodeProject Latest articles - C++" href="http://www.codeproject.com/WebServices/ArticleRSS.aspx?cat=2">
+<link rel="alternate" type="application/rss+xml" title="CodeProject Latest articles - C#" href="http://www.codeproject.com/WebServices/ArticleRSS.aspx?cat=3">
+<link rel="alternate" type="application/rss+xml" title="CodeProject Latest articles - Web" href="http://www.codeproject.com/WebServices/ArticleRSS.aspx?cat=23">
+<link rel="alternate" type="application/rss+xml" title="CodeProject Lounge Postings" href="http://www.codeproject.com/webservices/LoungeRSS.aspx">
+<meta name="robots" content="index, follow">
+<link rel="search" type="application/opensearchdescription+xml" title="CodeProject" href="http://www.codeproject.com/info/OpenSearch.xml">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!-- base href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial" -->
+	<link rel="icon" href="http://www.codeproject.com/favicon.ico" type="image/ico">
+<link rel="shortcut icon" href="http://www.codeproject.com/favicon.ico" type="image/ico">
+<link rel="apple-touch-icon" href="http://www.codeproject.com/images/FavIcon-Apple.png" type="image/png">
+<script type="text/javascript" language="Javascript">//<![CDATA[
+function defrm () { /* thanks twitter */ document.write = ''; window.top.location = window.self.location;  setTimeout(function() { document.body.innerHTML = ''; }, 0);  window.self.onload = function(evt) { document.body.innerHTML = ''; }; }if (window.top !== window.self) {  try {  if (window.top.location.host) { /* will throw */ } else { defrm(); /* chrome */ }  } catch (ex) { defrm(); /* everyone else */ } }if (typeof(DemoUrl)!='undefined')   document.write(unescape('%3Cme')+'ta http'+'-equiv="re'+'fresh"                  con'+'tent="1;url='+DemoUrl+unescape('"%3CE'));
+(function() { 
+	var _dma = document.createElement('script');
+        _dma.type = 'text/javascript';
+        _dma.async = true;
+        _dma.src = ('https:' == document.location.protocol ? 'https://' : 'http://') + 'cdn2.developermedia.com/a.min.js';
+        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(_dma);
+})();
+
+//]]>
+</script><script src="article_files/a.js" async="" type="text/javascript"></script>
+
+	
+
+
+
+
+<script type="text/javascript">
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-1735123-1']);
+	_gaq.push(['_trackPageview']);
+	_gaq.push(['_setDomainName', 'www.codeproject.com']);
+	_gaq.push(['_setSessionTimeout', '1200']); 
+
+	(function () {
+		var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+	})(); 
+</script><script src="article_files/ga.js" async="" type="text/javascript"></script>
+
+
+<link href="article_files/translateelement.css" charset="UTF-8" rel="stylesheet" type="text/css"><script src="article_files/main.js" charset="UTF-8" type="text/javascript"></script><script src="article_files/element_main.js" charset="UTF-8" type="text/javascript"></script></head>	
+
+<body style="position: relative; min-height: 100%; top: 0px;" class="firefox firefox42">
+
+<a class="access-link" href="#Main"><img alt="Click here to Skip to main content" src="article_files/t_002.gif"></a>
+
+
+
+
+
+<div class="page-background">
+
+	
+	
+
+	
+
+	
+    <div id="ctl00_STM" class="site-top-menu fixed">
+        <div class="main-content">
+            
+
+<div class="container memberbar clearfix">
+
+	<div id="ctl00_MemberMenu_GenInfo" class="float-left">11,915,771 members (61,428 online)</div>
+
+	<div class="float-left">
+		
+	</div>
+
+	<div class="float-right">
+
+		
+
+		<span id="ctl00_MemberMenu_Messages_NotificationDiv" class="tooltip member-message">
+	<a id="ctl00_MemberMenu_Messages_NotificationCount" class="notification-count" href="http://www.codeproject.com/script/Membership/MyNotifications.aspx">6</a>
+
+	<div class="tooltip-flyout notification-dropdown">
+		
+		
+		
+		<div id="Notifications" class="notification-list">
+			<img src="article_files/animated_loading.gif" alt="loading" style="margin:auto;">
+		</div>
+		<div class="spaced">
+			<a id="ctl00_MemberMenu_Messages_AllNotifications" class="bold" href="http://www.codeproject.com/script/Membership/MyNotifications.aspx">View all notifications</a>
+		</div>
+	</div>
+</span><span id="ctl00_MemberMenu_CurRat" class="tooltip">
+				<a id="ctl00_MemberMenu_MyProfile" dir="ltr" href="http://www.codeproject.com/script/Membership/View.aspx?mid=11836984">Patrick P. Frey</a><img src="article_files/arrow-down-16.png" style="width:16px;height:16px;vertical-align:middle">
+				<div class="tooltip-flyout" style="width:12em !important;">
+					
+					<div class="list-item"><a id="ctl00_MemberMenu_MySettingsDefault" href="https://www.codeproject.com/script/Membership/Modify.aspx">My Settings</a></div>
+					
+					<div class="list-item"><a id="ctl00_MemberMenu_MyBookmarks" href="http://www.codeproject.com/script/Bookmarks/List.aspx?obtid=2">My Bookmarks</a></div>
+					<div class="list-item"><a id="ctl00_MemberMenu_MyArticles" href="http://www.codeproject.com/script/Articles/MemberArticles.aspx?amid=11836984">My Articles</a></div>
+					<div class="list-item"><a id="ctl00_MemberMenu_MyMessages" href="http://www.codeproject.com/script/Forums/Messages.aspx?fmid=11836984">My Messages</a></div>
+					<div class="list-item"><a id="ctl00_MemberMenu_MyQuestions" href="http://www.codeproject.com/script/Answers/MemberPosts.aspx?tab=questions&amp;mid=11836984&amp;showall=True">My Questions</a></div>
+					<div class="list-item"><a id="ctl00_MemberMenu_MyAnswers" href="http://www.codeproject.com/script/Answers/MemberPosts.aspx?tab=answers&amp;mid=11836984&amp;showall=True">My Answers</a></div>
+					<div class="list-item"><a id="ctl00_MemberMenu_MyComments" href="http://www.codeproject.com/script/comments/MemberComments.aspx?mid=11836984">My Comments</a></div>
+					<div class="list-item"><a id="ctl00_MemberMenu_MyContacts" href="http://www.codeproject.com/script/Membership/ListContacts.aspx">My Contact info</a></div>
+					
+					
+					
+					
+				</div>
+			</span><span id="ctl00_MemberMenu_TotalPoints" title="Total reputation points"><a class="bold member-rep-box bronze" title="399" href="http://www.codeproject.com/script/Reputation/List.aspx?mid=11836984">399</a></span>
+			&nbsp;
+			<a id="ctl00_MemberMenu_Signout" href="http://www.codeproject.com/script/Membership/LogOff.aspx?rp=%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial">Sign out</a>
+			<img src="article_files/circle-cross.gif" style="vertical-align:middle;margin-top:-3px;" height="16px" width="16px">
+		
+
+		
+	</div>
+</div>
+        </div>
+    </div>
+
+	
+    <div id="ctl00_SH" class="site-header fixed">
+        <div class="main-content">
+            <div class="logo"><a href="http://www.codeproject.com/"><img id="ctl00_Logo" tabindex="1" title="CodeProject" src="article_files/logo250x135.gif" alt="Home" style="height:135px;width:250px;border-width:0px;"></a></div>
+            <div class="promo"><div class="msg-728x90" data-format="728x90" data-type="ad" data-publisher="lqm.codeproject.site" data-zone="Platforms-Frameworks-Libraries/Libraries/Code-Projects" data-tags="C++, Architect, Dev, Linux, PHP, search,rating4.5"><noscript><a href="http://ad.doubleclick.net/N6839/jump/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=728x90;ord=635838457771386418?"><img src="http://ad.doubleclick.net/N6839/ad/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=728x90;ord=635838457771386418?"  width="728px" height="90px" /></a></noscript></div></div>
+        </div>
+    </div>
+
+	<a href="#Main"><img alt="Click here to Skip to main content" class="access-link" src="article_files/t_002.gif"></a>
+
+	
+	<div id="ctl00_TPR" class="sub-headerbar clearfix fixed">
+    <div class="float-right">
+		
+
+<div class="searchbar">
+
+<form method="get" action="/search.aspx?sbo=kw" name="Search" class="tight">
+
+
+<table class="search" border="0" cellpadding="0" cellspacing="0"><tbody><tr><td><input tabindex="2" class="search  subdue" id="sb_tb" value="Search for articles, questions, tips" name="q"></td><td><input src="article_files/search.gif" type="image"></td></tr></tbody></table>
+
+<div class="hover-container">
+	<div style="display: none;" id="SearchFilter" class="search-advanced small-text align-left">
+	<b>Search within:<br></b>
+		
+		<input id="sb_kw" name="sbo" value="kw" checked="checked" type="radio"><label for="sb_kw">Articles</label><br>
+<input id="sb_qa" name="sbo" value="qa" type="radio"><label for="sb_qa">Quick Answers</label><br>
+<input id="sb_fm" name="sbo" value="fm" type="radio"><label for="sb_fm">Messages</label><br>
+
+
+		
+		
+
+		
+		
+	</div>
+</div>
+</form>
+
+</div>
+    </div>
+    <div class="float-left">
+		
+
+<div class="navbar clearfix">
+<ul class="navmenu openable">
+
+<li class="desktop-only"><a id="ctl00_TopNavBar_Home" href="http://www.codeproject.com/">home</a>
+
+
+</li><li class=""><a id="ctl00_TopNavBar_Art" class="down selected" href="http://www.codeproject.com/script/Articles/Latest.aspx">articles</a>
+
+	<ul>
+		<li class=""><a id="ctl00_TopNavBar_ArtTopicList" class="fly" onmouseover="navBarMenu.ShowMap(this, 'ctl00_TopNavBar_MapFlyout');" href="http://www.codeproject.com/script/Content/SiteMap.aspx">Chapters and Sections<span class="has-submenu">&gt;</span></a><ul id="ctl00_TopNavBar_MapFlyout">
+			<li>
+				<div id="siteMap">
+					<img src="article_files/animated.gif" alt="loading" style="margin:150px;width:100px;height:100px;">
+				</div>
+			</li>
+			</ul>
+		</li>
+		<li><a id="ctl00_TopNavBar_ArtSearch" class="fly break" href="http://www.codeproject.com/search.aspx?sbo=kw">Search</a></li>
+		<li><a id="ctl00_TopNavBar_ArtLatestArts" class="fly" href="http://www.codeproject.com/script/Articles/Latest.aspx?at=1,3,7">Latest Articles</a></li>
+		<li><a id="ctl00_TopNavBar_ArtLatestTips" class="fly" href="http://www.codeproject.com/script/Articles/Latest.aspx?at=6">Latest Tips/Tricks</a></li>
+		<li><a id="ctl00_TopNavBar_ArtTop" class="fly" href="http://www.codeproject.com/script/Articles/TopArticles.aspx?ta_so=5">Top Articles</a></li>
+		<li><a id="ctl00_TopNavBar_ArtBeginner" class="fly" href="http://www.codeproject.com/search.aspx?sbo=kw?aidlst=152&amp;sa_us=True">Beginner Articles</a></li>
+		<li><a id="ctl00_TopNavBar_ArtBlogArticles" class="fly break" href="http://www.codeproject.com/script/Articles/BlogArticleList.aspx">Technical Blogs</a></li>
+		<li><a id="ctl00_TopNavBar_ArtGuide" class="fly" href="http://www.codeproject.com/info/Submit.aspx">Posting/Update Guidelines</a></li>
+		<li><a id="ctl00_TopNavBar_ArtHelpForum" class="fly" href="http://www.codeproject.com/Forums/1641/Article-Writing.aspx">Article Help Forum</a></li>
+		<li><a id="ctl00_TopNavBar_ArtCompetition" class="fly break" href="http://www.codeproject.com/script/Awards/CurrentCompetitions.aspx?cmpTpId=1">Article Competition</a></li>
+		<li><a id="ctl00_TopNavBar_ArtPostArticle" class="fly highlight1" href="http://www.codeproject.com/script/Articles/Submit.aspx">
+			<img src="article_files/write13.png" height="13px" width="13px"> Submit an article or tip
+			</a></li>
+		<li><a id="ctl00_TopNavBar_ArtPostBlog" class="fly highlight2" href="http://www.codeproject.com/script/Articles/BlogFeed.aspx">
+			<img src="article_files/write13.png" height="13px" width="13px"> Post your Blog
+			</a></li>		<li class="last"></li>
+	</ul>
+
+</li>
+
+
+
+<li class="">
+<a id="ctl00_TopNavBar_Answers" href="http://www.codeproject.com/script/Answers/List.aspx?tab=active">
+    <span class="desktop-only tablet-only">quick answers</span><span class="mobile-only">Q&amp;A</span>
+</a>
+	<ul>
+		<li id="ctl00_TopNavBar_AQL"><a id="ctl00_TopNavBar_ArticleQuestion" class="fly highlight1" href="#_comments">
+			<img src="article_files/write13.png" height="13px" width="13px"> Ask a Question about this 
+			article</a>
+		</li>
+
+		<li><a id="ctl00_TopNavBar_QAAsk" class="fly highlight2" href="http://www.codeproject.com/Questions/ask.aspx"><img src="article_files/write13.png" height="13px" width="13px"> Ask a Question</a></li>
+
+		
+		<li><a id="ctl00_TopNavBar_QAUnanswered" class="fly" href="http://www.codeproject.com/script/Answers/List.aspx?tab=unanswered">View Unanswered Questions</a></li>
+		<li><a id="ctl00_TopNavBar_QALatest" class="fly" href="http://www.codeproject.com/script/Answers/List.aspx?tab=active">View All Questions...</a></li>
+		
+				<li><a id="ctl00_TopNavBar_QATR_ctl00_Tag" class="fly" href="http://www.codeproject.com/script/Answers/List.aspx?tab=active&amp;alltags=true&amp;tags=120" style="padding-left:30px">Linux questions</a></li>
+			
+				<li><a id="ctl00_TopNavBar_QATR_ctl01_Tag" class="fly" href="http://www.codeproject.com/script/Answers/List.aspx?tab=active&amp;alltags=true&amp;tags=81" style="padding-left:30px">C# questions</a></li>
+			
+				<li><a id="ctl00_TopNavBar_QATR_ctl02_Tag" class="fly" href="http://www.codeproject.com/script/Answers/List.aspx?tab=active&amp;alltags=true&amp;tags=85" style="padding-left:30px">ASP.NET questions</a></li>
+			
+				<li><a id="ctl00_TopNavBar_QATR_ctl03_Tag" class="fly" href="http://www.codeproject.com/script/Answers/List.aspx?tab=active&amp;alltags=true&amp;tags=93" style="padding-left:30px">SQL questions</a></li>
+			
+				<li><a id="ctl00_TopNavBar_QATR_ctl04_Tag" class="fly" href="http://www.codeproject.com/script/Answers/List.aspx?tab=active&amp;alltags=true&amp;tags=842" style="padding-left:30px">VB.NET questions</a></li>
+			
+		<li class="last"></li>
+	</ul>
+
+</li>
+
+
+
+<li class=""><a id="ctl00_TopNavBar_Forums" href="http://www.codeproject.com/script/Forums/List.aspx">
+        <span class="desktop-only tablet-only">discussions</span><span class="mobile-only">forums</span>
+</a>
+
+	<ul>
+		<li><a id="ctl00_TopNavBar_MessageBoardsAll" class="fly" href="http://www.codeproject.com/script/Forums/List.aspx">All Message Boards...</a></li>
+		<li class=""><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1580997/Application-Lifecycle.aspx">Application Lifecycle<span class="has-submenu">&gt;</span></a>
+<ul class="openable"><li><a class="fly" href="http://www.codeproject.com/Forums/1533717/Running-a-Business.aspx">Running a Business</a></li>
+<li><a class="fly" href="http://www.codeproject.com/Forums/1533716/Sales-Marketing.aspx">Sales / Marketing</a></li>
+<li><a class="fly" href="http://www.codeproject.com/Forums/1651/Collaboration-Beta-Testing.aspx">Collaboration / Beta Testing</a></li>
+<li><a class="fly" href="http://www.codeproject.com/Forums/3304/Work-Issues.aspx">Work  Issues</a></li>
+</ul></li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/369270/Design-and-Architecture.aspx">Design and Architecture</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/12076/ASP-NET.aspx">ASP.NET</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1580226/JavaScript.aspx">JavaScript</a>
+</li>
+<li class=""><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1647/C-Cplusplus-MFC.aspx">C / C++ / MFC<span class="has-submenu">&gt;</span></a>
+<ul class="openable"><li><a class="fly" href="http://www.codeproject.com/Forums/4486/ATL-WTL-STL.aspx">ATL /  WTL / STL</a></li>
+<li><a class="fly" href="http://www.codeproject.com/Forums/3785/Managed-Cplusplus-CLI.aspx">Managed C++/CLI</a></li>
+</ul></li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1649/Csharp.aspx">C#</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1627782/Free-Tools.aspx">Free Tools</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1827460/Objective-C-and-Swift.aspx">Objective-C and Swift</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1725/Database.aspx">Database</a>
+</li>
+<li class=""><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/186301/Hardware-Devices.aspx">Hardware &amp; Devices<span class="has-submenu">&gt;</span></a>
+<ul class="openable"><li><a class="fly" href="http://www.codeproject.com/Forums/1644/System-Admin.aspx">System Admin</a></li>
+</ul></li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1606152/Hosting-and-Servers.aspx">Hosting and Servers</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1643/Java.aspx">Java</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1650/NET-Framework.aspx">.NET Framework</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1848626/Android.aspx">Android</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1876716/iOS.aspx">iOS</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/13695/Mobile.aspx">Mobile</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1540733/Sharepoint.aspx">Sharepoint</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1004257/Silverlight-WPF.aspx">Silverlight / WPF</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1646/Visual-Basic.aspx">Visual Basic</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1640/Web-Development.aspx">Web Development</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/suggestions.aspx">Site Bugs / Suggestions</a>
+</li>
+<li><a class="fly" style="padding-left:30px" href="http://www.codeproject.com/Forums/1652005/Spam-and-Abuse-Watch.aspx">Spam and Abuse Watch</a>
+</li>
+
+		<li class="last"></li>
+	</ul>
+
+</li>
+
+<li class="desktop-only"><a id="ctl00_TopNavBar_Features" href="http://www.codeproject.com/Feature/">features</a>
+
+	<ul>
+		<li><a id="ctl00_TopNavBar_Comps" class="fly" href="http://www.codeproject.com/script/Awards/CurrentCompetitions.aspx?cmpTpId=1&amp;awsac=true">Competitions</a></li>
+		<li><a id="ctl00_TopNavBar_News" class="fly" href="http://www.codeproject.com/script/News/List.aspx">News</a></li>
+		<li><a id="ctl00_TopNavBar_Insider" class="fly" href="http://www.codeproject.com/Feature/Insider/">The Insider Newsletter</a></li>
+    	<li><a id="ctl00_TopNavBar_DailyBuild" class="fly" href="http://www.codeproject.com/Feature/DailyBuild">The Daily Build Newsletter</a></li>
+		<li><a id="ctl00_TopNavBar_Newsletters" class="fly" href="http://www.codeproject.com/script/Mailouts/Archive.aspx?mtpid=1">Newsletter archive</a></li>
+		<li><a id="ctl00_TopNavBar_Surveys" class="fly" href="http://www.codeproject.com/script/Surveys/List.aspx">Surveys</a></li>
+		<li><a id="ctl00_TopNavBar_Showcase" class="fly" href="http://www.codeproject.com/KB/showcase/">Product Showcase</a></li>
+		<li><a id="ctl00_TopNavBar_Research" class="fly" href="http://www.codeproject.com/script/ResearchLibrary/Index.aspx">Research Library</a></li>
+
+		<li><a id="ctl00_TopNavBar_Stuff" class="fly" href="http://www.codeproject.com/Info/Stuff.aspx">CodeProject Stuff</a></li>
+		<li class="last"></li>
+	</ul>
+
+</li>
+
+
+<li class=""><a id="ctl00_TopNavBar_Lounge" href="http://www.codeproject.com/Lounge.aspx">
+            <span class="desktop-only tablet-only">community</span><span class="mobile-only">lounge</span>
+</a>
+
+	<ul>
+		<li><a id="ctl00_TopNavBar_WhosWho" class="fly" href="http://www.codeproject.com/script/Membership/Profiles.aspx">Who's Who</a></li>
+		<li><a id="ctl00_TopNavBar_MVPs" class="fly break" href="http://www.codeproject.com/script/Awards/MVPWinners.aspx">Most Valuable Professionals</a></li>
+		
+
+		<li><a id="ctl00_TopNavBar_LoungeLnk" class="fly highlight2" href="http://www.codeproject.com/Lounge.aspx">The Lounge &nbsp;</a></li>
+		<li><a id="ctl00_TopNavBar_InsiderLnk" class="fly" href="http://www.codeproject.com/Insider.aspx">The Insider News</a></li>
+		<li><a id="ctl00_TopNavBar_WeirdWonderful" class="fly" href="http://www.codeproject.com/Feature/WeirdAndWonderful.aspx">The Weird &amp; The Wonderful</a></li>
+		<li><a id="ctl00_TopNavBar_SoapBoxLnk" class="fly" href="http://www.codeproject.com/Forums/1536756/The-Soapbox.aspx">The Soapbox</a></li>
+		<li><a id="ctl00_TopNavBar_PRLnk" class="fly break" href="http://www.codeproject.com/Forums/1738007/Press-Releases.aspx">Press Releases</a></li>
+
+		
+		<li class=""><a class="fly" href="http://www.codeproject.com/Forums/1580229/Hindi.aspx">Non-English Language
+			<span class="has-submenu">&gt;</span></a>
+		<ul>
+		<li><a class="fly" href="http://www.codeproject.com/Forums/1580229/Hindi.aspx">General Indian Topics</a></li>
+		<li><a class="fly" href="http://www.codeproject.com/Forums/1580230/Chinese.aspx">General Chinese Topics</a></li>
+		</ul>
+		</li><li class="last"></li>
+		
+	</ul>
+
+</li>
+
+
+<li class="desktop-only tablet-only" style="margin-left:20px"><a id="ctl00_TopNavBar_Help" href="http://www.codeproject.com/KB/FAQs/">help</a>
+
+	<ul>
+		<li><a id="ctl00_TopNavBar_HelpWhatIs" class="fly" href="http://www.codeproject.com/info/guide.aspx">What is 'CodeProject'?</a></li>
+		<li><a id="ctl00_TopNavBar_HelpGeneral" class="fly break" href="http://www.codeproject.com/KB/FAQs/">General FAQ</a></li>
+		<li><a id="ctl00_TopNavBar_HelpPostQuestion" class="fly break highlight2" href="http://www.codeproject.com/Questions/ask.aspx">Ask a Question</a></li>
+		<li><a id="ctl00_TopNavBar_HelpBugs" class="fly" href="http://www.codeproject.com/suggestions.aspx">Bugs and Suggestions</a></li>
+		<li><a id="ctl00_TopNavBar_HelpArticles" class="fly" href="http://www.codeproject.com/Forums/1641/Article-Writing.aspx">Article Help Forum</a></li>
+		<li><a id="ctl00_TopNavBar_HelpSiteMap" class="fly" href="http://www.codeproject.com/script/Content/SiteMap.aspx">Site Map</a></li>
+		<li><a id="ctl00_TopNavBar_HelpAdvertise" class="fly" href="http://developermedia.com/">Advertise with us</a></li>
+		<li><a id="ctl00_TopNavBar_HelpJobs" class="fly" href="http://www.codeproject.com/info/Jobs/">Employment Opportunities</a></li>
+		<li><a id="ctl00_TopNavBar_HelpAboutUs" class="fly" href="http://www.codeproject.com/info/about.aspx">About Us</a></li>
+		<li class="last"></li>
+	</ul>
+
+</li>
+
+</ul>
+
+</div>
+    </div>
+	<div class="sub-headerbar-divider"></div>
+	</div>		
+	
+
+	<div id="A" class="container-content-wrap fixed"> 
+
+	<div itemscope="" itemtype="http://schema.org/Article" class="container-content"> 
+
+
+		<div class="clearfix">
+			<div class="container-breadcrumb float-left ">
+				<div><a href="http://www.codeproject.com/script/Content/SiteMap.aspx">Articles</a> » <a href="http://www.codeproject.com/Chapters/8/Platforms-Frameworks-Libraries.aspx">Platforms, Frameworks &amp; Libraries</a> » <a href="http://www.codeproject.com/KB/library/"><span itemprop="articleSection">Libraries</span></a> » <a href="http://www.codeproject.com/KB/library/#Code+Projects">Code Projects</a></div>
+			</div>
+
+			<div class="float-left">
+				
+			</div>
+
+			<div class="edit-links float-right">
+				
+
+
+ 
+&nbsp;
+
+<a id="ctl00_AdminLinks_GetHtml" class="tooltip" href="http://www.codeproject.com/script/Articles/ViewHtml.aspx?aid=1009582">
+	<img src="article_files/html.png" style="vertical-align:middle;border:0" height="24px" width="24px">
+	<div class="speech-bubble-container-up" style="width:180px">
+		<div class="speech-bubble-up">Get the article's HTML for editing offline</div>
+		<div class="speech-bubble-pointer-up">
+			<div class="speech-bubble-pointer-up-inner"></div>
+		</div>
+	</div>
+</a>
+
+<a id="ctl00_AdminLinks_Modify" class="tooltip" href="http://www.codeproject.com/script/Articles/SubmissionWizard.aspx?aid=1009582">
+	<img src="article_files/edit24.png" style="vertical-align:middle;border:0" height="24px" width="24px">
+	<div class="speech-bubble-container-up" style="width:150px">
+		<div class="speech-bubble-up">Update Article</div>
+		<div class="speech-bubble-pointer-up">
+			<div class="speech-bubble-pointer-up-inner"></div>
+		</div>
+	</div>
+	<span id="ctl00_AdminLinks_EdtLbl" class="small-text">Update your article</span></a>
+
+<a id="ctl00_AdminLinks_Delete" class="tooltip" href="http://www.codeproject.com/script/Articles/Delete.aspx?aid=1009582">
+	<img src="article_files/delete24.png" style="vertical-align:middle;border:0" height="24px" width="24px">
+	<div class="speech-bubble-container-up" style="width:100px">
+		<div class="speech-bubble-up">Delete</div>
+		<div class="speech-bubble-pointer-up">
+			<div class="speech-bubble-pointer-up-inner"></div>
+		</div>
+	</div>
+</a>
+
+
+
+
+			</div>
+
+			<div class="article-nav float-right">
+					
+		        
+		        
+					
+
+                
+				
+
+<a id="ctl00_ActionLinks_BookmarkMd_ImgBt" title="Bookmark" alternatetext="Bookmark" name="bm_1009582_2" onclick="return bookmarkMe(1009582,2,'/script/Bookmarks/Ajax/Add.aspx?obid=1009582&amp;obtid=2&amp;action=AddBookmark&amp;bio=true&amp;bis=medium','medium');" href="http://www.codeproject.com/script/Bookmarks/Add.aspx?obid=1009582&amp;obtid=2&amp;action=AddBookmark&amp;bio=true&amp;bis=medium" style="display:inline-block;height:24px;width:24px;"><img title="Bookmark" src="article_files/bookmark24.png" alt="" style="border-width:0px;"></a>
+
+
+<span id="ctl00_ActionLinks_BookmarkMd_StatusMsg" class="tiny-text" style="display:none" name="bm_1009582_2"></span>
+<a id="ctl00_ActionLinks_PrintMd" href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial?display=Print">
+	<img src="article_files/print24.png" title="Print" style="border:0" height="24px" width="24px">
+</a>
+			</div>
+		</div>
+
+		<table class="extended container-article-parts" cellpadding="0" cellspacing="0">
+        <tbody><tr valign="top">
+		<td class="article-wing-left" width="117px">
+
+			<div id="ctl00_Nav" class="container-article-tabs">
+    			
+
+<div class="tabs">
+	<div class="selected">Article</div><div class="unselected"><a href="http://www.codeproject.com/script/Articles/ViewDownloads.aspx?aid=1009582">Browse Code</a></div><div class="unselected"><a href="http://www.codeproject.com/script/Articles/Statistics.aspx?aid=1009582">Stats</a></div><div class="unselected"><a href="http://www.codeproject.com/script/Articles/ListVersions.aspx?aid=1009582">Revisions (11)</a></div><div class="unselected"><a href="http://www.codeproject.com/script/Articles/ListAlternatives.aspx?aid=1009582">Alternatives</a></div>
+
+	<div class="unselected"><a href="http://www.codeproject.com/Articles/1009582/WebControls/#_comments" id="ctl00_ArticleTabs_CommentLink" class="anchorLink">Comments 
+        <span id="ctl00_ArticleTabs_CmtCnt">(2)</span></a>
+	</div>
+</div>	
+
+
+				<a id="ctl00_AddAlternative" title="Write a related article about upgrades or translate this into a different language." class="add-item" href="http://www.codeproject.com/script/Articles/SubmissionWizard.aspx?at=1&amp;apid=1009582">Add your own<br>alternative version</a>
+
+			    <div class="tags"> 
+                    <h4>Tagged as</h4>
+                    
+                    <div class="tags">
+<span class="t"><a href="http://www.codeproject.com/search.aspx?sbo=kw&amp;aidlst=78">C++</a></span><span class="t"><a href="http://www.codeproject.com/search.aspx?sbo=kw&amp;aidlst=120">Linux</a></span><span class="t"><a href="http://www.codeproject.com/search.aspx?sbo=kw&amp;aidlst=142">PHP</a></span><span class="t"><a href="http://www.codeproject.com/search.aspx?sbo=kw&amp;aidlst=118">Dev</a></span><span class="t"><a href="http://www.codeproject.com/search.aspx?sbo=kw&amp;aidlst=116">Architect</a></span><span class="t"><a href="http://www.codeproject.com/search.aspx?sbo=kw&amp;aidlst=1456">search</a></span></div>
+			    </div>
+                
+
+                <div class="stats">
+                <h4>Stats</h4>
+                <div id="ctl00_ArtStats"><div class="stats"><div>4.8K views</div><div>9 bookmarked</div></div></div>
+                </div>
+
+                <div class="subdue padded-top" title="Date First posted">Posted 
+                    <span itemprop="datePublished" content="2015-07-14">15 Jul 2015</span></div>
+
+                
+			</div>
+
+		</td>
+		<td>
+			
+			<div id="AT" class="container-article  fixed"> 
+
+				<div class="article">
+
+					<form name="aspnetForm" method="post" action="/Articles/1009582/Building-a-search-engine-with-Strus-tutorial" id="aspnetForm" style="margin:0;padding:0">
+<div>
+<input name="__VIEWSTATE" id="__VIEWSTATE" value="cwn1kh1tWWXndclZiakAUs7O++W9YRiw4wsgPyp/Y6uOELAd+g4ILDYYteZE3MgRzElCtU6iQ1TgEHYBwc7DYODk+VSkX4ucRb1E3KFfimDp4VwpMhMa0Cv8ufkUAzWzgEVKB1pBmP0/DgNGYjPxXvKXb0ilaKINJ7Ku5ArMDYipSk+3+tttCIC4eHoMHK8SCYxHkxycFiI/MaMGgh1cG/Ni9Memx0yDgUllSJ1B9KPzkDS1BcPUczF5Z946Tp7HGbHQmFzjmrUYpEKyKt3WopH6tkEWz/KYBP5jN05JLE2DPD3cDoXMByGUCANh1M4ZajvnxGwEHyMtOEl+X9fwPRMKG2SQdsxHyDbsNF/fx7ZgGw+GxA4+5onQ1Iq+0xr1gGHYgtQMZ4+mcBIl1D/cE6Nz6V0+i4Z02JdeoGfzYPT7cWF6K/VYPIxRNYzq4ybLQ8DWPSvzqClXid2+Nfv9tIrbwGjOw71tWcQJ3eirokELNThcI9Ui9XFEyLhvP+KTpfWru/Z7R2FIXP6bkVXET+dI3K9VoIlRaaoY+ZQEjgNUBApc6L1qs5OM6fr5X071O2pImaOgDafX3OzcY51H7kJV3OCHs7fKVOzjR/A64TBuwm1dzCeeLHDvZzCxkEI3vAOFA1Sv0aHT6KJkpFpeghlPg2VgmWkv2WfbIXZ9EttOvsg96NaJTFfzdZ6kKRRS6huNARqLSyC6lJMXAVWK30mfaWQUcgpTDuqXi/TlLo/prDGL1Jx70Yx3/2m/DMKzWqf3zzLiiqBtTbHilDKH9L7pcVBgdQ0mBGLojO+pgCDhbC4XTFtFWa56pV3uQdYw/OPy4cm+/rMMHuS9MnuxSRLr5xePyf9tNKlveoaiRjwGCbgqPh9oXpsSHGsBykExbfOmirH0QH0aS3wkGgux5eeumXVTCRHovrSlZT7IwSuIzYsTMQkrcp+0wBOtQwV64lRWnBvG0jp0eciG6PGR0Ard2oODFcb7iEcqg4wjArMMufTmkNaZcgIb+VhIKVxmtv88cNHE6HYJj0a9EGuPhGQe72YmW2jMeZW/DaWpSNayk8uXnMfh7m0X1yvM6CFVezSxb0ONzTX3ZyWaL8dBwA48BXBU7/e3I4IwUNY8ZXIkPhmFX7u3Ba9nvuM/+9GsFsm9TEsFELzoVVM3Tuz1ATuQT/qYhxqe8s3VmW0r+ZrN99RIRzS5MJgZE2S8e5DZQk98JloNbMCUoxir8qau0l0QaTfRDz4D2lm2b2pjlkDiWqwsw2pJREyZ7uo0qgeEHXyH/2zRjUFET2wQk6CF/DWAmyCQT7lGLR0zipmwYDlq0c7FrDP3gkH1VT3lWsU9W2ZkpC1yvt5Eoju19nXoGc9JZbe5+LVRPcdWKeIZz7az87xPPaMPRPxDi3nvhKttQvYUBJV38UGL8q1mQrJlQdLfTK9WpILRd3Ao9UCoQwlk/ByblsUy6dUu3Df/labnPQSbqjj3u/W3WPWC4VMcsIvMoCfNGWcU65pdUK4UrZVLzVrmzRevwc6b9YEzAfqVbRigc3txFFNeC5sBpdFQWBIBZlGcbyx+BMKCdeKXejpIJifXLp2+UdVLqpwoWJ+UN64RJIYJs1meiVEE8cj54YfLtb9/g9ZtQtgy1XW8EYa1jpVuQ3Pg4y3LViiZWIX1q/lx2ONEq55wlYf1irEox8BfYSfZnCVflnO1Ircp6lne/WmCj274s2wTWndBZFtBvlvXqdbDmklftA7GfRoS3mRZsborz/k39qtR8sIXMmKfVA0kgtkgchLTB0WkBZXNgc0B+yRV7leGNlz7JMsDjw2U5TDaXCuyRyM9p6JVeoNvaEz6emF2LpZkk2HHBNi6sqFaz3C5BTN29uiVyqwG1aaDDKGkaxWKovt44/08ZY2cXv0txfAVgXTKwVnb7gwfuL7N4MnZw+M2kTh7YeWaJOTHyA+D5xcVxiXOlBLaeqEhmTV6TR8Y0NDe2O5V/AmNXs50Mv9m6DPaT1dgPIkQfKg9Kh6y6yLesd9/B8si3XcVCA4TP5kow202N12WsZQ5B1YEev67Mn1NBytcAq5yZfrxu+Y9kilnMHjxH3ubWGCT8C3dazNSUYCX1tYD1vVvXD3fPKbv5MfwuAyeaU79H4Y5V3jXF7sIkui/KOpHm3eWZ3zpydFyXXKpxQXgW9UgXmwsygG/8RaoE2uiKyEEVzJJJavhT9icpSOsA8Yc73pq9Ik2xbp/D4F/0E8MOz1SPhe/s2gcy8ks/pFjIj+YaPAoBcIIvGZaJqqoGgxw7FjOLTFYB7ivbKSXt2RYcQh+ZwC+4jpw2zFqVph5jIUCuBXlSdPdhvG+CPfegICb0hGinDk8Mp2ktTC0oL1/2VtYK+ObaEsnwdFKOzwim03bAydiqJ5YM7YjAzBAVZOY7HUfbv/DB2su32cx1UimOOU2aPCNc4WiJeX3hLcQoAW9XPBz1aoxgZkqAdCw7K/2YgFLACbb09o3cmjRYbpyMhTIahku+VcIUp7/U4CrXnGk57eH+gFVKfCqbs5Rgg04xhqgT0EkI4D4lYhLu0OlV6erer1FjPet47EdLiHoZotbkRu7fWYr6B/SGIq+uJqt9vU1vRkwJwTx5+htm60Ff89F7vpQX0jFttgbLMC1FPrN4p2k6b+jMI0s1wlGBYaG+ZGgqU5A3TfP3hdRnU5KQn0ktDdjuE9oN+P1uukFau25nuti1hsHl8aNNsaPAYlQQTBGTsWsVNaE5KMjDK0O+a+zyPkEvcG1its7brVngeHsupd0iKnxOUuynE1FQkzkJ6t0Bi5WUgr012aSmWK6+d7MdDn4Y7PtL6DsBeJPjySuMj/9ctOTkaJZSq7jv7mPdnp7QBJRXqM30RoduMrbOiFrENIA7Ny1xggv7/fr8orO4WLewBTiWI5q2E2qxEXxfhgjv8m1HjICoWKmWfBD0yhNUDxhwXvPGw5sRMyEjunqfC9m/c7Qsf3QzAOTQS/vcvMDi3AgKECwyqyNkwxk9eDyfoUFsyQvE+D5RAVIWRua+ZboH/3KHrlccIWObobg7vvO8QdCdiMkzN4r+UdgX16bKBRm2oUSuKefqCmACZGUtLWPrrTTNB3xjT/ey8+VziYwxRgDsJxfLcjPNoCwLthqxrUQxdcfuVpicZzYys6nEU/bdWhMkg/wDbIu4rxd1QmBKpyO9RDRisdKWmSaf+svdml/vrKcndUH+3WagM+xSOC8i8kO/AiRxv9B+HaFQlS7iuwDW3wrsBloao2ImWZbNakgz9VrJPQZEnlhJIlunQmi0++ow9FonGykArqnCpxwKyHHqtUmfBNxxUCwVWHbRQnb4AGuqbAqnz4GuXdfUUFjir+IoYjR20xqQplLTUwv200uItbv9vm7RJhfFeST+xS7KXKz42J9yOHVRqTRFE/t7LWOpXSLyQFzwLLskBgOW+9r1sAAoFbK4RlwumszrwhYq1u8XE6ISd+QooCVb/5BFN0=" type="hidden">
+</div>
+
+<div>
+
+	<input name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="10C1FD69" type="hidden">
+</div>
+
+					
+					 
+					<div class="header">
+					    <a name="Main"></a>
+
+					    
+					    <a name="_articleTop" id="_articleTop"></a>
+					    <div class="title">
+					        
+					        <h1 id="ctl00_ArticleTitle" itemprop="name">Building a search engine with Strus (tutorial)</h1> 
+					    </div>
+
+                        <div style="height:34px">
+					        
+					        <div class="entry float-left">
+                                <img src="article_files/11d02976ac9a67d97b816a5114e4fa4f.jpg" id="ctl00_avatar" class="float-left avatar">
+                                <div class="float-left">
+
+						            <span class="author"><a href="http://www.codeproject.com/script/Membership/View.aspx?mid=11836984" rel="author"><span itemprop="author" itemscope="" itemtype="http://schema.org/Person"><span itemprop="name">Patrick P. Frey</span></span></a></span>, 
+						            <span class="date" itemprop="dateModified" title="Date last updated" content="2015-11-15 05:29:00">
+							            15 Nov 2015</span>
+			
+                                    <a id="ctl00_LicenseLink" title="The GNU General Public License (GPLv3)" class="license" href="http://www.opensource.org/licenses/gpl-3.0.html">GPL3</a><div id="ctl00_CurRat" class="tooltip anchorLink" style="cursor:pointer;margin-top: 5px" name="CurRat_1009582">
+				
+							            
+
+<table class="small-text" itemprop="aggregateRating" itemscope="" itemtype="http://schema.org/AggregateRating" cellpadding="0" cellspacing="0"> 
+<tbody><tr>
+	
+	<td class="nowrap">
+
+		
+			<meta itemprop="bestRating" content="5"> 
+			<meta itemprop="worstRating" content="1">
+		
+
+		<span id="ctl00_ArticleRating_VI">
+		<div class="nowrap rating-stars-medium" style="height:18px;width:80px;position:relative;">
+	<div class="clipped align-left float-left" style="height:16px;width:75px;">
+		<img src="article_files/stars-fill-md.png" style="border-width:0px;">
+	</div><div class="clipped" style="height:16px;width:5px;position:relative;">
+		<img src="article_files/stars-empty-md.png" style="border-width:0px;position:absolute;top:0;right:0;">
+	</div>
+</div>
+		</span>
+
+		
+	</td>
+	
+	<td id="ctl00_ArticleRating_VR" class="nowrap">
+		&nbsp;
+		<span id="ctl00_ArticleRating_VotesR">&nbsp;<span itemprop="ratingValue" class="rating">4.74</span> (<span itemprop="ratingCount" class="count">7</span> votes)</span>
+		
+	</td>
+
+</tr>
+
+</tbody></table>
+
+
+							            <div id="ctl00_RB" class="speech-bubble-container-up">
+								            <div class="speech-bubble-up" style="width:150px !important">
+									                        
+<div>
+<table class="feature" title="Voting Distribution. Recent data only" cellpadding="0" cellspacing="0" height="50px" width="100%"><tbody><tr class="chart-row"><td class="chart-column"><div><img src="article_files/pollcol.gif" alt="1 vote, 14.3%" title="1 vote, 14.3%" border="0px" height="10px" width="20pxpx"></div><span title="1 vote">1</span></td>
+<td class="chart-column"><span title="0 votes">2</span></td>
+<td class="chart-column"><span title="0 votes">3</span></td>
+<td class="chart-column"><div><img src="article_files/pollcol.gif" alt="1 vote, 14.3%" title="1 vote, 14.3%" border="0px" height="10px" width="20pxpx"></div><span title="1 vote">4</span></td>
+<td class="chart-column"><div><img src="article_files/pollcol.gif" alt="5 votes, 71.4%" title="5 votes, 71.4%" border="0px" height="50px" width="20pxpx"></div><span title="5 votes">5</span></td>
+</tr></tbody></table><div class="small-text align-center">4.74/5 - 7 votes</div><div class="small-text align-center subdue">μ 4.74, σ<sub>a</sub> 1.59 [<a href="http://www.codeproject.com/KB/FAQs/RatingReputationFAQ.aspx#noisefilter">?</a>]</div>
+</div>
+								            </div>
+								            <div class="speech-bubble-pointer-up">
+									            <div class="speech-bubble-pointer-up-inner"></div>
+								            </div>
+							            </div>
+						            </div>
+                                </div>
+					        </div>
+
+                            
+						    <div id="ctl00_RateArticleRow" class="float-right align-right voting-bar">
+						        <div id="ctl00_RateArticle_RateItemWrapper" class="small-text" name="RateItem_1009582">
+
+	<table class="small-text" cellpadding="0" cellspacing="0" width="100%">
+	<tbody><tr>
+		<td id="ctl00_RateArticle_VoteResultDiv" class="rating-result align-right">
+			<span class="align-right"></span>
+			<img class="loaderImg" alt="loading..." src="article_files/animated_loading_blue.gif" style="display:none;" height="16px" width="16px"> 
+		</td>
+
+	
+		<td class="voteTbl" style="white-space:nowrap" align="right">
+			<table class="small-text">
+			<tbody><tr>
+				
+				<td id="ctl00_RateArticle_StartForm" align="right" nowrap="nowrap">Rate: </td>
+
+				<td id="ctl00_RateArticle_VoteFormDiv" class="nowrap rating-stars-voter-large">
+					
+
+					<span id="ctl00_RateArticle_RB" class="tooltip ajaxHist radio voting">
+						<span id="ctl00_RateArticle_VoteRBL"><input style="display: none;" id="ctl00_RateArticle_VoteRBL_0" name="ctl00$RateArticle$VoteRBL" value="1" type="radio"><input style="display: none;" id="ctl00_RateArticle_VoteRBL_1" name="ctl00$RateArticle$VoteRBL" value="2" type="radio"><input style="display: none;" id="ctl00_RateArticle_VoteRBL_2" name="ctl00$RateArticle$VoteRBL" value="3" type="radio"><input style="display: none;" id="ctl00_RateArticle_VoteRBL_3" name="ctl00$RateArticle$VoteRBL" value="4" type="radio"><input style="display: none;" id="ctl00_RateArticle_VoteRBL_4" name="ctl00$RateArticle$VoteRBL" value="5" type="radio"></span> 
+
+						
+					<div class="rating-star-block"><a title="vote 1" class="star outline" rating="1" href="#">vote 1</a><a title="vote 2" class="star outline" rating="2" href="#">vote 2</a><a title="vote 3" class="star outline" rating="3" href="#">vote 3</a><a title="vote 4" class="star outline" rating="4" href="#">vote 4</a><a title="vote 5" class="star outline" rating="5" href="#">vote 5</a></div></span>
+
+				</td>
+
+				
+				<td style="padding-left:5px">	
+					<input style="display: none;" name="ctl00$RateArticle$SubmitRateBtn" value="Vote!" id="ctl00_RateArticle_SubmitRateBtn" class="button" type="submit">
+				</td>
+			</tr>
+			</tbody></table>
+			
+		</td>
+	</tr>
+	</tbody></table>
+	<div class="hover-container">
+		<div id="ctl00_RateArticle_RCD" class="rating-comment align-left float-right">
+			Add a reason or comment to your vote:
+            <a href="#" id="clear-rate_ctl00_RateArticle_RCD" title="close" class="rating-close">x</a>
+            <br>
+			<textarea class="RateComment" rows="5" cols="60" style="width:98%;"></textarea>
+			<span id="ctl00_RateArticle_CommentReq" class="subdue">Adding a comment to your rating is optional</span>
+		</div>
+        
+	</div>
+</div>
+						    </div>
+						    	
+                        </div>
+
+   					    
+                        <div id="ctl00_description" class="summary" itemprop="headline">This
+ tutorial based on a docker image will guide through the development of a
+ simple search engine based on Strus (project-strus.net), a collection 
+of libraries and line tools for building a search engine.</div><span id="ctl00_thumbnailUrl" class="date" itemprop="image" content="http://codeproject.cachefly.net/script/Articles/Images/article100x80.png"></span>			
+
+                    </div>
+                    
+					
+					
+
+					
+
+					
+					
+					
+
+						
+					
+
+					
+
+						
+						<div id="contentdiv" class="text" itemprop="articleBody">
+						
+
+
+
+<h2>Goals</h2>
+
+<p>The goal of this tutorial is to let you issue a query from your 
+browser, that is executed by a PHP script on an nginx webserver and to 
+understand the execution of the query. All prerequisites you need are 
+delivered as docker image. You only need to have docker installed. The 
+tutorial will take about 30 Minutes to complete. Have fun !</p>
+
+<h2>Introduction</h2>
+
+<p>To execute the steps of this tutorial you need some intermediate 
+knowledge about unix shell programming and it would be helpful to know 
+basics about <a href="http://php.net/">PHP</a>. For the analyzer 
+configuration a simple proprietary definition language is used. But it 
+will not be alien for users that have seen other configuration languages
+ before.</p>
+
+<p>In this tutorial you will download the dataset to build the search 
+index with, preprocess the data with some lines of bash, create a 
+storage for the index, define a configuration for analyzing the data, 
+feed the search index, and finally issue a query with a PHP script. All 
+prerequisites like the <a href="http://nginx.org/en/">nginx</a> webserver, PHP and the strus libraries and programs are available as a docker image. So all you need is to get <a href="https://www.docker.com/">docker</a> installed on your machine.</p>
+
+<p><strong>The dataset used in this tutorial is from MusicBrainz (musicbrainz.org). Please respect <a href="https://musicbrainz.org/doc/About/Data_License">the license of this dataset</a> !</strong></p>
+
+<h2>Background</h2>
+
+<p>The background of this tutorial is the project <a href="http://project-strus.net/">strus</a>, hosted on <a href="https://github.com/search?q=user%3Apatrickfrey+strus">github</a>. For having a look how strus copes with a bigger data collection you could also have a look at the <a href="http://demo.project-strus.net/strus.html">demo search on the complete Wikipedia collection</a>
+ (English). You will find there also a description about this project. 
+The complexity of the Wikipedia project would burst all limits of a 
+tutorial. This tutorial just aims to show how easy it is to build a 
+search engine with strus based on a small collection (282'000) of small 
+data records (about a dozen terms) with a simple structure.</p>
+
+<h2>Prerequisites</h2>
+
+<p>You need a <a href="http://docs.docker.com/mac/started">docker installation</a>.</p>
+
+<p>For running the tutorial you need an internet connection.</p>
+
+<p>&nbsp;</p>
+
+<h2>Step 1: Start the docker container</h2>
+
+<p>To start <a href="http://registry.hub.docker.com/u/patrickfrey/strus-ub1404-nginx">the docker image</a> typing the follwing command in your shell:</p>
+
+<div class="pre-action-link" id="premain523327" style="width:100%;display:block;"><span id="prehide523327" onclick="processCodeBlocks.togglePre(523327);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(523327);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre523327">docker run -p <span class="code-digit">40080</span>:<span class="code-digit">80</span> -t -i patrickfrey/strus-ub1404-nginx:v0_2 /bin/bash
+</pre>
+
+<p>and you will get a promt like this</p>
+
+<div class="pre-action-link" id="premain87452" style="width:100%;display:block;"><span id="prehide87452" onclick="processCodeBlocks.togglePre(87452);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(87452);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre87452" lang="C++">root@8cbc7f49f3cf:/home/strus#
+</pre>
+
+<p>All following shell commands of this tutorial are executed in this docker container shell.</p>
+
+<p>&nbsp;</p>
+
+<h2>Step 2: Download and prepare the data</h2>
+
+<p class="description">If you want to skip this section, you can simply execute the script <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/scripts/musicbrainz/step1_fetchData.sh">step_fetchData.sh</a>. This script will execute the steps described here in about a minute on a convenient developer machine.<br>
+Otherwise you have to manually fetch the data from <a href="https://musicbrainz.org/doc/MusicBrainz_Database/Download">MusicBrainz</a>.
+ The dump of the record releases will be dumped and converted into a 
+proprietary XML we will use. Because there are many items to process, we
+ will put up to 100 entries into one file. The analyzer will be 
+configured to handle one item of these 100 entries as one document. 
+Download and decompress the data with the following commands:</p>
+
+<h4>Prepare data directory</h4>
+
+<p class="description">We create a directory for the data because the MusicBrainz files are all unpacked in current directory.</p>
+
+<div class="pre-action-link" id="premain341537" style="width:100%;display:block;"><span id="prehide341537" onclick="processCodeBlocks.togglePre(341537);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(341537);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre341537">mkdir data
+cd data
+</pre>
+
+<h4>Download and uppack the data dump</h4>
+
+<div class="pre-action-link" id="premain630503" style="width:100%;display:block;"><span id="prehide630503" onclick="processCodeBlocks.togglePre(630503);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(630503);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre630503">wget http:<span class="code-comment">//</span><span class="code-comment">ftp.musicbrainz.org/pub/musicbrainz/data/fullexport/LATEST
+</span>LATEST=`cat LATEST`
+wget http:<span class="code-comment">//</span><span class="code-comment">ftp.musicbrainz.org/pub/musicbrainz/data/fullexport/$LATEST/mbdump-cdstubs.tar.bz2
+</span>bzip2 -d mbdump-cdstubs.tar.bz2
+tar -xvf mbdump-cdstubs.tar
+</pre>
+
+<h4>Create the documents</h4>
+
+<p class="description">We count the maximum document identifier that 
+will be assigned and we set $ndocs as the maximum number of documents we
+ will get. In every document will be at maximum 100 items to insert. For
+ every document identifier we create a document with the XML header.</p>
+
+<div class="pre-action-link" id="premain906382" style="width:100%;display:block;"><span id="prehide906382" onclick="processCodeBlocks.togglePre(906382);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(906382);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre906382">cat mbdump/release_raw | sed <span class="code-string">'</span><span class="code-string">s/\&amp;/\&amp;amp;/g'</span> | sed <span class="code-string">'</span><span class="code-string">s/&lt;/\&amp;lt;/g'</span> | sed <span class="code-string">'</span><span class="code-string">s/&gt;/\&amp;gt;/g'</span> &gt; dump.txt
+ndocs=`cat dump.txt | awk -F<span class="code-string">"</span><span class="code-string">\t"</span> <span class="code-string">'</span><span class="code-string">{if(min=="")min=max=$1; if($1&gt;max) {max=$1}; if($1&lt; min) {min=$1}; } END {print int((max+1)/100)}'</span>`
+mkdir doc
+idoc=<span class="code-digit">0</span>
+<span class="code-keyword">while</span> [ $idoc -le $ndocs ]
+<span class="code-keyword">do</span>
+    echo <span class="code-string">"</span><span class="code-string">&lt;?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?&gt;"</span> &gt; doc/$idoc.xml
+    echo <span class="code-string">"</span><span class="code-string">&lt;list&gt;"</span> &gt;&gt; doc/$idoc.xml
+    idoc=`expr $idoc + 1`
+done
+</pre>
+
+<h4>Fill the documents with the content of the dump</h4>
+
+<p class="description">For every entry we want to process, we create an own XML tag. Every record is marked with an '&lt;item&gt;...&lt;/item&gt;' tag.</p>
+
+<div class="pre-action-link" id="premain223363" style="width:100%;display:block;"><span id="prehide223363" onclick="processCodeBlocks.togglePre(223363);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(223363);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre223363">cat dump.txt \
+  | awk -F<span class="code-string">"</span><span class="code-string">\t"</span> <span class="code-string">'</span><span class="code-string">{FNAME=int($1/100); print "&lt;item&gt;&lt;id&gt;" $1 "&lt;/id&gt;&lt;title&gt;" $2 "&lt;/title&gt;&lt;artist&gt;" $3 "&lt;/artist&gt;&lt;date&gt;" $4 "&lt;/date&gt;&lt;upc&gt;" $9 "&lt;/upc&gt;&lt;note&gt;" $10 "&lt;/note&gt;&lt;/item&gt;" &gt;&gt; "doc/"FNAME".xml" }'</span>
+idoc=<span class="code-digit">0</span>
+<span class="code-keyword">while</span> [ $idoc -le $ndocs ]
+<span class="code-keyword">do</span>
+    echo <span class="code-string">"</span><span class="code-string">&lt;/list&gt;"</span> &gt;&gt; doc/$idoc.xml
+    idoc=`expr $idoc + 1`
+done
+</pre>
+
+<h4>Leave the data directory and inspect the result</h4>
+
+<p class="description">We have now preprocessed the MusicBrainz example 
+collection with about 282'000 records. We go back to the upper directory
+ and inpect what we got. There should be about 3200 files and each file 
+should contain about 100 items.</p>
+
+<div class="pre-action-link" id="premain15033" style="width:100%;display:block;"><span id="prehide15033" onclick="processCodeBlocks.togglePre(15033);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(15033);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre15033">ls doc/
+</pre>
+
+<p>You get:</p>
+
+<div class="pre-action-link" id="premain352093" style="width:100%;display:block;"><span id="prehide352093" onclick="processCodeBlocks.togglePre(352093);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(352093);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre352093"><span class="code-digit">0</span>.xml     <span class="code-digit">1267</span>.xml  <span class="code-digit">1536</span>.xml  <span class="code-digit">1805</span>.xml  <span class="code-digit">2074</span>.xml  <span class="code-digit">2343</span>.xml  <span class="code-digit">2612</span>.xml  <span class="code-digit">2882</span>.xml  <span class="code-digit">3150</span>.xml <span class="code-digit">461</span>.xml  <span class="code-digit">730</span>.xml
+<span class="code-digit">1</span>.xml     <span class="code-digit">1268</span>.xml  <span class="code-digit">1537</span>.xml  <span class="code-digit">1806</span>.xml  <span class="code-digit">2075</span>.xml  <span class="code-digit">2344</span>.xml  <span class="code-digit">2613</span>.xml  <span class="code-digit">2883</span>.xml  <span class="code-digit">3151</span>.xml  <span class="code-digit">462</span>.xml  <span class="code-digit">731</span>.xml
+... (more)
+</pre>
+
+<p class="description">Here is an except of an example input file for strus. You can inspect the first 5 lines with:</p>
+
+<div class="pre-action-link" id="premain525122" style="width:100%;display:block;"><span id="prehide525122" onclick="processCodeBlocks.togglePre(525122);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(525122);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre525122">head -n <span class="code-digit">7</span> doc/999.xml 
+</pre>
+
+<p class="description">We get:(may differ a little bit because the data used gets updated from time to time)</p>
+
+<div class="pre-action-link" id="premain596893" style="width:100%;display:block;"><span id="prehide596893" onclick="processCodeBlocks.togglePre(596893);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(596893);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre596893"><span class="code-summarycomment">&lt;?</span><span class="code-summarycomment">xml</span> <span class="code-summarycomment">version</span><span class="code-keyword">="</span><span class="code-keyword">1.0"</span> <span class="code-summarycomment">encoding</span><span class="code-keyword">="</span><span class="code-keyword">UTF-8"</span> <span class="code-summarycomment">standalone</span><span class="code-keyword">="</span><span class="code-keyword">yes"</span> <span class="code-summarycomment">?</span><span class="code-summarycomment">&gt;</span>
+<span class="code-keyword">&lt;</span><span class="code-leadattribute">list</span><span class="code-keyword">&gt;</span>
+<span class="code-keyword">&lt;</span><span class="code-leadattribute">item</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">id</span><span class="code-keyword">&gt;</span>99929<span class="code-keyword">&lt;</span><span class="code-leadattribute">/id</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">title</span><span class="code-keyword">&gt;</span>Flutterstrut<span class="code-keyword">&lt;</span><span class="code-leadattribute">/title</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">artist</span><span class="code-keyword">&gt;</span>Hundred Year Flood<span class="code-keyword">&lt;</span><span class="code-leadattribute">/artist</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">date</span><span class="code-keyword">&gt;</span>2009-06-18 01:37:51.35028+00<span class="code-keyword">&lt;</span><span class="code-leadattribute">/date</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">upc</span><span class="code-keyword">&gt;</span>881387000018<span class="code-keyword">&lt;</span><span class="code-leadattribute">/upc</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">note</span><span class="code-keyword">&gt;</span>CD Baby id:hyf2<span class="code-keyword">&lt;</span><span class="code-leadattribute">/note</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">/item</span><span class="code-keyword">&gt;</span>
+<span class="code-keyword">&lt;</span><span class="code-leadattribute">item</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">id</span><span class="code-keyword">&gt;</span>99999<span class="code-keyword">&lt;</span><span class="code-leadattribute">/id</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">title</span><span class="code-keyword">&gt;</span>The Hanging Garden<span class="code-keyword">&lt;</span><span class="code-leadattribute">/title</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">artist</span><span class="code-keyword">&gt;</span>Hypnotique<span class="code-keyword">&lt;</span><span class="code-leadattribute">/artist</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">date</span><span class="code-keyword">&gt;</span>2009-06-18 01:37:52.548532+00<span class="code-keyword">&lt;</span><span class="code-leadattribute">/date</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">upc</span><span class="code-keyword">&gt;</span>634479159961<span class="code-keyword">&lt;</span><span class="code-leadattribute">/upc</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">note</span><span class="code-keyword">&gt;</span>CD Baby id:hypnotique<span class="code-keyword">&lt;</span><span class="code-leadattribute">/note</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">/item</span><span class="code-keyword">&gt;</span>
+<span class="code-keyword">&lt;</span><span class="code-leadattribute">item</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">id</span><span class="code-keyword">&gt;</span>99994<span class="code-keyword">&lt;</span><span class="code-leadattribute">/id</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">title</span><span class="code-keyword">&gt;</span>Hypnopilot<span class="code-keyword">&lt;</span><span class="code-leadattribute">/title</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">artist</span><span class="code-keyword">&gt;</span>Hypnopilot<span class="code-keyword">&lt;</span><span class="code-leadattribute">/artist</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">date</span><span class="code-keyword">&gt;</span>2009-06-18 01:37:52.49057+00<span class="code-keyword">&lt;</span><span class="code-leadattribute">/date</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">upc</span><span class="code-keyword">&gt;</span>088907200068<span class="code-keyword">&lt;</span><span class="code-leadattribute">/upc</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">note</span><span class="code-keyword">&gt;</span>CD Baby id:hypnopilot<span class="code-keyword">&lt;</span><span class="code-leadattribute">/note</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">/item</span><span class="code-keyword">&gt;</span>
+<span class="code-keyword">&lt;</span><span class="code-leadattribute">item</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">id</span><span class="code-keyword">&gt;</span>99995<span class="code-keyword">&lt;</span><span class="code-leadattribute">/id</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">title</span><span class="code-keyword">&gt;</span>The Sphinx of Imagination<span class="code-keyword">&lt;</span><span class="code-leadattribute">/title</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">artist</span><span class="code-keyword">&gt;</span>Hypnotica<span class="code-keyword">&lt;</span><span class="code-leadattribute">/artist</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">date</span><span class="code-keyword">&gt;</span>2009-06-18 01:37:52.503809+00<span class="code-keyword">&lt;</span><span class="code-leadattribute">/date</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">upc</span><span class="code-keyword">&gt;</span>634479143427<span class="code-keyword">&lt;</span><span class="code-leadattribute">/upc</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">note</span><span class="code-keyword">&gt;</span>CD Baby id:hypnotica<span class="code-keyword">&lt;</span><span class="code-leadattribute">/note</span><span class="code-keyword">&gt;</span><span class="code-keyword">&lt;</span><span class="code-leadattribute">/item</span><span class="code-keyword">&gt;</span>
+</pre>
+
+<p>Every file created contains about 100 items to insert as document. 
+The grouping of multiple items has been done to reduce the number of 
+files created.</p>
+
+<p>&nbsp;</p>
+
+<h2>Step 3: Create the storage</h2>
+
+<h4>Initialize the storage database</h4>
+
+<p class="description">We will use the utility programs of strus to create the storage and insert the documents into the search index.<br>
+We have one data element 'date' we would like to use for meta data 
+restrictions. The meta data used for restrictions are put into the meta 
+data table. We can at any time alter the meta data table or add new 
+elements with the command <a href="http://www.project-strus.net/utilities.htm#strusAlterMetaData">strusAlterMetaData</a>. But we can also define some meta data within the <a href="http://www.project-strus.net/utilities.htm#strusCreate">strusCreate</a> command.<br>
+The command to create the storage looks as follows.</p>
+
+<div class="pre-action-link" id="premain879634" style="width:100%;display:block;"><span id="prehide879634" onclick="processCodeBlocks.togglePre(879634);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(879634);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre879634">strusCreate -s <span class="code-string">"</span><span class="code-string">path=storage; metadata=date UINT32"</span>
+</pre>
+
+<p class="description">The first argument describes the properties of 
+the storage created with a semicolon-separated list of configuration 
+assigments. The path argument of it defines the directory the key/value 
+store database based on leveldb will write its files to. The storage 
+configuration string is dependend on the storage and key/value store 
+database we use. All following commands introduced in this tutorial 
+later that refer to a storage will have a configuration string parameter
+ with the same syntax, but depending on the case with different 
+parameters.<br>
+With this call the storage has been created in the subdirectory 'storage'. Type</p>
+
+<div class="pre-action-link" id="premain727733" style="width:100%;display:block;"><span id="prehide727733" onclick="processCodeBlocks.togglePre(727733);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(727733);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre727733">ls storage
+</pre>
+
+<p class="description">and you will see (LevelDB files)</p>
+
+<div class="pre-action-link" id="premain187794" style="width:100%;display:block;"><span id="prehide187794" onclick="processCodeBlocks.togglePre(187794);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(187794);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre187794"><span class="code-digit">000005</span>.log  CURRENT  LOCK  LOG  LOG.old  MANIFEST-000004
+</pre>
+
+<p>&nbsp;</p>
+
+<h2>Step 4: Configure the document analyzer</h2>
+
+<p class="description">We will use the standard document segmenter as we
+ will process XML documents. The analyzer configuration describes, what 
+elements will be extracted from the items and how items are defined. It 
+also describes how these items are transformed into the form they are 
+stored. The analyzer configuration defines different sections that 
+describe what type of elements are created. For creating an analyzer 
+configuration we create a file with the extension ".ana" and start to 
+edit it:</p>
+
+<div class="pre-action-link" id="premain829429" style="width:100%;display:block;"><span id="prehide829429" onclick="processCodeBlocks.togglePre(829429);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(829429);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre829429">touch tutorial.ana
+vi tutorial.ana
+</pre>
+
+<p class="description">The following sub sections show what we define in this configuration file. The complete analyzer configuration is defined in <a href="https://raw.githubusercontent.com/patrickfrey/strusTutorials/master/config/musicbrainz/tutorial.ana">tutorial.ana</a>. The segmenter used in this tutorial defines XML selection expressions is the abbreviated syntax of XPath with 2 exceptions:</p>
+
+<ol>
+	<li>Tag selections like "/list/item/title" do not select a subtree but just the tag.</li>
+	<li>Contect selections like "/list/item/title::text()" are written as "/list/item/title()" (the "::text" is omitted).</li>
+</ol>
+
+<h4>Define the items to index (collection units aka documents)</h4>
+
+<p class="description">As we saw in the preparation of the documents 
+there are about 100 items inserted into one file. For separating these 
+items as documents to insert we have to define a section document that 
+defines what selection expression defines a document in an input file:</p>
+
+<div class="pre-action-link" id="premain881272" style="width:100%;display:block;"><span id="prehide881272" onclick="processCodeBlocks.togglePre(881272);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(881272);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre881272">[Document]
+	doc = /list/item;
+</pre>
+
+<h4>Define the the search index (retrievable items)</h4>
+
+<p class="description">The elements that are subject of retrieval are 
+put into the section [SearchIndex]. We decide to make words in the tags 
+"title","artist" and "note" retrievable.<br>
+All of them we tokenize the same way (as words) and we use the snowball 
+stemmer ("stem") followed by a lowercase conversion ("lc") and a 
+diacritical character conversion ("convdia") to normalize them.<br>
+Our language we instrument the stemmer and the diacritical characer conversion with is English ("en").<br>
+The feature type name we assign to the produced search index features is for all features "word".</p>
+
+<div class="pre-action-link" id="premain545031" style="width:100%;display:block;"><span id="prehide545031" onclick="processCodeBlocks.togglePre(545031);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(545031);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre545031">[SearchIndex]
+	word = convdia(en):stem(en):lc  word  /list/item/title();
+	word = convdia(en):stem(en):lc  word  /list/item/artist();
+	word = convdia(en):stem(en):lc  word  /list/item/note();
+</pre>
+
+<p class="description">Intuitively this configuration is understod if 
+you read every feature assignment from right to left: Select an element,
+ select the tokens from an element selection, normalize the tokens: "lc 
+-&gt; stem -&gt; convdia" and assign them to a feature type "word".</p>
+
+<h4>Define the elements the forward index (for summarization)</h4>
+
+<p class="description">The elements that are used for summarization are 
+put into the section [ForwardIndex]. We decide to use the retrievable 
+words in the tags "title","artist" and "note" also for summarization to 
+show what query features matched in the document. Because the summary 
+should show the original content of the document without markup, we use a
+ whitespace tokenizer ("split") and no normalizer ("orig") to convert 
+them for insert.</p>
+
+<div class="pre-action-link" id="premain246941" style="width:100%;display:block;"><span id="prehide246941" onclick="processCodeBlocks.togglePre(246941);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(246941);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre246941">[ForwardIndex]
+	orig = orig split /list/item/title();
+	orig = orig split /list/item/artist();
+	orig = orig split /list/item/note();
+</pre>
+
+<p class="description">Intuitively this configuration is understod as the search index definition by reading the processing steps from right to left.</p>
+
+<h4>Define the attributes</h4>
+
+<p class="description">Now assign some attributes to each document 
+inserted. Attributes are used in the representation of the result. There
+ is one reserved attribute name that is very important for our case. It 
+is the attribute "<b>docid</b>". When defining it, the strusInsert 
+program will define the content of this attribute as document 
+identifier. If you do not define it, the input file path will be used as
+ document identifier. Because the document identifier has to be unique, 
+we have to create one when there are multiple documents grouped in one 
+input file as we did before. For all four elements we will use a 
+tokenization ("content") and normalization ("orig"), that keeps the 
+elements in their original state:</p>
+
+<div class="pre-action-link" id="premain613046" style="width:100%;display:block;"><span id="prehide613046" onclick="processCodeBlocks.togglePre(613046);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(613046);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre613046">[Attribute]
+	<b>docid</b> = orig content /list/item/id();
+	title = orig content /list/item/title();
+	upc = orig content /list/item/upc();
+	note = orig content /list/item/note();
+</pre>
+
+<p class="description">The definitions of the section attribute is read 
+intuitively from right to left as the elements introduced before with 
+the exception that the leftmost identifier specifies the name of the 
+attribute the value is assigned to.</p>
+
+<h4>Define the meta data</h4>
+
+<p class="description">As final step we assign the meta data element 
+'date' we want to use for restrictions but also in the representation of
+ the result. For converting the date into a format we can use as meta 
+data table element we use the 'date2int' normalizer. As start date of 
+the date as integer calculation we chose the year of the invention of 
+the phonograph by Thomas Edison and we define the unit as number of days
+ since then. The input format we deduce by looking at an input sample 
+(bravely assuming here that all dates have the same format):</p>
+
+<div class="pre-action-link" id="premain122838" style="width:100%;display:block;"><span id="prehide122838" onclick="processCodeBlocks.togglePre(122838);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(122838);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre122838">2009-06-18 <span class="code-digit">01</span>:<span class="code-digit">37</span>:<span class="code-digit">52</span>.503809+00
+</pre>
+
+<p class="description">The tokenization is just forwarding the tag content. Here is the configuration of the date:</p>
+
+<div class="pre-action-link" id="premain252740" style="width:100%;display:block;"><span id="prehide252740" onclick="processCodeBlocks.togglePre(252740);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(252740);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre252740">[MetaData]
+	date = date2int(<span class="code-string">"</span><span class="code-string">d 1877-01-01"</span>, <span class="code-string">"</span><span class="code-string">%Y-%m-%d %H:%M:%s *"</span>) content /list/item/date();
+</pre>
+
+<p class="description">The definitions of the section attribute is read 
+intuitively from right to left as the elements introduced before with 
+the exception that the leftmost identifier specifies the name of the 
+meta data element the value is assigned to.</p>
+
+<h4>Check the configuration</h4>
+
+<p class="description">The be sure that we got everything right, we now 
+test what we got with one candidate input file. We can do this by 
+calling the program <a href="http://www.project-strus.net/utilities.htm#strusAnalyze">strusAnalyze</a> with our configuration and an input file:</p>
+
+<div class="pre-action-link" id="premain351422" style="width:100%;display:block;"><span id="prehide351422" onclick="processCodeBlocks.togglePre(351422);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(351422);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre351422">strusAnalyze tutorial.ana doc/2333.xml  | less
+</pre>
+
+<p class="description">We have a look at the first document analyzed and
+ see that all went well (Multi part document results of the strusAnalyze
+ program are separated by '-- document ' followed by the identifier 
+assigned to it in the [Document] section):</p>
+
+<div class="pre-action-link" id="premain29813" style="width:100%;display:block;"><span id="prehide29813" onclick="processCodeBlocks.togglePre(29813);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(29813);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre29813">-- document doc
+
+search index terms:
+<span class="code-digit">1</span> word <span class="code-string">'</span><span class="code-string">live'</span>
+<span class="code-digit">2</span> word <span class="code-string">'</span><span class="code-string">in'</span>
+<span class="code-digit">3</span> word <span class="code-string">'</span><span class="code-string">milan'</span>
+<span class="code-digit">5</span> word <span class="code-string">'</span><span class="code-string">27'</span>
+<span class="code-digit">6</span> word <span class="code-string">'</span><span class="code-string">9'</span>
+<span class="code-digit">7</span> word <span class="code-string">'</span><span class="code-string">1956'</span>
+<span class="code-digit">8</span> word <span class="code-string">'</span><span class="code-string">maria'</span>
+<span class="code-digit">9</span> word <span class="code-string">'</span><span class="code-string">calla'</span>
+
+forward index terms:
+<span class="code-digit">1</span> orig <span class="code-string">'</span><span class="code-string">Live'</span>
+<span class="code-digit">2</span> orig <span class="code-string">'</span><span class="code-string">in'</span>
+<span class="code-digit">3</span> orig <span class="code-string">'</span><span class="code-string">Milan'</span>
+<span class="code-digit">4</span> orig <span class="code-string">'</span><span class="code-string">(27,9,1956)'</span>
+<span class="code-digit">8</span> orig <span class="code-string">'</span><span class="code-string">Maria'</span>
+<span class="code-digit">9</span> orig <span class="code-string">'</span><span class="code-string">Callas'</span>
+
+metadata:
+date <span class="code-string">'</span><span class="code-string">48527'</span>
+
+attributes:
+docid <span class="code-string">'</span><span class="code-string">233372'</span>
+title <span class="code-string">'</span><span class="code-string">Live in Milan (27,9,1956)'</span>
+</pre>
+
+<h4>Check single steps of the analyzer configuration</h4>
+
+<p class="description">What do we do when something went wrong when checking a document with strusAnalyze ?<br>
+Let's assume that our output was empty. There are tools to check the different steps of document analysis. The first program is <a href="http://www.project-strus.net/utilities.htm#strusSegment">strusSegment</a> that allows us to check wheter a selection expression matched. Let's take the document title as example:</p>
+
+<div class="pre-action-link" id="premain472111" style="width:100%;display:block;"><span id="prehide472111" onclick="processCodeBlocks.togglePre(472111);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(472111);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre472111">strusSegment -e <span class="code-string">'</span><span class="code-string">/list/item/title()'</span> doc/2333.xml  | head -n <span class="code-digit">2</span>
+</pre>
+
+<p>The output looks as follows:</p>
+
+<div class="pre-action-link" id="premain284814" style="width:100%;display:block;"><span id="prehide284814" onclick="processCodeBlocks.togglePre(284814);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(284814);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre284814"><span class="code-string">'</span><span class="code-string">Live in Milan (27,9,1956)'</span>
+<span class="code-string">'</span><span class="code-string">Greatest Hits'</span>
+</pre>
+
+<p class="description">This looks good as expected. The second program for checking analyzer steps is <a href="http://www.project-strus.net/utilities.htm#strusAnalyzePhrase">strusAnalyzePhrase</a>.
+ This program allows us to check tokenizers and normalizers used in the 
+configuration. Let's check if words are tokenized and normalized 
+correctly:</p>
+
+<div class="pre-action-link" id="premain753157" style="width:100%;display:block;"><span id="prehide753157" onclick="processCodeBlocks.togglePre(753157);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(753157);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre753157">echo <span class="code-string">'</span><span class="code-string">Live in Milan (27,9,1956)'</span> | strusAnalyzePhrase -n <span class="code-string">"</span><span class="code-string">convdia(en):stem(en):lc"</span> -t <span class="code-string">"</span><span class="code-string">word"</span> -
+</pre>
+
+<p>This leads to the following output:</p>
+
+<div class="pre-action-link" id="premain217472" style="width:100%;display:block;"><span id="prehide217472" onclick="processCodeBlocks.togglePre(217472);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(217472);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre217472"><span class="code-digit">1</span> <span class="code-string">'</span><span class="code-string">live'</span>
+<span class="code-digit">2</span> <span class="code-string">'</span><span class="code-string">in'</span>
+<span class="code-digit">3</span> <span class="code-string">'</span><span class="code-string">milan'</span>
+<span class="code-digit">4</span> <span class="code-string">'</span><span class="code-string">27'</span>
+<span class="code-digit">5</span> <span class="code-string">'</span><span class="code-string">9'</span>
+<span class="code-digit">6</span> <span class="code-string">'</span><span class="code-string">1956'</span>
+</pre>
+
+<p>At the first glance this looks good. But why are the positions 
+assigned different compared with the analyzer run? The word '27' has 
+position 5 when passed through the analyzer with our configuration and 4
+ when calling strusAnalyzePhrase. The reason is that the positions are 
+assigned globally to all elements of the configuration. Every by byte 
+position in the document defined by any tokenizer configured is 
+respected when assigning the word positions. The strusAnalyzePhrase does
+ not have this information, so it assigns the positions ascending. 
+Because we have added in the analyzer configuration a method that 
+produces a token '(27,9,1956)' that has a byte position between "Milan" 
+and "27", this token gets the word position 4. The token '27' gets the 
+following position assigned, in our example 5. The reason for this is 
+that the positions of all the features in the forward index and the 
+search index have to be in sync to define their occurrence relation by 
+their word position.</p>
+
+<p><a id="insert" name="insert"></a></p>
+
+<h2>Step 5: Insert the documents into the storage</h2>
+
+<p class="description">We got now the analysis of the documents done. Now we would like to insert the documents into the storage created. The program <a href="http://www.project-strus.net/utilities.htm#strusInsert">strusInsert</a>
+ helps us to do that. It has several options to boost the insert 
+process. It depends very much on the collection and the hardware used 
+which parameters are best.<br>
+If we know that all documents inserted are new, then we should specify 
+the option '-n' ('--new'). In this case the inserter can assume that all
+ files inserted are new and thus it can allocate document numbers in 
+ranges. Otherwise the storage issues an immediate write for every new 
+document inserted and this slows down the insert process dramatically 
+because we have only new documents now.<br>
+Another important option is '-c' ('--commit') that sets the number of 
+documents inserted within one transaction. Because out documents are 
+very small (less than a dozen terms), the default of 1000 is not very 
+reasonable. Better is 50000.<br>
+Here is our insert command with the proposed options for this collection:</p>
+
+<div class="pre-action-link" id="premain300975" style="width:100%;display:block;"><span id="prehide300975" onclick="processCodeBlocks.togglePre(300975);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(300975);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre300975">strusInsert -n -c <span class="code-digit">50000</span> -f <span class="code-digit">100</span> -s <span class="code-string">"</span><span class="code-string">path=storage"</span> tutorial.ana doc
+</pre>
+
+<p class="description">that does not use multiple inserter threads 
+(default), commits an open transaction after 50000 documents inserted, 
+preallocates document numbers in ranges and fills the storage in the 
+folder 'storage' with XML documents analyzed with the configuration 
+tutorial.ana. This should output the following 2 lines after roughly a 
+minute or half a minute:</p>
+
+<div class="pre-action-link" id="premain245525" style="width:100%;display:block;"><span id="prehide245525" onclick="processCodeBlocks.togglePre(245525);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(245525);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre245525">inserted <span class="code-digit">282291</span> documents (total <span class="code-digit">282291</span>), <span class="code-digit">0</span> transactions open     
+done
+</pre>
+
+<p>&nbsp;</p>
+
+<h2>Step 6: Inspect the storage</h2>
+
+<p class="description">The following examples use the dump from 29th of June 2015. You might get different results with another dump.</p>
+
+<p class="description">Now as we have inserted all documents we are curious to see if everything went right. There is a program <a href="http://www.project-strus.net/utilities.htm#strusDumpStorage">strusInspect</a>
+ that lets us inspect some properties of the storage. We chose the 
+document with the document id '10009'. First we find out what internal 
+document number this docid got:</p>
+
+<div class="pre-action-link" id="premain323906" style="width:100%;display:block;"><span id="prehide323906" onclick="processCodeBlocks.togglePre(323906);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(323906);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre323906">strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> docno <span class="code-digit">10009</span>
+</pre>
+
+<p>we get</p>
+
+<div class="pre-action-link" id="premain266556" style="width:100%;display:block;"><span id="prehide266556" onclick="processCodeBlocks.togglePre(266556);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(266556);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre266556"><span class="code-digit">123</span>
+</pre>
+
+<p class="description">Then we do some calls to inspect this document</p>
+
+<div class="pre-action-link" id="premain988258" style="width:100%;display:block;"><span id="prehide988258" onclick="processCodeBlocks.togglePre(988258);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(988258);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre988258">strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> attribute docid <span class="code-digit">123</span>
+
+strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> content orig <span class="code-digit">123</span>
+strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> attribute title <span class="code-digit">123</span>
+
+strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> pos word danc <span class="code-digit">123</span>
+strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> ff word danc <span class="code-digit">123</span>
+strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> df word danc 
+
+strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> metatable
+strusInspect -s <span class="code-string">"</span><span class="code-string">path=storage"</span> metadata date <span class="code-digit">123</span>
+</pre>
+
+<p class="description">and we get</p>
+
+<div class="pre-action-link" id="premain181002" style="width:100%;display:block;"><span id="prehide181002" onclick="processCodeBlocks.togglePre(181002);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(181002);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre181002"><span class="code-digit">10009</span>
+
+Absolute Let<span class="code-string">'</span><span class="code-string">s dance 13 Various
+Absolute Let'</span>s dance <span class="code-digit">13</span>
+
+<span class="code-digit">4</span>
+<span class="code-digit">1</span>
+<span class="code-digit">1575</span>
+
+date <span class="code-sdkkeyword">UInt32</span>
+<span class="code-digit">48253</span>
+</pre>
+
+<p class="description">If we want to check all the content of a storage, we can use the programs <a href="http://www.project-strus.net/utilities.htm#strusCheckStorage">strusCheckStorage</a> and <a href="http://www.project-strus.net/utilities.htm#strusCheckInsert">strusCheckInsert</a>.</p>
+
+<h2>Step 7: Example query with PHP</h2>
+
+<p class="description">In this section we examine the possibility to 
+issue queries in a scripting language. As example we use the PHP 
+bindings to query our strus storage built. The PHP scripts running in 
+the webserver context can not directly access the storage files. The 
+strus PHP commands issued are using a proxy implementation of the strus 
+interface that redirect the calls to be executed on a server. This 
+server is implemented as program <a href="http://www.project-strus.net/utilities.htm#strusRpcServer">strusRpcServer</a>.
+ Because we started the image with a shell, the docker CMD starting the 
+strus server was ignored. So we have to start it by hand in the 
+background:</p>
+
+<div class="pre-action-link" id="premain899290" style="width:100%;display:block;"><span id="prehide899290" onclick="processCodeBlocks.togglePre(899290);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(899290);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre899290">strusRpcServer -s <span class="code-string">"</span><span class="code-string">path=storage"</span> &amp;
+</pre>
+
+<h4>Test execution chain</h4>
+
+<p class="description">We start with a simple PHP script that asks the strus storage for the number of documents inserted. We call the script <u>status.php</u>:</p>
+
+<div class="pre-action-link" id="premain234955" style="width:100%;display:block;"><span id="prehide234955" onclick="processCodeBlocks.togglePre(234955);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(234955);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre234955">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+&lt;?php
+require <span class="code-string">"</span><span class="code-string">strus.php"</span>;
+<span class="code-keyword">try</span> {
+	<span class="code-comment">//</span><span class="code-comment"> Create the strus context as proxy redirecting the 
+</span>	<span class="code-comment">//</span><span class="code-comment">	commands to the strus server listening on port 7181:
+</span>	<span class="code-sdkkeyword">$context</span> = <span class="code-keyword">new</span> StrusContext( <span class="code-string">"</span><span class="code-string">localhost:7181"</span> );
+	<span class="code-comment">//</span><span class="code-comment"> Create the storage client:
+</span>	<span class="code-sdkkeyword">$storage</span> = <span class="code-sdkkeyword">$context</span>-&gt;createStorageClient( <span class="code-string">"</span><span class="code-string">"</span> );
+
+	<span class="code-keyword">echo</span> <span class="code-string">'</span><span class="code-string">&lt;p&gt;'</span>;
+	<span class="code-comment">//</span><span class="code-comment"> Print the number of documents inserted:
+</span>	<span class="code-keyword">echo</span> <span class="code-string">"</span><span class="code-string">Number of documents inserted: "</span> . <span class="code-sdkkeyword">$storage</span>-&gt;nofDocumentsInserted() . <span class="code-string">"</span><span class="code-string">!"</span>;
+	<span class="code-keyword">echo</span> <span class="code-string">'</span><span class="code-string">&lt;/p&gt;'</span>;
+}
+<span class="code-keyword">catch</span> ( Exception <span class="code-sdkkeyword">$e</span>) {
+	<span class="code-comment">//</span><span class="code-comment"> Handle possible error:
+</span>	<span class="code-keyword">echo</span> <span class="code-string">'</span><span class="code-string">&lt;p&gt;&lt;font color="red"&gt;Caught exception: '</span> . <span class="code-string">"</span><span class="code-string">{$e-&gt;getMessage()}&lt;/font&gt;&lt;/p&gt;"</span>;
+}
+<span class="code-pagedirective">?&gt;</span></pre>
+
+<p class="description">In order to make it accessible for nginx, we have
+ to copy it to the web servers html pages root directory and give it the
+ right permissions:</p>
+
+<div class="pre-action-link" id="premain421112" style="width:100%;display:block;"><span id="prehide421112" onclick="processCodeBlocks.togglePre(421112);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(421112);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre421112">cp status.php /usr/share/nginx/html/
+chown www-data:www-data /usr/share/nginx/html/status.php
+chmod +x /usr/share/nginx/html/status.php
+</pre>
+
+<p class="description">Now we can call it via HTTP, say we can enter the
+ following URL into a web browsers address bar. We have specified port 
+40080 when starting the strus docker container, so we also specify it 
+here:</p>
+
+<div class="pre-action-link" id="premain929177" style="width:100%;display:block;"><span id="prehide929177" onclick="processCodeBlocks.togglePre(929177);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(929177);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre929177">http:<span class="code-comment">//</span><span class="code-comment">127.0.0.1:40080/status.php
+</span></pre>
+
+<p class="description">and we get:</p>
+
+<p class="description"><img alt="Number of documents inserted: 282306 !" src="article_files/numberOfDocuments.jpg" style="width: 401px; height: 184px;"></p>
+
+<h4>Issue a query</h4>
+
+<p class="description">Now we try to create a simple page showing a 
+ranked list of best matches to a query passed as GET parameters. We call
+ the PHP source file <u>search.php</u>:</p>
+
+<div class="pre-action-link" id="premain560450" style="width:100%;display:block;"><span id="prehide560450" onclick="processCodeBlocks.togglePre(560450);">Hide</span>  &nbsp; <span id="preShrink560450" onclick="processCodeBlocks.shrinkExpand(560450);">Shrink</span> <img id="preimg560450" src="article_files/arrow-up-16.png" style="height:16px;width:16px" onclick="processCodeBlocks.shrinkExpand(560450);">  &nbsp; <span onclick="return processCodeBlocks.copyCode(560450);">Copy Code</span></div><pre processed="true" style="margin-top: 0px;" id="pre560450">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+&lt;?php
+require <span class="code-string">"</span><span class="code-string">strus.php"</span>;
+
+<span class="code-comment">//</span><span class="code-comment"> The following helper function will be used to evaluate a query:
+</span>function evalQuery( <span class="code-sdkkeyword">$queryString</span>, <span class="code-sdkkeyword">$minRank</span>, <span class="code-sdkkeyword">$maxNofRanks</span>)
+{
+    <span class="code-comment">//</span><span class="code-comment"> We create the strus context as proxy to the strusRpcServer
+</span>    <span class="code-comment">//</span><span class="code-comment"> started in our docker container listening on port 7181:
+</span>    <span class="code-sdkkeyword">$context</span> = <span class="code-keyword">new</span> StrusContext( <span class="code-string">"</span><span class="code-string">localhost:7181"</span> );
+
+    <span class="code-comment">//</span><span class="code-comment"> We create the storage proxy interface refering to the storage
+</span>    <span class="code-comment">//</span><span class="code-comment"> served by the server by passing an empty storage configuration:
+</span>    <span class="code-sdkkeyword">$storage</span> = <span class="code-sdkkeyword">$context</span>-&gt;createStorageClient( <span class="code-string">"</span><span class="code-string">"</span> );
+
+    <span class="code-comment">//</span><span class="code-comment"> We create the analyzer proxy interface:
+</span>    <span class="code-sdkkeyword">$analyzer</span> = <span class="code-sdkkeyword">$context</span>-&gt;createQueryAnalyzer();
+
+    <span class="code-comment">//</span><span class="code-comment"> We create the query evaluation proxy interface:
+</span>    <span class="code-sdkkeyword">$queryeval</span> = <span class="code-sdkkeyword">$context</span>-&gt;createQueryEval();
+
+    <span class="code-comment">//</span><span class="code-comment"> Here we define how the query is analyzed. In our example we will introduce
+</span>    <span class="code-comment">//</span><span class="code-comment"> only one phrase type and call it "qry". The produced feature type "word" matches
+</span>    <span class="code-comment">//</span><span class="code-comment"> to the feature type in the search index of the document. The tokenizer used
+</span>    <span class="code-comment">//</span><span class="code-comment"> is the same as for the features in the document ("word"). So is the normalizer
+</span>    <span class="code-comment">//</span><span class="code-comment"> defined. Note that the execution of the normalizer is read from left to
+</span>    <span class="code-comment">//</span><span class="code-comment"> right and not as in the analyzer configuration language from right to left.
+</span>    <span class="code-sdkkeyword">$analyzer</span>-&gt;definePhraseType( <span class="code-string">"</span><span class="code-string">qry"</span>, <span class="code-string">"</span><span class="code-string">word"</span><span class="code-comment">/*</span><span class="code-comment">feat type*/</span>, <span class="code-string">"</span><span class="code-string">word"</span><span class="code-comment">/*</span><span class="code-comment">tokenizer*/</span>,
+            [<span class="code-string">"</span><span class="code-string">lc"</span>, [<span class="code-string">"</span><span class="code-string">stem"</span>, <span class="code-string">"</span><span class="code-string">en"</span>], [<span class="code-string">"</span><span class="code-string">convdia"</span>, <span class="code-string">"</span><span class="code-string">en"</span>] ] <span class="code-comment">/*</span><span class="code-comment">normalizer*/</span>);
+
+    <span class="code-comment">//</span><span class="code-comment"> Now we define our weighting function, that counts the number of query
+</span>    <span class="code-comment">//</span><span class="code-comment"> feature matches in the document. Weighting function attribute names,
+</span>    <span class="code-comment">//</span><span class="code-comment"> that reference features, start with a dot '.'. Others referencing
+</span>    <span class="code-comment">//</span><span class="code-comment"> number or string constants not:
+</span>    <span class="code-sdkkeyword">$queryeval</span>-&gt;addWeightingFunction( <span class="code-digit">1</span>.<span class="code-digit">0</span>, <span class="code-string">"</span><span class="code-string">tf"</span>, [<span class="code-string">"</span><span class="code-string">.match"</span> =&gt; <span class="code-string">"</span><span class="code-string">qry"</span> ]);
+
+    <span class="code-comment">//</span><span class="code-comment"> Next we define what is presented as attribute of the result.
+</span>    <span class="code-comment">//</span><span class="code-comment"> We would like to see the document identifier and the document title:
+</span>    <span class="code-sdkkeyword">$queryeval</span>-&gt;addSummarizer( <span class="code-string">"</span><span class="code-string">DOCID"</span>, <span class="code-string">"</span><span class="code-string">attribute"</span>, [ <span class="code-string">"</span><span class="code-string">name"</span> =&gt; <span class="code-string">"</span><span class="code-string">docid"</span> ] );
+    <span class="code-sdkkeyword">$queryeval</span>-&gt;addSummarizer( <span class="code-string">"</span><span class="code-string">TITLE"</span>, <span class="code-string">"</span><span class="code-string">attribute"</span>, [ <span class="code-string">"</span><span class="code-string">name"</span> =&gt; <span class="code-string">"</span><span class="code-string">title"</span> ] );
+
+    <span class="code-comment">//</span><span class="code-comment"> For the documents to match we have to define a selection expression.
+</span>    <span class="code-comment">//</span><span class="code-comment"> The selected features will be addressed by the feature set identifier "sel":
+</span>    <span class="code-sdkkeyword">$queryeval</span>-&gt;addSelectionFeature( <span class="code-string">"</span><span class="code-string">sel"</span>);
+
+    <span class="code-comment">//</span><span class="code-comment"> Now we have finished the query evaluation scheme definition and we create
+</span>    <span class="code-comment">//</span><span class="code-comment"> the query to issue. First we define the query object to instantiate:
+</span>    <span class="code-sdkkeyword">$query</span> = <span class="code-sdkkeyword">$queryeval</span>-&gt;createQuery( <span class="code-sdkkeyword">$storage</span>);
+
+    <span class="code-comment">//</span><span class="code-comment"> Next we take the query string as phrase and analyze it. In a more complex
+</span>    <span class="code-comment">//</span><span class="code-comment"> system we would parse the query language first and the elements of the
+</span>    <span class="code-comment">//</span><span class="code-comment"> query language would be the queryphrases to analyze. In our simple example
+</span>    <span class="code-comment">//</span><span class="code-comment"> setting, we have just a single phrase query:
+</span>    <span class="code-sdkkeyword">$terms</span> = <span class="code-sdkkeyword">$analyzer</span>-&gt;analyzePhrase( <span class="code-string">"</span><span class="code-string">qry"</span>, <span class="code-sdkkeyword">$queryString</span>);
+
+    <span class="code-keyword">if</span> (count( <span class="code-sdkkeyword">$terms</span>) &gt; <span class="code-digit">0</span>)
+    {
+        <span class="code-comment">//</span><span class="code-comment"> Now we create the query expressions and define the query features.
+</span>        <span class="code-comment">//</span><span class="code-comment"> The selection feature "sel" will be represented as selection of documents,
+</span>        <span class="code-comment">//</span><span class="code-comment"> that contain all query features.
+</span>        <span class="code-comment">//</span><span class="code-comment"> The weighted features "qry" will be the set of terms in the query.
+</span>
+        <span class="code-comment">//</span><span class="code-comment"> $selexpr will contain the expression that selects the documents to weight.
+</span>        <span class="code-comment">//</span><span class="code-comment"> It is represented as array with the identifier of the feature join operator
+</span>        <span class="code-comment">//</span><span class="code-comment"> "contains" as first element and the structures representing the arguments as
+</span>        <span class="code-comment">//</span><span class="code-comment"> following elements. "contains" means that the expression selects the documents
+</span>        <span class="code-comment">//</span><span class="code-comment"> that match all argument expressions.
+</span>        <span class="code-sdkkeyword">$selexpr</span> = [ <span class="code-string">"</span><span class="code-string">contains"</span> ];
+
+        <span class="code-keyword">foreach</span> (<span class="code-sdkkeyword">$terms</span> <span class="code-keyword">as</span> &amp;$term)
+        {
+            <span class="code-comment">//</span><span class="code-comment"> Add the term as argument to the select expression:
+</span>            <span class="code-sdkkeyword">$selexpr</span>[] = [ <span class="code-sdkkeyword">$term</span>-&gt;type, <span class="code-sdkkeyword">$term</span>-&gt;value ];
+
+            <span class="code-comment">//</span><span class="code-comment"> Define the features to use for weighting:
+</span>            <span class="code-sdkkeyword">$query</span>-&gt;defineFeature( <span class="code-string">"</span><span class="code-string">qry"</span>, [ <span class="code-sdkkeyword">$term</span>-&gt;type, <span class="code-sdkkeyword">$term</span>-&gt;value ], <span class="code-digit">1</span>.<span class="code-digit">0</span> );
+        }
+        <span class="code-comment">//</span><span class="code-comment"> Define the feature to use for document selection:
+</span>        <span class="code-sdkkeyword">$query</span>-&gt;defineFeature( <span class="code-string">"</span><span class="code-string">sel"</span>, <span class="code-sdkkeyword">$selexpr</span>, <span class="code-digit">1</span>.<span class="code-digit">0</span>);
+    }
+
+    <span class="code-comment">//</span><span class="code-comment"> At last we define the number of documents to retrieve and the first rank to show:
+</span>    <span class="code-sdkkeyword">$query</span>-&gt;setMaxNofRanks( <span class="code-sdkkeyword">$maxNofRanks</span>);
+    <span class="code-sdkkeyword">$query</span>-&gt;setMinRank( <span class="code-sdkkeyword">$minRank</span>);
+
+    <span class="code-comment">//</span><span class="code-comment"> And we evaluate the query and return it as result:
+</span>    <span class="code-keyword">return</span> <span class="code-sdkkeyword">$query</span>-&gt;evaluate();
+}
+
+<span class="code-comment">//</span><span class="code-comment"> Parse the query parameters:
+</span>parse_str( getenv(<span class="code-string">'</span><span class="code-string">QUERY_STRING'</span>), <span class="code-sdkkeyword">$_GET</span>);
+<span class="code-sdkkeyword">$queryString</span> = <span class="code-sdkkeyword">$_GET</span>[<span class="code-string">'</span><span class="code-string">q'</span>];
+<span class="code-sdkkeyword">$nofRanks</span> = <span class="code-digit">20</span>;
+<span class="code-sdkkeyword">$minRank</span> = <span class="code-digit">0</span>;
+<span class="code-keyword">if</span> (array_key_exists( <span class="code-string">'</span><span class="code-string">n'</span>, <span class="code-sdkkeyword">$_GET</span>))
+{
+    <span class="code-sdkkeyword">$nofRanks</span> = intval( <span class="code-sdkkeyword">$_GET</span>[<span class="code-string">'</span><span class="code-string">n'</span>]);
+}
+<span class="code-keyword">if</span> (array_key_exists( <span class="code-string">'</span><span class="code-string">i'</span>, <span class="code-sdkkeyword">$_GET</span>))
+{
+    <span class="code-sdkkeyword">$minRank</span> = intval( <span class="code-sdkkeyword">$_GET</span>[<span class="code-string">'</span><span class="code-string">i'</span>]);
+}
+
+<span class="code-comment">//</span><span class="code-comment"> Call the defined subroutine to evaluate the query:
+</span><span class="code-sdkkeyword">$results</span> = evalQuery( <span class="code-sdkkeyword">$queryString</span>, <span class="code-sdkkeyword">$minRank</span>, <span class="code-sdkkeyword">$nofRanks</span>);
+
+<span class="code-comment">//</span><span class="code-comment"> Display the result:
+</span><span class="code-keyword">echo</span> <span class="code-string">'</span><span class="code-string">&lt;table border=1&gt;'</span>;
+<span class="code-keyword">foreach</span> (<span class="code-sdkkeyword">$results</span> <span class="code-keyword">as</span> &amp;$result)
+{
+    <span class="code-sdkkeyword">$docid</span> = <span class="code-string">'</span><span class="code-string">'</span>;
+    <span class="code-sdkkeyword">$title</span> = <span class="code-string">'</span><span class="code-string">'</span>;
+    <span class="code-keyword">foreach</span>( <span class="code-sdkkeyword">$result</span>-&gt;attributes <span class="code-keyword">as</span> &amp;$attrib )
+    {
+        <span class="code-keyword">if</span>( strcmp( <span class="code-sdkkeyword">$attrib</span>-&gt;name, <span class="code-string">'</span><span class="code-string">TITLE'</span> ) == <span class="code-digit">0</span> ) {
+            <span class="code-sdkkeyword">$title</span> = <span class="code-sdkkeyword">$attrib</span>-&gt;value;
+        }
+        <span class="code-keyword">if</span>( strcmp( <span class="code-sdkkeyword">$attrib</span>-&gt;name, <span class="code-string">'</span><span class="code-string">DOCID'</span> ) == <span class="code-digit">0</span> ) {
+            <span class="code-sdkkeyword">$docid</span> = <span class="code-sdkkeyword">$attrib</span>-&gt;value;
+        }
+    }
+    <span class="code-keyword">echo</span> <span class="code-string">'</span><span class="code-string">&lt;tr&gt;&lt;td&gt;'</span> . <span class="code-sdkkeyword">$docid</span> . <span class="code-string">'</span><span class="code-string">&lt;/td&gt;&lt;td&gt;'</span> . <span class="code-sdkkeyword">$title</span> . <span class="code-string">'</span><span class="code-string">&lt;/td&gt;&lt;/tr&gt;'</span> . <span class="code-string">"</span><span class="code-string">\n"</span>;
+}
+<span class="code-keyword">echo</span> <span class="code-string">'</span><span class="code-string">&lt;/table&gt;'</span>;
+<span class="code-pagedirective">?&gt;</span></pre>
+
+<p>Now we copy the file into the webservers document area and set the permissions correctly:</p>
+
+<div class="pre-action-link" id="premain948168" style="width:100%;display:block;"><span id="prehide948168" onclick="processCodeBlocks.togglePre(948168);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(948168);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre948168">cp search.php /usr/share/nginx/html/
+chown www-data:www-data /usr/share/nginx/html/search.php
+chmod +x /usr/share/nginx/html/search.php
+</pre>
+
+<p class="description">Now we can call the search page via HTTP, say we 
+can enter the following URL into a web browsers address bar as we did it
+ with the <u>status.php</u> page. We search for "party dance", and retrieve the first 10 ranks starting with the best match:</p>
+
+<div class="pre-action-link" id="premain363594" style="width:100%;display:block;"><span id="prehide363594" onclick="processCodeBlocks.togglePre(363594);">Hide</span>  &nbsp; <span onclick="return processCodeBlocks.copyCode(363594);">Copy Code</span></div><pre style="margin-top: 0px;" id="pre363594">http:<span class="code-comment">//</span><span class="code-comment">127.0.0.1:40080/search.php?q=party%20dance&amp;i=0&amp;n=10
+</span></pre>
+
+<p class="description">and we get:</p>
+
+<p><img alt="(266941,Dance Party), (235925, Kid's Christmas Dance Party), ...." src="article_files/searchResult.jpg" style="width: 692px; height: 392px;"></p>
+
+
+						</div>
+						
+
+						<div class="float-right" style="margin:20px 0 0 10px;border:1px solid #ccc">
+						<div class="msg-300x250" data-format="300x250" data-type="ad" data-publisher="lqm.codeproject.site" data-zone="Platforms-Frameworks-Libraries/Libraries/Code-Projects" data-loadonview="true" data-tags="C++, Architect, Dev, Linux, PHP, search,rating4.5"><noscript><a href="http://ad.doubleclick.net/N6839/jump/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=300x250;ord=635838457771386418?"><img src="http://ad.doubleclick.net/N6839/ad/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=300x250;ord=635838457771386418?"  width="300px" height="250px" /></a></noscript></div>
+						</div>
+                        
+                        
+						
+						<h2>License</h2>
+						<div id="LicenseTerms"><p>This article, along with any associated source code and files, is licensed under <a href="http://www.opensource.org/licenses/gpl-3.0.html" rel="license">The GNU General Public License (GPLv3)</a></p></div>
+						
+
+                        
+						<h2>Share</h2>
+				        <div class="share-list">
+					        
+
+
+
+<!-- Buttons start here. Copy this ul to your document. -->
+<ul class="rrssb-buttons clearfix rrssb-1">
+    <li data-size="34" data-initwidth="16.666666666666668" style="width: calc(50% - 84px);" class="email">
+
+        <a href="mailto:?subject=Building%20a%20search%20engine%20with%20Strus%20%28tutorial%29%20-%20CodeProject&amp;body=Here%27s%20an%20interesting%20article%20on%20for%20you%20on%20codeproject.com%0a%0ahttp%3a%2f%2fwww.codeproject.com%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial%0a">
+            <span class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve"><g>
+                        <path d="M20.111 26.147c-2.336 1.051-4.361 1.401-7.125 1.401c-6.462 0-12.146-4.633-12.146-12.265 
+                            c0-7.94 5.762-14.833 14.561-14.833c6.853 0 11.8 4.7 11.8 11.252c0 5.684-3.194 9.265-7.399 
+                            9.3 c-1.829 0-3.153-0.934-3.347-2.997h-0.077c-1.208 1.986-2.96 2.997-5.023 2.997c-2.532 
+                            0-4.361-1.868-4.361-5.062 c0-4.749 3.504-9.071 9.111-9.071c1.713 0 3.7 0.4 4.6 0.973l-1.169 
+                            7.203c-0.388 2.298-0.116 3.3 1 3.4 c1.673 0 3.773-2.102 3.773-6.58c0-5.061-3.27-8.994-9.303-8.994c-5.957 
+                            0-11.175 4.673-11.175 12.1 c0 6.5 4.2 10.2 10 10.201c1.986 0 4.089-0.43 5.646-1.245L20.111 
+                            26.147z M16.646 10.1 c-0.311-0.078-0.701-0.155-1.207-0.155c-2.571 0-4.595 2.53-4.595 5.529c0 
+                            1.5 0.7 2.4 1.9 2.4 c1.441 0 2.959-1.828 3.311-4.087L16.646 10.068z"></path></g>
+                </svg>
+            </span>
+            <span class="text">email</span>
+        </a>
+    </li>
+    <li data-size="47" data-initwidth="16.666666666666668" style="width: calc(50% - 84px);" class="twitter">
+        <!-- Replace href with your Meta and URL information  -->
+        <a href="http://twitter.com/home?status=Building+a+search+engine+with+Strus+%28tutorial%29+-+CodeProject+-+http%3a%2f%2fwww.codeproject.com%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial" class="popup">
+            <span class="icon">
+                <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
+                <path d="M24.253,8.756C24.689,17.08,18.297,24.182,9.97,24.62c-3.122,0.162-6.219-0.646-8.861-2.32
+                    c2.703,0.179,5.376-0.648,7.508-2.321c-2.072-0.247-3.818-1.661-4.489-3.638c0.801,0.128,1.62,0.076,2.399-0.155
+                    C4.045,15.72,2.215,13.6,2.115,11.077c0.688,0.275,1.426,0.407,2.168,0.386c-2.135-1.65-2.729-4.621-1.394-6.965
+                    C5.575,7.816,9.54,9.84,13.803,10.071c-0.842-2.739,0.694-5.64,3.434-6.482c2.018-0.623,4.212,0.044,5.546,1.683
+                    c1.186-0.213,2.318-0.662,3.329-1.317c-0.385,1.256-1.247,2.312-2.399,2.942c1.048-0.106,2.069-0.394,3.019-0.851
+                    C26.275,7.229,25.39,8.196,24.253,8.756z"></path>
+                </svg>
+            </span>
+            <span class="text">twitter</span>
+        </a>
+    </li>
+
+    <li data-size="57" data-initwidth="16.666666666666668" style="width: 42px;" class="facebook small">
+        <!-- Replace with your URL. For best results, make sure you page has the proper FB Open Graph tags in header: 
+        https://developers.facebook.com/docs/opengraph/howtos/maximizing-distribution-media-content/ -->
+        <a href="https://www.facebook.com/sharer/sharer.php?u=http%3a%2f%2fwww.codeproject.com%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial" class="popup">
+            <span class="icon">
+                <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
+                    <path d="M27.825,4.783c0-2.427-2.182-4.608-4.608-4.608H4.783c-2.422,0-4.608,2.182-4.608,4.608v18.434
+                        c0,2.427,2.181,4.608,4.608,4.608H14V17.379h-3.379v-4.608H14v-1.795c0-3.089,2.335-5.885,5.192-5.885h3.718v4.608h-3.726
+                        c-0.408,0-0.884,0.492-0.884,1.236v1.836h4.609v4.608h-4.609v10.446h4.916c2.422,0,4.608-2.188,4.608-4.608V4.783z"></path>
+                </svg>
+            </span>
+            <span class="text">facebook</span>
+        </a>
+    </li>
+    
+    <li data-size="47" data-initwidth="16.666666666666668" style="width: 42px;" class="linkedin small">
+        <!-- Replace href with your meta and URL information -->
+        <a href="http://www.linkedin.com/shareArticle?mini=true&amp;url=http%3a%2f%2fwww.codeproject.com%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial&amp;title=Building+a+search+engine+with+Strus+%28tutorial%29+-+CodeProject&amp;summary=&amp;source=codeproject.com" class="popup">
+            <span class="icon">
+                <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
+                    <path d="M25.424,15.887v8.447h-4.896v-7.882c0-1.979-0.709-3.331-2.48-3.331c-1.354,0-2.158,0.911-2.514,1.803
+                        c-0.129,0.315-0.162,0.753-0.162,1.194v8.216h-4.899c0,0,0.066-13.349,0-14.731h4.899v2.088c-0.01,0.016-0.023,0.032-0.033,0.048
+                        h0.033V11.69c0.65-1.002,1.812-2.435,4.414-2.435C23.008,9.254,25.424,11.361,25.424,15.887z M5.348,2.501
+                        c-1.676,0-2.772,1.092-2.772,2.539c0,1.421,1.066,2.538,2.717,2.546h0.032c1.709,0,2.771-1.132,2.771-2.546
+                        C8.054,3.593,7.019,2.501,5.343,2.501H5.348z M2.867,24.334h4.897V9.603H2.867V24.334z"></path>
+                </svg>
+            </span>
+            <span class="text">linkedin</span>
+        </a>
+    </li>
+    <li data-size="37" data-initwidth="16.666666666666668" style="width: 42px;" class="reddit small">
+        <a href="http://www.reddit.com/submit?url=http%3a%2f%2fwww.codeproject.com%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial&amp;title=Building+a+search+engine+with+Strus+%28tutorial%29+-+CodeProject">
+            <span class="icon">
+                <svg xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve"><g>
+                <path d="M11.794 15.316c0-1.029-0.835-1.895-1.866-1.895c-1.03 0-1.893 0.865-1.893 1.895s0.863 1.9 1.9 1.9 C10.958 17.2 11.8 16.3 11.8 15.316z"></path>
+                <path d="M18.1 13.422c-1.029 0-1.895 0.864-1.895 1.895c0 1 0.9 1.9 1.9 1.865c1.031 0 1.869-0.836 1.869-1.865 C19.969 14.3 19.1 13.4 18.1 13.422z"></path>
+                <path d="M17.527 19.791c-0.678 0.678-1.826 1.006-3.514 1.006c-0.004 0-0.009 0-0.014 0c-0.004 0-0.01 0-0.015 0 
+                c-1.686 0-2.834-0.328-3.51-1.005c-0.264-0.265-0.693-0.265-0.958 0c-0.264 0.265-0.264 0.7 0 1 c0.943 0.9 2.4 1.4 
+                4.5 1.402c0.005 0 0 0 0 0c0.005 0 0 0 0 0c2.066 0 3.527-0.459 4.47-1.402 c0.265-0.264 0.265-0.693 0.002-0.958C18.221 
+                19.5 17.8 19.5 17.5 19.791z"></path><path d="M27.707 13.267c0-1.785-1.453-3.237-3.236-3.237c-0.793 0-1.518 0.287-2.082 
+                0.761c-2.039-1.295-4.646-2.069-7.438-2.219 l1.483-4.691l4.062 0.956c0.071 1.4 1.3 2.6 2.7 2.555c1.488 0 2.695-1.208 
+                2.695-2.695C25.881 3.2 24.7 2 23.2 2 c-1.059 0-1.979 0.616-2.42 1.508l-4.633-1.091c-0.344-0.081-0.693 0.118-0.803 
+                0.455l-1.793 5.7 C10.548 8.6 7.7 9.4 5.6 10.75C5.006 10.3 4.3 10 3.5 10.029c-1.785 0-3.237 1.452-3.237 3.2 c0 1.1 0.6 
+                2.1 1.4 2.69c-0.04 0.272-0.061 0.551-0.061 0.831c0 2.3 1.3 4.4 3.7 5.9 c2.299 1.5 5.3 2.3 8.6 2.325c3.228 0 6.271-0.825 
+                8.571-2.325c2.387-1.56 3.7-3.66 3.7-5.917 c0-0.26-0.016-0.514-0.051-0.768C27.088 15.5 27.7 14.4 27.7 13.267z M23.186 
+                3.355c0.74 0 1.3 0.6 1.3 1.3 c0 0.738-0.6 1.34-1.34 1.34s-1.342-0.602-1.342-1.34C21.844 4 22.4 3.4 23.2 3.355z M1.648 
+                13.3 c0-1.038 0.844-1.882 1.882-1.882c0.31 0 0.6 0.1 0.9 0.209c-1.049 0.868-1.813 1.861-2.26 2.9 C1.832 14.2 1.6 13.8 1.6 
+                13.267z M21.773 21.57c-2.082 1.357-4.863 2.105-7.831 2.105c-2.967 0-5.747-0.748-7.828-2.105 
+                c-1.991-1.301-3.088-3-3.088-4.782c0-1.784 1.097-3.484 3.088-4.784c2.081-1.358 4.861-2.106 7.828-2.106 c2.967 0 5.7 
+                0.7 7.8 2.106c1.99 1.3 3.1 3 3.1 4.784C24.859 18.6 23.8 20.3 21.8 21.57z M25.787 14.6 
+                c-0.432-1.084-1.191-2.095-2.244-2.977c0.273-0.156 0.59-0.245 0.928-0.245c1.035 0 1.9 0.8 1.9 1.9 
+                C26.354 13.8 26.1 14.3 25.8 14.605z"></path></g></svg>
+            </span>
+            <span class="text">reddit</span>
+        </a>
+    </li>
+    <li data-size="51" data-initwidth="16.666666666666668" style="width: 42px;" class="googleplus small">
+        <!-- Replace href with your meta and URL information.  -->
+        <a href="https://plus.google.com/share?url=http%3a%2f%2fwww.codeproject.com%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial" class="popup">
+            <span class="icon">
+                <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="28px" height="28px" viewBox="0 0 28 28" enable-background="new 0 0 28 28" xml:space="preserve">
+                    <g>
+                        <g>
+                            <path d="M14.703,15.854l-1.219-0.948c-0.372-0.308-0.88-0.715-0.88-1.459c0-0.748,0.508-1.223,0.95-1.663
+                                c1.42-1.119,2.839-2.309,2.839-4.817c0-2.58-1.621-3.937-2.399-4.581h2.097l2.202-1.383h-6.67c-1.83,0-4.467,0.433-6.398,2.027
+                                C3.768,4.287,3.059,6.018,3.059,7.576c0,2.634,2.022,5.328,5.604,5.328c0.339,0,0.71-0.033,1.083-0.068
+                                c-0.167,0.408-0.336,0.748-0.336,1.324c0,1.04,0.551,1.685,1.011,2.297c-1.524,0.104-4.37,0.273-6.467,1.562
+                                c-1.998,1.188-2.605,2.916-2.605,4.137c0,2.512,2.358,4.84,7.289,4.84c5.822,0,8.904-3.223,8.904-6.41
+                                c0.008-2.327-1.359-3.489-2.829-4.731H14.703z M10.269,11.951c-2.912,0-4.231-3.765-4.231-6.037c0-0.884,0.168-1.797,0.744-2.511
+                                c0.543-0.679,1.489-1.12,2.372-1.12c2.807,0,4.256,3.798,4.256,6.242c0,0.612-0.067,1.694-0.845,2.478
+                                c-0.537,0.55-1.438,0.948-2.295,0.951V11.951z M10.302,25.609c-3.621,0-5.957-1.732-5.957-4.142c0-2.408,2.165-3.223,2.911-3.492
+                                c1.421-0.479,3.25-0.545,3.555-0.545c0.338,0,0.52,0,0.766,0.034c2.574,1.838,3.706,2.757,3.706,4.479
+                                c-0.002,2.073-1.736,3.665-4.982,3.649L10.302,25.609z"></path>
+                            <polygon points="23.254,11.89 23.254,8.521 21.569,8.521 21.569,11.89 18.202,11.89 18.202,13.604 21.569,13.604 21.569,17.004
+                                23.254,17.004 23.254,13.604 26.653,13.604 26.653,11.89      "></polygon>
+                        </g>
+                    </g>
+                </svg>
+            </span>
+            <span class="text">google+</span>
+        </a>
+    </li>
+    
+</ul>
+<!-- Buttons end here -->
+
+				        </div> 
+    			        
+
+
+						
+						<h2 id="ctl00_AboutHeading">About the Author</h2>
+						    
+
+
+<div class="author-wrapper">
+
+    <div class="pic-wrapper"> 
+        <img id="ctl00_AboutAuthorRptr_ctl00_AboutAuthor_memberPhoto" class="profile-pic" src="article_files/11d02976ac9a67d97b816a5114e4fa4f.jpg" style="border-width:0px;transform:rotate(2deg);">
+
+    </div>
+
+    <div class="container-member">  
+        <b><a id="ctl00_AboutAuthorRptr_ctl00_AboutAuthor_memberProfileLink" class="author" href="http://www.codeproject.com/Members/ppfrey">Patrick P. Frey</a></b>
+
+        <table class="extended">
+        <tbody><tr>
+            <td rowspan="2" nowrap="nowrap" valign="middle">
+            
+            </td>
+            <td width="100%">
+                <div class="company">
+                    <span id="ctl00_AboutAuthorRptr_ctl00_AboutAuthor_memberJobTitle"></span>
+	                <span id="ctl00_AboutAuthorRptr_ctl00_AboutAuthor_memberCompany"></span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <span id="ctl00_AboutAuthorRptr_ctl00_AboutAuthor_memberLocation">Europe <img src="article_files/EU.gif" alt="Europe" height="11px" width="16px"></span>
+            </td>
+        </tr>
+        </tbody></table>
+    </div>
+
+    <div class="description">
+        No Biography provided
+
+        
+    </div>
+
+</div><br>
+						
+						
+
+						<div class="clearfix"></div>
+
+						<div style="padding-top:8px">
+							
+						</div>
+
+					
+
+				    
+					</form>
+
+				</div>
+
+				
+				<div class="bottom-promo"> 
+				    <div class="msg-728x90" data-format="728x90" data-type="ad" data-publisher="lqm.codeproject.site" data-zone="Platforms-Frameworks-Libraries/Libraries/Code-Projects" data-loadonview="true" data-tags="C++, Architect, Dev, Linux, PHP, search,rating4.5,pos_bottom"><noscript><a href="http://ad.doubleclick.net/N6839/jump/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=728x90;ord=635838457771386418?"><img src="http://ad.doubleclick.net/N6839/ad/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=728x90;ord=635838457771386418?"  width="728px" height="90px" /></a></noscript></div>
+				</div>
+				
+
+                
+        <h2 id="ctl00_AlsoRead_RelatedResults_ctl00_Header" class="also-read">You may also be interested in...</h2>
+        <table class="spaced content-list also-read">
+    
+	    <tbody><tr>
+        <td class="content-list-item" valign="top" width="50%">
+            <div class="thumbnail"><a id="ctl00_AlsoRead_RelatedResults_ctl01_Thumbnail" href="http://www.codeproject.com/Articles/563869/Making-a-Search-Engine"><img src="article_files/Thumb-563869.png" alt="" style="border-width:0px;"></a></div>
+            <div class="text">
+                <div class="title"><a id="ctl00_AlsoRead_RelatedResults_ctl01_Link" href="http://www.codeproject.com/Articles/563869/Making-a-Search-Engine">Making a Search Engine</a></div>
+                
+            </div>
+        </td>
+	
+        <td class="content-list-item" valign="top" width="50%">
+            <div class="thumbnail"><a id="ctl00_AlsoRead_RelatedResults_ctl02_Thumbnail" href="http://www.codeproject.com/ResearchLibrary/118/Synchronizing-Large-Engineering-Source-Code-Reposi"><img src="article_files/LibraryItemThumbnail_118_100x130.png" alt="" style="border-width:0px;"></a></div>
+            <div class="text">
+                <div class="title"><a id="ctl00_AlsoRead_RelatedResults_ctl02_Link" href="http://www.codeproject.com/ResearchLibrary/118/Synchronizing-Large-Engineering-Source-Code-Reposi">Synchronizing Large Engineering Source Code Repositories</a></div>
+                
+            </div>
+        </td>
+	    </tr>
+	
+	    <tr>
+        <td class="content-list-item" valign="top" width="50%">
+            <div class="thumbnail"><a id="ctl00_AlsoRead_RelatedResults_ctl03_Thumbnail" href="http://www.codeproject.com/Articles/30815/An-Anti-Reverse-Engineering-Guide"><img src="article_files/Thumb-30815.JPG" alt="" style="border-width:0px;"></a></div>
+            <div class="text">
+                <div class="title"><a id="ctl00_AlsoRead_RelatedResults_ctl03_Link" href="http://www.codeproject.com/Articles/30815/An-Anti-Reverse-Engineering-Guide">An Anti-Reverse Engineering Guide</a></div>
+                
+            </div>
+        </td>
+	
+        <td class="content-list-item" valign="top" width="50%">
+            <div class="thumbnail"><a id="ctl00_AlsoRead_RelatedResults_ctl04_Thumbnail" href="http://www.codeproject.com/Articles/1055167/Using-an-MCU-on-the-Intel-Edison-Board-with-the-Ul"><img src="article_files/Thumb-1055167.png" alt="" style="border-width:0px;"></a></div>
+            <div class="text">
+                <div class="title"><a id="ctl00_AlsoRead_RelatedResults_ctl04_Link" href="http://www.codeproject.com/Articles/1055167/Using-an-MCU-on-the-Intel-Edison-Board-with-the-Ul">Using an MCU on the Intel® Edison Board with the Ultrasonic Range Sensor</a></div>
+                
+            </div>
+        </td>
+	    </tr>
+	
+	    <tr>
+        <td class="content-list-item" valign="top" width="50%">
+            <div class="thumbnail"><a id="ctl00_AlsoRead_RelatedResults_ctl05_Thumbnail" href="http://www.codeproject.com/Articles/5981/Internal-Site-Search-Engine"><img src="article_files/Thumb-5981.jpg" alt="" style="border-width:0px;"></a></div>
+            <div class="text">
+                <div class="title"><a id="ctl00_AlsoRead_RelatedResults_ctl05_Link" href="http://www.codeproject.com/Articles/5981/Internal-Site-Search-Engine">Internal Site Search Engine</a></div>
+                
+            </div>
+        </td>
+	
+        <td class="content-list-item" valign="top" width="50%">
+            <div class="thumbnail"><a id="ctl00_AlsoRead_RelatedResults_ctl06_Thumbnail" href="http://www.codeproject.com/Articles/23/SAPrefs-Netscape-like-Preferences-Dialog"><img src="article_files/Thumb-23.gif" alt="" style="border-width:0px;"></a></div>
+            <div class="text">
+                <div class="title"><a id="ctl00_AlsoRead_RelatedResults_ctl06_Link" href="http://www.codeproject.com/Articles/23/SAPrefs-Netscape-like-Preferences-Dialog">SAPrefs - Netscape-like Preferences Dialog</a></div>
+                
+            </div>
+        </td>
+	    </tr>
+	
+		</tbody></table>
+	
+
+
+
+				
+				
+
+					<h2>Comments and Discussions</h2>
+					<a class="float-left" name="_comments" id="_comments">&nbsp;</a><div id="_MessageBoardctl00_MessageBoard" onclick="return SwitchMessage(event, null)">
+<table id="ForumTable" class="forum relaxed" cellpadding="0" cellspacing="0">
+<tbody><tr>
+<td><table border="0" cellpadding="3px" cellspacing="0" width="100%">
+<tbody><tr class="header1">
+<td colspan="2" style="white-space:nowrap;"><div class="container">
+<div class="button new-message compose float-left" onclick="FireNew(this)">
+<a rel="nofollow" href="http://www.codeproject.com/script/Forums/Edit.aspx?fid=1887876&amp;floc=/Articles/1009582/Building-a-search-engine-with-Strus-tutorial" name="Frm_HoverNL" target="_top">Add a Comment or Question&nbsp;</a>
+</div><div class="admin-links float-left align-middle" style="width:60px;line-height:24px;margin-top:4px;">
+&nbsp;<a href="http://www.codeproject.com/KB/FAQs/MessageBoardsFAQ.aspx"><img src="article_files/help_sm.png" title="FAQ" alt="FAQ" style="border-width:0;width:16px;height:16px;vertical-align:middle;"></a>&nbsp;<a rel="nofollow" href="http://www.codeproject.com/script/Forums/DownloadMessages.aspx?fid=1887876"><img src="article_files/download_sm.png" title="Download the first 500 Messages" style="vertical-align:middle;width:16px;height:16px;border:0"></a>
+</div><div class="float-right">
+<form action="/Search.aspx?sbo=fm" method="get" class="searchbar">
+<input name="fid" value="1887876" type="hidden"><input name="sbo" value="fm" type="hidden"><b>Search Comments </b><input class="search" name="qf" type="search">&nbsp;<input value="Go" class="button" type="submit">
+</form>
+</div>
+</div></td>
+</tr><tr class="header2">
+<td></td><td style="width:100%;"><div style="text-align:right;">
+<form action="/script/Forums/SetOptions.aspx?floc=%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial&amp;fid=1887876" method="get" style="margin:0;padding:0;">
+<input name="fid" value="1887876" type="hidden"><input name="currentQS" value="?floc=%2fArticles%2f1009582%2fBuilding-a-search-engine-with-Strus-tutorial&amp;fid=1887876" type="hidden"><input name="floc" value="/Articles/1009582/Building-a-search-engine-with-Strus-tutorial" type="hidden"><input name="prof" id="prof" style="vertical-align:middle;" type="checkbox"><label for="prof">Profile popups</label>&nbsp;&nbsp;&nbsp;&nbsp;Spacing<select size="1" class="dropdown" name="spc">
+<option selected="selected" value="Relaxed">Relaxed</option><option value="Compact">Compact</option><option value="Tight">Tight</option>
+</select>&nbsp;&nbsp;Layout<select size="1" class="dropdown" name="view">
+<option selected="selected" value="Normal">Normal</option><option value="Topic">Open Topics</option><option value="Expanded">Open All</option><option value="Thread">Thread View</option>
+</select>&nbsp;&nbsp;Per page<select size="1" class="dropdown" name="mpp">
+<option value="10">10</option><option selected="selected" value="25">25</option><option value="50">50</option>
+</select>&nbsp;&nbsp;&nbsp;<input value="Update" name="SetOpt" class="button" type="submit">
+</form>
+</div></td>
+</tr>
+</tbody></table></td>
+</tr><tr>
+<td><a name="xx0xx"></a><table border="0" cellpadding="2px" cellspacing="0" width="100%">
+<tbody><tr class="navbar">
+<td></td><td style="text-align:right;width:50%;"></td><td style="text-align:right;white-space:nowrap;"><span class="nav-link disabled">First</span> <span class="nav-link disabled">Prev</span> <span class="nav-link disabled">Next</span></td>
+</tr>
+</tbody></table></td>
+</tr><tr>
+<td><table class="fixed-layout blank-background" border="0" cellpadding="0" cellspacing="0" width="100%">
+<tbody><tr>
+<td><img src="article_files/t.gif" alt="" border="0" height="5px" width="1px"></td>
+</tr><tr id="F5092640_h0" class="header hover-row root">
+<td class="subject-line normal " width="100%"><table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tbody><tr>
+<td class="indent" width="20px"><a name="xx5092640xx"></a><img src="article_files/msg_question.gif" alt="Question" align="top" height="16px" width="16px"></td><td class="subject hover-container"> <span class="button-group"></span><a class="message-link" name="5092640" parent="0" thread="5092640" href="http://www.codeproject.com/Messages/5092640/where-is-cpp.aspx">where is cpp?</a> <a onclick="return Pin(this);" rel="nofollow" href="#" title="Click to pin message"><img src="article_files/pin.png" alt="Pin" align="top" border="0" height="13px" width="13px"></a><div class="mobile-only">
+	<span class="author">vvidov</span><span class="date">16-Jul-15  8:28</span>
+</div></td><td class="icon"><img src="article_files/icn-member-16.gif" title="member" alt="member" border="0" height="16px"></td><td class="author"><span><a href="http://www.codeproject.com/script/Membership/View.aspx?mid=36272">vvidov</a></span></td><td class="date"><span>16-Jul-15  8:28&nbsp;</span></td>
+</tr>
+</tbody></table></td>
+</tr><tr id="F5092640_h1" class="content root selected" style="display:none;">
+<td class="normal" width="100%"><table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tbody><tr valign="top">
+<td class="indent align-right" style="width:20px;"><div done="true" class="voteform vertical" ownerid="36272" msgid="5092640" votingtype="GoodOrBad"><a href="#xx5092640xx" onclick="RateMsg(36272,5092640,5,0);"><img src="article_files/upvote16.png" alt="upvote" title="upvote" align="absmiddle" border="0" height="16px" width="16px"></a>
+<br><a href="#xx5092640xx" onclick="RateMsg(36272,5092640,1,0);"><img src="article_files/downvote16.png" alt="downvote" title="downvote" align="absmiddle" border="0" height="16px" width="16px"></a>
+</div><img src="article_files/t.gif" alt="" height="1px" width="20px"></td><td class="text"><table border="0" cellpadding="0" cellspacing="5px" width="100%">
+<tbody><tr>
+<td><table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tbody><tr>
+<td colspan="2">where is cpp?<br></td>
+</tr><tr class="footer" style="vertical-align:top;">
+<td><a class="new-message" href="http://www.codeproject.com/script/Forums/Edit.aspx?fid=1887876&amp;select=5092640&amp;floc=/Articles/1009582/Building-a-search-engine-with-Strus-tutorial&amp;action=r" title="Reply">Reply</a>·<wbr><a class="nav-link" href="http://www.codeproject.com/script/Forums/Edit.aspx?fid=1887876&amp;select=5092640&amp;floc=/Articles/1009582/Building-a-search-engine-with-Strus-tutorial&amp;action=e" title="Email">Email</a>·<wbr><a href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial?fid=1887876&amp;tid=5092640" title="View&nbsp;Thread">View&nbsp;Thread</a>·<wbr><a href="http://www.codeproject.com/Messages/5092640/where-is-cpp.aspx" title="Get permanent link">Permalink</a>·<wbr><a href="http://www.codeproject.com/script/Bookmarks/Add.aspx?obid=5092640&amp;obtid=3&amp;action=AddBookmark&amp;bio=false&amp;bis=small" title="Bookmark this post" onclick="return bookmarkMe(0,0,'/script/Bookmarks/Ajax/Add.aspx?obid=5092640&amp;obtid=3&amp;action=AddBookmark&amp;bio=false&amp;bis=small',false, this, this);">Bookmark</a></td><td style="text-align:right;"><span id="MVF5092640" data-ref="3_5092640" class="rating-label" style="white-space:nowrap;"><span class="reportform" ownerid="36272" msgid="5092640"></span></span></td>
+</tr>
+</tbody></table></td>
+</tr>
+</tbody></table></td>
+</tr>
+</tbody></table></td>
+</tr><tr id="F5092914_h0" class="header hover-row">
+<td class="subject-line normal " width="100%"><table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tbody><tr>
+<td class="indent" width="38px"><a name="xx5092914xx"></a><img src="article_files/msg_answer.gif" alt="Answer" align="top" height="16px" width="16px"></td><td class="subject hover-container"> <span class="button-group"></span><a class="message-link" name="5092914" parent="5092640" thread="5092640" href="http://www.codeproject.com/Messages/5092914/Re-where-is-cpp.aspx">Re: where is cpp?</a> <a onclick="return Pin(this);" rel="nofollow" href="#" title="Click to pin message"><img src="article_files/pin.png" alt="Pin" align="top" border="0" height="13px" width="13px"></a><div class="mobile-only">
+	<span class="author">Member 11836984</span><span class="date">16-Jul-15  16:21</span>
+</div></td><td class="icon"><img src="article_files/icn-member-16.gif" title="member" alt="member" border="0" height="16px"></td><td class="author"><span><a href="http://www.codeproject.com/script/Membership/View.aspx?mid=11836984">Member 11836984</a></span></td><td class="date"><span>16-Jul-15  16:21&nbsp;</span></td>
+</tr>
+</tbody></table></td>
+</tr><tr id="F5092914_h1" class="content selected" style="display:none;">
+<td class="normal" width="100%"><table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tbody><tr valign="top">
+<td class="indent align-right" style="width:38px;"><div done="true" class="voteform vertical" ownerid="11836984" msgid="5092914" votingtype="GoodOrBad"><a href="#xx5092914xx" onclick="RateMsg(11836984,5092914,5,0);"><img src="article_files/upvote16.png" alt="upvote" title="upvote" align="absmiddle" border="0" height="16px" width="16px"></a>
+<br><a href="#xx5092914xx" onclick="RateMsg(11836984,5092914,1,0);"><img src="article_files/downvote16.png" alt="downvote" title="downvote" align="absmiddle" border="0" height="16px" width="16px"></a>
+</div><img src="article_files/t.gif" alt="" height="1px" width="38px"></td><td class="text"><table border="0" cellpadding="0" cellspacing="5px" width="100%">
+<tbody><tr>
+<td><table border="0" cellpadding="0" cellspacing="0" width="100%">
+<tbody><tr>
+<td colspan="2"><div class="parent"><a rel="nofollow" onclick="return SwitchMessage(null,5092640);" href="http://www.codeproject.com/Messages/5092640/where-is-cpp.aspx"><img src="article_files/arrow-up24.png" title="Go to Parent" style="width:16px;height:16px;border:0"></a></div>You can clone the projects from my github repositories (the ones starting with strus*):<br>
+    https://github.com/patrickfrey?tab=repositories<br>
+<br>
+git clone ...<br>
+git@github.com:patrickfrey/strus.git              (storage+query eval)<br>
+git@github.com:patrickfrey/strusAnalyzer.git      (analyzer aka indexer) <br>
+git@github.com:patrickfrey/strusModule.git        (loading of components as modules)<br>
+git@github.com:patrickfrey/strusRpc.git           (RPC client/server)<br>
+git@github.com:patrickfrey/strusUtilities.git     (command line tools)<br>
+git@github.com:patrickfrey/strusBindings.git      (language bindings based on SWIG)<br>
+git@github.com:patrickfrey/strusDocker.git        (docker image sources)<br>
+<br>
+See http://www.project-strus.net/projects.htm for a description of these
+ projects and the dependencies. The docker images can also be used to 
+see how the software has to be built.<br>
+<br>
+An installation guide can be found at http://www.project-strus.net/installation.htm.<br></td>
+</tr><tr class="footer" style="vertical-align:top;">
+<td><a class="new-message" href="http://www.codeproject.com/script/Forums/Edit.aspx?fid=1887876&amp;select=5092914&amp;floc=/Articles/1009582/Building-a-search-engine-with-Strus-tutorial&amp;action=r" title="Reply" onclick="return SelfCheck();">Reply</a>·<wbr><a class="nav-link" href="http://www.codeproject.com/script/Forums/Edit.aspx?fid=1887876&amp;select=5092914&amp;floc=/Articles/1009582/Building-a-search-engine-with-Strus-tutorial&amp;action=e" title="Email">Email</a>·<wbr><a href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial?fid=1887876&amp;tid=5092640" title="View&nbsp;Thread">View&nbsp;Thread</a>·<wbr><a href="http://www.codeproject.com/Messages/5092914/Re-where-is-cpp.aspx" title="Get permanent link">Permalink</a>·<wbr><a href="http://www.codeproject.com/script/Bookmarks/Add.aspx?obid=5092914&amp;obtid=3&amp;action=AddBookmark&amp;bio=false&amp;bis=small" title="Bookmark this post" onclick="return bookmarkMe(0,0,'/script/Bookmarks/Ajax/Add.aspx?obid=5092914&amp;obtid=3&amp;action=AddBookmark&amp;bio=false&amp;bis=small',false, this, this);">Bookmark</a> | <a href="http://www.codeproject.com/script/Forums/Edit.aspx?fid=1887876&amp;select=5092914&amp;floc=/Articles/1009582/Building-a-search-engine-with-Strus-tutorial&amp;action=m">Edit</a>·<wbr><a href="http://www.codeproject.com/script/Forums/Edit.aspx?fid=1887876&amp;select=5092914&amp;floc=/Articles/1009582/Building-a-search-engine-with-Strus-tutorial&amp;action=d">Delete</a></td><td style="text-align:right;"><span id="MVF5092914" data-ref="3_5092914" class="rating-label" style="white-space:nowrap;"></span></td>
+</tr>
+</tbody></table></td>
+</tr>
+</tbody></table></td>
+</tr>
+</tbody></table></td>
+</tr>
+</tbody></table></td>
+</tr><tr>
+<td><img src="article_files/t.gif" alt="" border="0" height="5px" width="1px"></td>
+</tr><tr>
+<td><table cellpadding="2px" cellspacing="0" width="100%">
+<tbody><tr class="footer">
+<td><span class="last-visit desktop-only tablet-only">Last Visit: 23-Nov-15  8:36 &nbsp; &nbsp; Last Update: 23-Nov-15  4:22</span></td><td><a rel="nofollow" href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial?fid=1887876">Refresh</a></td><td style="text-align:right;white-space:nowrap;"><input id="_mbnUrl" value="/Articles/1009582/Building-a-search-engine-with-Strus-tutorial?fid=1887876&amp;fr=3" type="hidden"><span class="nav-link selected">1</span></td>
+</tr>
+</tbody></table></td>
+</tr>
+</tbody></table>
+</div><p class="small-text"><img src="article_files/msg_general.gif" alt="General" align="top" height="16px" width="16px"> General &nbsp;&nbsp; <img src="article_files/msg_news.gif" alt="News" align="top" height="16px" width="16px"> News &nbsp;&nbsp; <img src="article_files/msg_idea.gif" alt="Suggestion" align="top" height="16px" width="16px"> Suggestion &nbsp;&nbsp; <img src="article_files/msg_question.gif" alt="Question" align="top" height="16px" width="16px"> Question &nbsp;&nbsp; <img src="article_files/msg_bug.gif" alt="Bug" align="top" height="16px" width="16px"> Bug &nbsp;&nbsp; <img src="article_files/msg_answer.gif" alt="Answer" align="top" height="16px" width="16px"> Answer &nbsp;&nbsp; <img src="article_files/msg_joke.gif" alt="Joke" align="top" height="16px" width="16px"> Joke &nbsp;&nbsp; <img src="article_files/msg_kudos.gif" alt="Praise" align="top" height="16px" width="16px"> Praise &nbsp;&nbsp; <img src="article_files/msg_rant.gif" alt="Rant" align="top" height="16px" width="16px"> Rant &nbsp;&nbsp; <img src="article_files/msg_admin.gif" alt="Admin" align="top" height="16px" width="16px"> Admin &nbsp;&nbsp; </p><p class="small-text">Use Ctrl+Left/Right to switch messages, Ctrl+Up/Down to switch threads, Ctrl+Shift+Left/Right to switch pages.</p>
+				
+
+			</div>
+			
+		</td>
+		<td class="article-wing-right" width="170px">
+			<div id="ctl00_RightSideBar" class="container-article-info">
+
+                <div id="RHSticky" class="container-article-info-sticky">
+        			
+
+
+<div class="article-summary">
+
+    
+
+
+    
+
+    
+
+    
+</div>
+
+				    
+
+				    <div style="width:160px;margin: 10px auto;">
+					    <div class="msg-160x600" data-format="160x600" data-type="ad" data-publisher="lqm.codeproject.site" data-zone="Platforms-Frameworks-Libraries/Libraries/Code-Projects" data-tags="C++, Architect, Dev, Linux, PHP, search,rating4.5"><noscript><a href="http://ad.doubleclick.net/N6839/jump/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=160x600;ord=635838457771543170?"><img src="http://ad.doubleclick.net/N6839/ad/lqm.codeproject.site/Platforms-Frameworks-Libraries/Libraries/Code-Projects;sz=160x600;ord=635838457771543170?"  width="160px" height="600px" /></a></noscript></div>
+				    </div>
+
+                    
+
+				    
+
+				    
+
+				    
+
+                    <div class="anchorLink gototop" id="gototop">
+                        <a id="ctl00_GoToTop" href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial#_articleTop">Go to top</a>
+                    </div>
+
+				</div>
+
+			</div>
+		</td>
+		</tr></tbody></table>
+
+		
+		<div class="theme1-background" style="height:2px" id="stickyStop"></div>
+
+		<div class="extended tiny-text">
+			<div class="row">
+				<div class="float-left">
+					<a id="ctl00_PermaLink" itemprop="url" href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial">Permalink</a> | 
+					<a id="ctl00_AdvertiseLink" href="http://developermedia.com/">Advertise </a> |
+					<a id="ctl00_PrivacyLink" href="http://www.codeproject.com/info/privacy.aspx">Privacy</a> |
+                    <a id="ctl00_TermsOfUseLink" href="http://www.codeproject.com/info/TermsOfUse.aspx">Terms of Use</a> |
+					<a id="ctl00_Mobile">Mobile</a>
+					<br>
+								
+					
+					Web03 |
+					2.8.151120.1 |
+					Last Updated 15 Nov 2015								
+				</div>
+
+                <div id="ctl00_GoogleTranslate" class="translate float-left"><div style="" dir="ltr" class="skiptranslate goog-te-gadget"><div class="goog-te-gadget-simple" style="white-space: nowrap;" id=":0.targetLanguage"><img style="background-image: url(&quot;https://translate.googleapis.com/translate_static/img/te_ctrl3.gif&quot;); background-position: -65px 0px;" class="goog-te-gadget-icon" src="article_files/cleardot.gif"><span style="vertical-align: middle;"><a href="javascript:void(0)" class="goog-te-menu-value"><span>Select Language</span><img src="article_files/cleardot.gif" height="1" width="1"><span style="border-left: 1px solid rgb(187, 187, 187);">​</span><img src="article_files/cleardot.gif" height="1" width="1"><span style="color: rgb(155, 155, 155);">▼</span></a></span></div></div></div>      
+
+				<div class="float-right align-right">
+					Article Copyright 2015 by Patrick P. Frey<br>Everything else
+					Copyright © <a href="mailto:webmaster@codeproject.com">CodeProject</a>, 1999-2015 <br>
+				</div>
+
+				
+
+
+<div class="page-width">
+Layout: <a id="ctl00_PageWidth_FixedT" title="Fixed width layout" rel="nofollow" class=" active" href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial?PageFlow=FixedWidth">fixed</a>
+|
+<a id="ctl00_PageWidth_FluidT" title="Fluid layout" rel="nofollow" href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial?PageFlow=Fluid">fluid</a>
+</div>
+
+
+
+			</div>
+		</div>
+		
+
+		<br clear="all">
+		
+			
+
+	</div> 
+	</div>
+</div>
+
+
+<div style="display:none;" id="dm_AdTable">
+	
+</div>
+<img id="ctl00_Audience" src="article_files/DFPAudiencePixel.gif" style="border-width:0px;height:1px;width:1px;">
+
+
+
+<script type="text/javascript" language="Javascript" src="article_files/jquery.js"></script><script type="text/javascript">//<![CDATA[
+if (typeof jQuery == 'undefined') {
+    document.write(unescape("%3Cscript src='/script/JS/jquery-1.6.2.min.js' type='text/javascript' %3E%3C/script%3E"));
+}//]]></script>
+<script type="text/javascript" language="Javascript" src="article_files/article.js"></script>
+<script type="text/javascript" language="Javascript" src="article_files/element.js"></script>
+<script type="text/javascript" language="Javascript" src="article_files/navbar.js"></script>
+<script type="text/javascript" language="Javascript" src="article_files/Notifications.js"></script>
+<script type="text/javascript" language="Javascript">//<![CDATA[
+$(document).ready(function () { processCodeBlocks.Initialise('#contentdiv'); });
+function googleTranslateElementInit() {  new google.translate.TranslateElement({   pageLanguage: 'en',   layout: google.translate.TranslateElement.InlineLayout.SIMPLE,   autoDisplay: false,   gaTrack: true,   gaId: 'UA-1735123-1'},  'ctl00_GoogleTranslate');}
+$(document).ready(function() { anchorAnimate();
+$('#RHSticky').sticky($('#stickyStop'));
+$('#ctl00_Nav').sticky($('#stickyStop'));
+});
+var notificationAlert = new NotificationAlert('ctl00_MemberMenu_Messages_NotificationCount','Notifications','/script/Membership/Ajax/NotificationList.aspx');
+notificationAlert.initialise();
+var oSrchFlt = false, oSrchBox=false,srchBoxFoc=false;
+$(document).ready(function() {
+ if(InitWatermark)InitWatermark('sb_tb', 'Search for articles, questions, tips');
+ var sbar = $('#sb_tb'); 
+ var sfilter = $('#SearchFilter');
+ if (sbar && sfilter) {
+  sfilter.removeClass('popup'); sfilter.hide(); sfilter.removeClass('open');
+  sbar.blur(function() {
+ if (!oSrchFlt) {sfilter.hide(); sfilter.removeClass('open');}
+ srchBoxFoc=false;
+ });
+  sbar.focus(function() {
+ oSrchFlt=false; srchBoxFoc=true;
+ sfilter.show(); sfilter.addClass('open');
+ });
+  sbar.mouseleave(function() { oSrchBox=false; });
+  sbar.mouseover(function() { oSrchBox=true; });
+  sfilter.mouseleave(function() { oSrchFlt=false; if (!srchBoxFoc&&!oSrchBox) { sfilter.hide(); sfilter.removeClass('open'); }});
+  sfilter.mouseover(function() { oSrchFlt=true; });
+ }
+});
+$('#clear-rate_ctl00_RateArticle_RCD').click(function () {    $('#ctl00_RateArticle_RCD').hide(); return false;});$("#ctl00_RateArticle_RateItemWrapper")   .removeClass("container-rating")   .hover( function() { $('#ctl00_RateArticle_RCD').fadeIn('fast'); },            function() { $('#ctl00_RateArticle_RCD').fadeOut('fast'); } );
+function PostBack_ctl00_RateArticle_RateItemWrapper() {
+  return rateItem(1009582,2,1,true,true,0,'LargeStars');
+}
+
+                        function getVotesHistogram(objectId, objectTypeId, containerId, loadingId) {
+                            if (!$('#' + containerId).attr('alreadyRequested')){
+                                $.ajax({
+                                    url: '/script/Ratings/Ajax/Histogram.aspx?obid=' + objectId + '&obtid='+objectTypeId,
+                                    success: function (data) {
+                                        $('#' + containerId).html(data);
+                                        $('#' + loadingId).hide();
+                                    }
+                                });
+                                $('#' + containerId).attr('alreadyRequested', 'true');
+                            }
+                        }
+$(document).ready(function() {   new starRating('#ctl00_RateArticle_VoteFormDiv', PostBack_ctl00_RateArticle_RateItemWrapper,'ctl00_RateArticle');
+  $('#ctl00_RateArticle_RB').mouseenter(function() {     getVotesHistogram(1009582,2   ,'ctl00_RateArticle_Histogram','ctl00_RateArticle_Loading');  })})
+$(document).ready(function() { $('#ctl00_RateArticle_SubmitRateBtn').hide(); });
+$(document).ready(function() { $('#ctl00_RateArticle_SubmitRateBtn').hide(); });function ChkRtctl00_RateArticle(val) {}
+
+forumDir = '/script/Forums/';
+allowReporting = false;
+allowRating = true;
+allowRatingDisplay = true;
+var smoothScroll = true;
+Selected        = -1;
+oldTitle        = document.title;
+minMessageScore = 1;
+minMessageScore = 5;
+abuseScore      = -2;
+spamScore       = -1;
+getRatingUrl    = '/script/Ratings/Ajax/GetRatings.aspx';
+getRatingRefKey = 'obrs';
+
+
+//]]>
+</script>
+
+
+
+<canvas id="cv1" width="1px" height="1px" style="position:absolute;left:0;top:0;pointer-events:none"></canvas><div id="goog-gt-tt" class="skiptranslate" dir="ltr"><div style="padding: 8px;"><div><div class="logo"><img src="article_files/translate_24dp.png" height="20" width="20"></div></div></div><div class="top" style="padding: 8px; float: left; width: 100%;"><h1 class="title gray">Original text</h1></div><div class="middle" style="padding: 8px;"><div class="original-text"></div></div><div class="bottom" style="padding: 8px;"><div class="activity-links"><span class="activity-link">Contribute a better translation</span><span class="activity-link"></span></div><div class="started-activity-container"><hr style="color: #CCC; background-color: #CCC; height: 1px; border: none;"><div class="activity-root"></div></div></div><div style="display: none;" class="status-message"></div></div><canvas id="cv2" width="1px" height="1px" style="position:absolute;left:0;top:0;pointer-events:none"></canvas><iframe style="visibility: visible; box-sizing: content-box; width: 860px; height: 274px; display: none;" class="goog-te-menu-frame skiptranslate" frameborder="0"></iframe></body></html>

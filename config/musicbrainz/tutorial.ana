@@ -20,3 +20,5 @@
 [MetaData]
 	date = date2int("d 1877-01-01", "%Y-%m-%d %H:%M:%s *") content /list/item/date();
 
+[Aggregator]
+	doclen = count(word);
