@@ -45,49 +45,50 @@ You can complete this tutorial also without any knowledge, but it will hardly be
 much more mature out of the box solutions available for you in this case.
 </p>
 
+<h2>Sources</h2>
+<p>The sources introduced in this tutorial are organized in "steps" as the tutorial. 
+So the source file <i>strusIR.py</i> shown in step 6 is in <i>src/step6/strusIR.py</i> of the
+source tarball or in <i>/home/strus/src/step6/strusIR.py</i> of the docker image.
+
 <h2>Introduction</h2>
 <p>
 The artificial collection for this tutorial is a list of 201 countries and the languages spoken there.
-Additionaly every country is assigned to a continent.
+Additionally every country is assigned to a continent.
 First we will inspect an information retrieval query with
 <a href="http://en.wikipedia.org/wiki/Okapi_BM25">BM25</a> as query evaluation scheme,
 searching for languages and getting a ranked list of countries.
 Then we will have a look at an example of weighting entities appearing in matching documents,
 searching for languages and getting a ranked list of continents.
 <br/>
-The Strus demo project, a search on the
-<a href="http://demo.project-strus.net">complete Wikipedia collection (English)</a>
-will get you an idea of the real information need behind these examples. The second weighting scheme
-ranking entities appearing in matching documents, that is introduced in this tutorial, is called 
-NBLNK there. The NBLNK retrieval method of the Wikipedia demo ranks links in documents that are 
-occurring in sentences that match to the query.
-Try <a href="http://demo.project-strus.net/evalQuery.php?q=hypertext&n=20&s=NBLNK">the example query "hypertext"</a>.
+The weighting scheme extracting and weighting the entities is originating from the NBLNK
+weighting scheme of the strus demo project, a search on the <a href="http://demo.project-strus.net">complete Wikipedia collection (English)</a>.
+The NBLNK retrieval method of the Wikipedia demo ranks links in documents that are 
+occurring in sentences that match to the query. The original source (PHP) can be found
+<a href="http://demo.project-strus.net/show_evalQuery.php">here</a>.
 <br/>
-The weighting scheme for extracting entities will look very complicated for the example task
-(extracting continents). For illustrating the power of Strus in term of extracting and weighting
-entities in expressions, the full Wikipedia NBLNK weighting method is introduced.
-Looking at the example collection and the query, this is like using a sledge-hammer to crack a nut.
+Looking at the example collection and the query, the NBLNK as well as the BM25 weighting 
+scheme are a little bit like using a sledge-hammer to crack a nut. But it is still difficult to
+find a good test collection for a tutorial.
 </p>
 
 <h2>Glossary</h2>
 <p>In this tutorial you will encounter several terms that have a specific definition in Strus:
 <ol>
-<li><b>Posting</b>: Contrary to most other search engines postings describe pairs <i>(d,p)</i>
-of cardinal numbers, where <i>d</i> refers to a document and <i>p</i> to a position
-(word count, not byte position). The model of set operations is described on the boolean algebra of
-sets of pairs <i>(d,p)</i> rather than the boolean algebra of sets of document numbers with position
-information as related information.
-The implementation is of course very similar to other engines. You cannot do things too differently
-without falling into performance holes, that are the same for all implementing such engines.
+<li><b>Posting</b>: Postings describe pairs <i>(d,p)</i> of cardinal numbers, where <i>d</i> 
+refers to a document and <i>p</i> to a position (word count, not byte position).
+This definition is purely formal. The sets of postings describe the domain of the functions
+that form the expressions we use for retrieval. The basic structure Strus operates on is
+the <a href="https://en.wikipedia.org/wiki/Boolean_algebra">Boolean algebra</a>
+of sets of pairs <i>(d,p)</i> with some n-ary functions added.
 </li>
 <li><b>Weighting function</b>: Function that assigns a numerical weight (double precision floating point number)
-to documents. Weighing functions are parameterized and use iterators on the postings of query expressions
+to documents. Weighing functions are parameterized and use iterators on the sets of postings of query expressions
 to calculate the weight.
 </li>
 <li><b>Summarizer</b>: A function to extract content of a document for presentation of further processing.
 </li>
 <li><b>Term expression</b>: An arbitrary complex expression represented as tree with typed terms as leaves.
-An expression is built from typed terms and n-ary functions on the postings of term sub expressions.
+An expression is built from typed terms and n-ary functions on the sets of postings of term sub expressions.
 </li>
 <li><b>Feature</b>: A feature (or query feature) is associating some <i>term expression</i> with a weight and 
 a name of a set to address it. Objects that reference features are for example <i>weighting functions</i>
@@ -214,7 +215,7 @@ if __name__ == "__main__":
 </pre>
 <p>
 It consists of three parts: The main program that runs the server [3].
-The application dispacher that selects a handler based on URL patterns [2]
+The application dispatcher that selects a handler based on URL patterns [2]
 and a list or request handlers used in the application [1].
 If we start this program in a source file <u>strusServer.py</u> with the following command:
 </p>
@@ -374,7 +375,6 @@ import tornado.ioloop
 import tornado.web
 import os
 import sys
-import time
 <font color='green'>import strusIR
 
 # Declare the information retrieval engine:
@@ -429,7 +429,7 @@ class QueryHandler(tornado.web.RequestHandler):
 				results = backend.evaluateQueryText(
 						querystr, firstrank, nofranks)
 				self.render(
-					"search_html.tpl",
+					"search_bm25_html.tpl",
 					scheme=scheme, querystr=querystr,
 					firstrank=firstrank, nofranks=nofranks,
 					results=results)
@@ -453,7 +453,7 @@ class QueryHandler(tornado.web.RequestHandler):
 </pre>
 
 <h2>Step 7: Call the server</h2>
-<p>Our server definition is now complete. Have a look at the <a href="./show_strusServer.php">complete server source</a>.
+<p>Our server definition is now complete.
 <br/>
 Now we can start the server and issue a query. We started the docker image with the port 40000 
 mapped to the docker image port 80. So we can issue the GET request 
@@ -464,7 +464,7 @@ http://127.0.0.1:40000/query?q=german&i=0&n=12&s=BM25
 <p>
 with our favorite web browser. You get the following results from our dummy implementation of the
 retrieval engine:
-<img border=2 style="display:block;" width="60%" src="dummy_result_bm25.jpg" alt="dummy result BM25"/>
+<img border=2 style="display:block;" width="60%" src="tutorial1.jpg" alt="dummy result BM25"/>
 </p>
 <p>or if you search with NBLNK with this query string:
 <pre>
@@ -472,7 +472,7 @@ http://127.0.0.1:40000/query?q=german&i=0&n=12&s=NBLNK
 </pre>
 </p>
 <p>you get
-<img border=2 style="display:block;" width="60%" src="dummy_result_nblnk.jpg" alt="dummy result NBLNK"/>
+<img border=2 style="display:block;" width="60%" src="tutorial2.jpg" alt="dummy result NBLNK"/>
 </p>
 
 <h2>Step 8: Define the real information retrieval engine with Strus</h2>
@@ -537,7 +537,7 @@ def createQueryAnalyzer(self):
 <ol>
 <li>The document text selector expressions (2nd parameter of defineDocument, addSearchIndexFeature,
 addForwardIndexFeature, defineAttribute) are used to address the parts of the document to process. The syntax
-and semantics of selector expressions is dependend of the document segmenter you use. The
+and semantics of selector expressions is dependent of the document segmenter you use. The
 default document segmenter used is an XML segmenter based on the <a href="http://www.textwolf.net">textwolf library</a>.
 It uses an expression syntax derived from <a href="https://en.wikipedia.org/wiki/XPath#Abbreviated_syntax">abbreviated syntax of XPath</a>.
 Another segmenter for another document format might define selection expressions differently.
@@ -574,7 +574,7 @@ The definition of the weighting scheme configuration for BM25 in our case look a
 # as summarization attributes:
 def createQueryEvalBM25(self):
 	rt = self.context.createQueryEval()
-	# Declare sentence marker feature needed for summarization:
+	# Declare the sentence marker feature needed for summarization:
 	rt.addTerm( "sentence", "sent", "")
 	# Declare the feature used for selecting result candidates:
 	rt.addSelectionFeature( "selfeat")
@@ -630,7 +630,7 @@ summarizers to present the results look as follows:
 # entities in the same sentence as matches as query evaluation result:
 def createQueryEvalNBLNK(self):
 	rt = self.context.createQueryEval()
-	# Declare sentence marker feature needed for the 
+	# Declare the sentence marker feature needed for the 
 	# summarization features extracting the entities:
 	rt.addTerm( "sentence", "sent", "")
 	# Declare the feature used for selecting result candidates:
@@ -748,14 +748,52 @@ tornado templates).
 </p>
 
 <h3>The method evaluate a query weighting matching document entities</h3>
-<p>The method for extracting and weighting entities from our example documents 
-and its helper methods look as follows:
+<p>The method for extracting and weighting entities from our example documents
+is constructing expression features for the extracting summarizer from pairs of query 
+features or from one term in case of a single term query. For the construction
+of expression features from pairs of query features two cases are considered:
+If one of the terms is immediately following the other, there is also an 
+expression built, that is searching for the immediate sequence in document sentences.
+The summarizer features built from these sequence expressions get the highest weight.
+For all the terms whether they are neighbours in the query or not, we construct
+expressions searching for features in a distance of 5 or 20 (word count distance) in the same sentence.
+For neighbour terms in the query the features built from these expressions get a slightly
+higher weight.
+<br/>All these summarizer feature expressions also search for a link inside a distance of 
+50 (word count distance) inside the same sentence. A variable is attached to this link,
+that is extracted by the summarizer accumulating the weights of all links.
+<br/>
+In Strus variable assignments are bound to one position of an expression match.
+Therefore the item extracted has to define the position of an expression match.
+So we build the summarizer feature expressions around the links we want to extract.
+The following expression shows one example feature built from "indigenous languages":
 </p>
 <pre>
+	sumexpr = [ "inrange_struct", 50, ["sent"],
+			["=CONTINENT", "continent_var"], 
+			[ "within_struct", 20,
+					["sent"],
+					["word", "indigenous"],
+					["word", "languages"]
+			]
+		]
+	query.defineFeature( "sumfeat", sumexpr, 1.0 )
+</pre>
+<p>
+translated this means: We look inside a structure delimited by sentence delimiters in a distance of maximum 50
+terms for a 'continent' with a variable 'CONTINENT' assigned and for a structure delimited by sentence delimiters 
+in a distance of maximum 20 terms for the words "indigenous" and "languages".
+</p>
+<p>
+We introduce now the helper methods to build these summarizer features and finally to the weighting scheme
+using these features to extract the continents:
+</p>
+<h4>The method to create the summarization features for neighbour terms in the query</h4>
+<pre>
 # Helper method to define the query features created from terms 
-# of the query string, that are following susequently in the query:
+# of the query string, that are subsequent in the query:
 def __defineSubsequentQueryTermFeatures( self, query, term1, term2):
-	# Pairs of terms appearing subsequently in the query are 
+	# Pairs of subsequent terms in the query are 
 	# translated into 3 query expressions:
 	#	1+2) search for sequence inside a sentence in documents.
 	#		The summarizer extracts entities within 
@@ -791,18 +829,21 @@ def __defineSubsequentQueryTermFeatures( self, query, term1, term2):
 	weight = [ 3.0, 2.0, 2.0, 1.5 ]
 	ii = 0
 	while ii < 4:
-		# The summarization expression attaches a variable referencing an
+		# The summarization expression attaches a variable referencing
 		# the entity to extract.
 		# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
 		sumexpr = [ "inrange_struct", 50, ["sent"],
 				["=CONTINENT", "continent_var"], expr[ ii] ]
 		query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
 		ii += 1
+</pre>
 
+<h4>The method to create the summarization features for non neighbour terms in the query</h4>
+<pre>
 # Helper method to define the query features created from terms 
-# of the query string, that are not following subsequently in the query:
+# of the query string, that are not subsequent in the query:
 def __defineNonSubsequentQueryTermFeatures( self, query, term1, term2):
-	# Pairs of terms not appearing subsequently in the query are 
+	# Pairs of non subsequent terms in the query are 
 	# translated into two query expressions:
 	#	1) search for the terms in a distance smaller than 5 inside
 	#		a sentence, weight 1.6,
@@ -829,7 +870,7 @@ def __defineNonSubsequentQueryTermFeatures( self, query, term1, term2):
 	weight = [ 1.6, 1.2 ]
 	ii = 0
 	while ii &lt; 2:
-		# The summarization expression attaches a variable referencing an
+		# The summarization expression attaches a variable referencing
 		# the entity to extract.
 		# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
 		sumexpr = [ "inrange_struct", 50, ["sent"],
@@ -837,18 +878,27 @@ def __defineNonSubsequentQueryTermFeatures( self, query, term1, term2):
 		query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
 		ii += 1
 
+</pre>
+
+<h4>The method to create the summarization features for a single term query</h4>
+<pre>
 # Helper method to define the query features created from a single
 # term query:
 def __defineSingleTermQueryFeatures( self, query, term):
 	# Single term query:
 	expr = [ term.type(), term.value() ]
-	# The summarization expression attaches a variable referencing an
+	# The summarization expression attaches a variable referencing
 	# the entity to extract.
 	# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
 	sumexpr = [ "inrange_struct", 50, ["sent"],
 			["=CONTINENT", "continent_var"] ]
 	query.defineFeature( "sumfeat", sumexpr, 1.0 )
 
+
+</pre>
+
+<h4>The query evaluation method</h4>
+<pre>
 # Query evaluation method that builds a ranked list from the best weighted entities
 # extracted from sentences with matches:
 def evaluateQueryEntities( self, querystr, firstrank, nofranks):
@@ -877,7 +927,7 @@ def evaluateQueryEntities( self, querystr, firstrank, nofranks):
 	else:
 		self.__defineSingleTermQueryFeatures( query, terms[0] )
 
-	# Define the selector ("selfeat") as the set of documents that contain all query terms:
+	# Define the selector ("selfeat") as the set of documents that contain all query terms
 	# and define the single term features for weighting and candidate evaluation ("docfeat"):
 	selexpr = ["contains"]
 	for term in terms:
@@ -917,7 +967,7 @@ def evaluateQueryEntities( self, querystr, firstrank, nofranks):
 </pre>
 
 <h3>The complete strusIR module</h3>
-<p>We can now have a look at the <a href="./show_strusIR.php">complete sources of our strusIR module</a>. 
+<p>Our strusIR module is now complete</a>. 
 </p>
 
 <h2>Step 9: Restart the server and insert the documents with CURL</h2>
@@ -954,7 +1004,7 @@ http://127.0.0.1:40000/query?q=spanish&i=0&n=12&s=BM25
 </pre>
 </p>
 <p>we get:
-<img border=2 style="display:block;" width="90%" src="result_bm25_spanish.jpg" alt="result BM25"/>
+<img border=2 style="display:block;" width="90%" src="tutorial3.jpg" alt="result BM25"/>
 </p>
 <p>or if you search with NBLNK with this query string:
 <pre>
@@ -962,8 +1012,13 @@ http://127.0.0.1:40000/query?q=spanish&i=0&n=12&s=NBLNK
 </pre>
 </p>
 <p>you get
-<img border=2 style="display:block;" width="60%" src="result_nblnk_spanish.jpg" alt="dummy result NBLNK"/>
+<img border=2 style="display:block;" width="60%" src="tutorial4.jpg" alt="dummy result NBLNK"/>
 </p>
+
+<h2>License</h2>
+<p>This article, along with any associated source code and files, is licensed under The GNU General Public License (GPLv3)
+</p>
+
 </body>
 </html>
 

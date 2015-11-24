@@ -4,12 +4,12 @@ import tornado.ioloop
 import tornado.web
 import os
 import sys
-import time
 import strusIR
 
-# Declare the information retrieval engine
+# Declare the information retrieval engine:
 backend = strusIR.Backend( "path=storage; cache=512M")
 
+# [1] Request handlers:
 # Declare the insert document handler (POST request with the multipart document as body):
 class InsertHandler(tornado.web.RequestHandler):
 	def post(self):
@@ -20,7 +20,7 @@ class InsertHandler(tornado.web.RequestHandler):
 		except Exception as e:
 			self.write( "ERR %s\n" % (e))
 
-# Declare the information retrieval query request handler:
+# Declare the query request handler:
 class QueryHandler(tornado.web.RequestHandler):
 	def get(self):
 		try:
@@ -42,8 +42,8 @@ class QueryHandler(tornado.web.RequestHandler):
 					firstrank=firstrank, nofranks=nofranks,
 					results=results)
 			elif scheme == "NBLNK":
-				# The evaluation scheme is weighting the links
-				# of matching sentences:
+				# The evaluation scheme is weighting the entity
+				# reference in the matching documents:
 				results = backend.evaluateQueryEntities(
 						querystr, firstrank, nofranks)
 				self.render(
@@ -59,26 +59,27 @@ class QueryHandler(tornado.web.RequestHandler):
 				message=e, scheme=scheme, querystr=querystr,
 				firstrank=firstrank, nofranks=nofranks)
 
-# Dispatcher:
+# [2] Dispatcher:
 application = tornado.web.Application([
-	(r"/insert",
-		InsertHandler),
-	(r"/query",
-		QueryHandler),
+	# /insert in the URL triggers the handler for inserting documents:
+	(r"/insert", InsertHandler),
+	# /query in the URL triggers the handler for answering queries:
+	(r"/query", QueryHandler),
+	# /static in the URL triggers the handler for accessing static 
+	# files like images referenced in tornado templates:
 	(r"/static/(.*)",tornado.web.StaticFileHandler,
 		{"path": os.path.dirname(os.path.realpath(sys.argv[0]))},)
 ])
 
-# Run the server:
+# [3] Server main:
 if __name__ == "__main__":
 	try:
 		print( "Starting server ...\n");
-		application.listen(8080)
-		print( "Listening on port 8080\n");
+		application.listen(80)
+		print( "Listening on port 80\n");
 		tornado.ioloop.IOLoop.current().start()
 		print( "Terminated\n");
 	except Exception as e:
 		print( e);
-
 
 
