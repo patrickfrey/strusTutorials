@@ -61,8 +61,9 @@ Then we will have a look at an example of weighting entities appearing in matchi
 searching for languages and getting a ranked list of continents.
 <br/>
 The weighting scheme extracting and weighting the entities is originating from the NBLNK
-weighting scheme of the strus demo project, a search on the <a href="http://demo.project-strus.net">complete Wikipedia collection (English)</a>.
-The NBLNK retrieval method of the Wikipedia demo ranks links in documents that are 
+weighting scheme of the <a href="http://demo.project-strus.net">Strus demo</a> project,
+a search on the complete Wikipedia collection (English).
+The NBLNK retrieval method there ranks links in documents that are 
 occurring in sentences that match to the query. The original source (PHP) can be found
 <a href="http://demo.project-strus.net/show_evalQuery.php">here</a>.
 <br/>
@@ -79,7 +80,7 @@ refers to a document and <i>p</i> to a position (word count, not byte position).
 This definition is purely formal. The sets of postings describe the domain of the functions
 that form the expressions we use for retrieval. The basic structure Strus operates on is
 the <a href="https://en.wikipedia.org/wiki/Boolean_algebra">Boolean algebra</a>
-of sets of pairs <i>(d,p)</i> with some n-ary functions added.
+of sets of pairs <i>(d,p)</i> with some n-ary functions on these sets added.
 </li>
 <li><b>Weighting function</b>: Function that assigns a numerical weight (double precision floating point number)
 to documents. Weighing functions are parameterized and use iterators on the sets of postings of query expressions
@@ -101,7 +102,7 @@ and <i>summarizers</i>.
 <p>
 To start the docker image typing the following command in your shell:
 <pre>
-docker run -p 40080:80 -t -i patrickfrey/strus-ub1404-torntuto:v2_0 /bin/bash
+docker run -p 40080:80 -t -i patrickfrey/strus-ub1404-torntuto:v0_2_4 /bin/bash
 </pre>
 </p>
 <p>
@@ -181,37 +182,37 @@ import sys
 
 # [1] Request handlers:
 class InsertHandler(tornado.web.RequestHandler):
-	def post(self):
-		pass;
-		#... insert handler implementation
+    def post(self):
+        pass;
+        #... insert handler implementation
 
 class QueryHandler(tornado.web.RequestHandler):
-	def get(self):
-		pass;
-		#... query handler implementation
+    def get(self):
+        pass;
+        #... query handler implementation
 
 # [2] Dispatcher:
 application = tornado.web.Application([
-	# /insert in the URL triggers the handler for inserting documents:
-	(r"/insert", InsertHandler),
-	# /query in the URL triggers the handler for answering queries:
-	(r"/query", QueryHandler),
-	# /static in the URL triggers the handler for accessing static 
-	# files like images referenced in tornado templates:
-	(r"/static/(.*)",tornado.web.StaticFileHandler,
-		{"path": os.path.dirname(os.path.realpath(sys.argv[0]))},)
+    # /insert in the URL triggers the handler for inserting documents:
+    (r"/insert", InsertHandler),
+    # /query in the URL triggers the handler for answering queries:
+    (r"/query", QueryHandler),
+    # /static in the URL triggers the handler for accessing static 
+    # files like images referenced in tornado templates:
+    (r"/static/(.*)",tornado.web.StaticFileHandler,
+        {"path": os.path.dirname(os.path.realpath(sys.argv[0]))},)
 ])
 
 # [3] Server main:
 if __name__ == "__main__":
-	try:
-		print( "Starting server ...\n");
-		application.listen(80)
-		print( "Listening on port 80\n");
-		tornado.ioloop.IOLoop.current().start()
-		print( "Terminated\n");
-	except Exception as e:
-		print( e);
+    try:
+        print( "Starting server ...\n");
+        application.listen(80)
+        print( "Listening on port 80\n");
+        tornado.ioloop.IOLoop.current().start()
+        print( "Terminated\n");
+    except Exception as e:
+        print( e);
 </pre>
 <p>
 It consists of three parts: The main program that runs the server [3].
@@ -229,7 +230,7 @@ Starting server ...
 
 Listening on port 80
 </pre>
-<p>... But it does not react to any command yet.
+<p>... But it does not react to any command yet, so we stop it again.
 </p>
 
 <h2>Step 5: Define the Tornado HTML templates to render the result</h2>
@@ -302,10 +303,10 @@ we map the <i>weight</i> and the <i>title</i>.</p>
   &lt;th align='left'&gt;Title&lt;/th&gt;
   &lt;/tr&gt;
   {% for result in results %}
-	&lt;tr&gt;
-	&lt;td&gt;{{ "%.4f" % result['weight'] }}&lt;/td&gt;
-	&lt;td&gt;{{ result['title'] }}&lt;/td&gt;
-	&lt;/tr&gt;
+    &lt;tr&gt;
+    &lt;td&gt;{{ "%.4f" % result['weight'] }}&lt;/td&gt;
+    &lt;td&gt;{{ result['title'] }}&lt;/td&gt;
+    &lt;/tr&gt;
   {% end %}
   &lt;/table&gt;
 {% end %}
@@ -319,8 +320,6 @@ we map the <i>weight</i> and the <i>title</i>.</p>
 {% block resultblock %}
 &lt;p&gt;&lt;font color="red"&gt;Error: {{message}}&lt;/font&gt;&lt;/p&gt;
 {% end %}
-&lt;/body&gt;
-&lt;/html&gt;
 </pre>
 
 
@@ -332,38 +331,38 @@ information retrieval engine:
 </p>
 <pre>
 class Backend:
-	# Constructor creating a local Strus context with the storage configuration 
-	# string passed as argument:
-	def __init__(self, config):
-		pass
+    # Constructor creating a local Strus context with the storage configuration 
+    # string passed as argument:
+    def __init__(self, config):
+        pass
 
-	# Insert a multipart document as described in step 2
-	# (doing nothing for the moment):
-	def insertDocuments( self, content):
-		return 0
+    # Insert a multipart document as described in step 2
+    # (doing nothing for the moment):
+    def insertDocuments( self, content):
+        return 0
 
-	# Query evaluation scheme for a classical information retrieval query
-	# with BM25 (returning a dummy ranked list with one element for now):
-	def evaluateQueryText( self, querystr, firstrank, nofranks):
-		rt = []
-		rt.append( {
-			'docno': 1,
-			'title': "test document",
-			'weight': 1.0,
-			'abstract': "Neque porro quisquam est qui dolorem ipsum ..."
-		})
-		return rt
+    # Query evaluation scheme for a classical information retrieval query
+    # with BM25 (returning a dummy ranked list with one element for now):
+    def evaluateQueryText( self, querystr, firstrank, nofranks):
+        rt = []
+        rt.append( {
+            'docno': 1,
+            'title': "test document",
+            'weight': 1.0,
+            'abstract': "Neque porro quisquam est qui dolorem ipsum ..."
+        })
+        return rt
 
-	# Query evaluation method that builds a ranked list from the best weighted entities
-	# extracted from sentences with matches (returning an dummy list for with
-	# one element now):
-	def evaluateQueryEntities( self, querystr, firstrank, nofranks):
-		rt = []
-		rt.append( {
-			'title': "test document",
-			'weight': 1.0
-		})
-		return rt
+    # Query evaluation method that builds a ranked list from the best weighted entities
+    # extracted from sentences with matches (returning an dummy list for with
+    # one element now):
+    def evaluateQueryEntities( self, querystr, firstrank, nofranks):
+        rt = []
+        rt.append( {
+            'title': "test document",
+            'weight': 1.0
+        })
+        return rt
 </pre>
 <p>In our skeleton we can now insert the following lines after the import directives that declare the
 information retrieval backend used.
@@ -391,13 +390,13 @@ string with OK or ERR as header depending on the result:</p>
 <pre>
 # Declare the insert document handler (POST request with the multipart document as body):
 class InsertHandler(tornado.web.RequestHandler):
-	def post(self):
-		try:
-			content = self.request.body
-			nofDocuments = backend.insertDocuments( content)
-			self.write( "OK %u\n" % (nofDocuments))
-		except Exception as e:
-			self.write( "ERR %s\n" % (e))
+    def post(self):
+        try:
+            content = self.request.body
+            nofDocuments = backend.insertDocuments( content)
+            self.write( "OK %u\n" % (nofDocuments))
+        except Exception as e:
+            self.write( "ERR %s\n" % (e))
 </pre>
 
 <h3>The query request handler</h3>
@@ -414,51 +413,51 @@ class InsertHandler(tornado.web.RequestHandler):
 <pre>
 # Declare the query request handler:
 class QueryHandler(tornado.web.RequestHandler):
-	def get(self):
-		try:
-			# q = query terms:
-			querystr = self.get_argument( "q", None)
-			# i = first rank of the result to display (for scrolling):
-			firstrank = int( self.get_argument( "i", 0))
-			# n = maximum number of ranks of the result to display on one page:
-			nofranks = int( self.get_argument( "n", 20))
-			# c = query evaluation scheme to use:
-			scheme = self.get_argument( "s", "BM25")
-			if scheme == "BM25":
-				# The evaluation scheme is a classical BM25 (Okapi):
-				results = backend.evaluateQueryText(
-						querystr, firstrank, nofranks)
-				self.render(
-					"search_bm25_html.tpl",
-					scheme=scheme, querystr=querystr,
-					firstrank=firstrank, nofranks=nofranks,
-					results=results)
-			elif scheme == "NBLNK":
-				# The evaluation scheme is weighting the entity
-				# reference in the matching documents:
-				results = backend.evaluateQueryEntities(
-						querystr, firstrank, nofranks)
-				self.render(
-					"search_nblnk_html.tpl",
-					scheme=scheme, querystr=querystr,
-					firstrank=firstrank, nofranks=nofranks,
-					results=results)
-			else:
-				raise Exception( "unknown query evaluation scheme", scheme)
-		except Exception as e:
-			self.render(
-				"search_error_html.tpl",
-				message=e, scheme=scheme, querystr=querystr,
-				firstrank=firstrank, nofranks=nofranks)
+    def get(self):
+        try:
+            # q = query terms:
+            querystr = self.get_argument( "q", None)
+            # i = first rank of the result to display (for scrolling):
+            firstrank = int( self.get_argument( "i", 0))
+            # n = maximum number of ranks of the result to display on one page:
+            nofranks = int( self.get_argument( "n", 20))
+            # c = query evaluation scheme to use:
+            scheme = self.get_argument( "s", "BM25")
+            if scheme == "BM25":
+                # The evaluation scheme is a classical BM25 (Okapi):
+                results = backend.evaluateQueryText(
+                        querystr, firstrank, nofranks)
+                self.render(
+                    "search_bm25_html.tpl",
+                    scheme=scheme, querystr=querystr,
+                    firstrank=firstrank, nofranks=nofranks,
+                    results=results)
+            elif scheme == "NBLNK":
+                # The evaluation scheme is weighting the entity
+                # reference in the matching documents:
+                results = backend.evaluateQueryEntities(
+                        querystr, firstrank, nofranks)
+                self.render(
+                    "search_nblnk_html.tpl",
+                    scheme=scheme, querystr=querystr,
+                    firstrank=firstrank, nofranks=nofranks,
+                    results=results)
+            else:
+                raise Exception( "unknown query evaluation scheme", scheme)
+        except Exception as e:
+            self.render(
+                "search_error_html.tpl",
+                message=e, scheme=scheme, querystr=querystr,
+                firstrank=firstrank, nofranks=nofranks)
 </pre>
 
 <h2>Step 7: Call the server</h2>
 <p>Our server definition is now complete.
 <br/>
-Now we can start the server and issue a query. We started the docker image with the port 40000 
+Now we can start the server and issue a query. We started the docker image with the port 40080 
 mapped to the docker image port 80. So we can issue the GET request 
 <pre>
-http://127.0.0.1:40000/query?q=german&i=0&n=12&s=BM25
+http://127.0.0.1:40080/query?q=german&i=0&n=12&s=BM25
 </pre>
 </p>
 <p>
@@ -468,7 +467,7 @@ retrieval engine:
 </p>
 <p>or if you search with NBLNK with this query string:
 <pre>
-http://127.0.0.1:40000/query?q=german&i=0&n=12&s=NBLNK
+http://127.0.0.1:40080/query?q=german&i=0&n=12&s=NBLNK
 </pre>
 </p>
 <p>you get
@@ -477,7 +476,14 @@ http://127.0.0.1:40000/query?q=german&i=0&n=12&s=NBLNK
 
 <h2>Step 8: Define the real information retrieval engine with Strus</h2>
 <p>Now we take a look at the <u>strusIR.py</u> module and the <i>Backend</i> class it implements.
-We replace step by step the dummy implementation by a real one.
+We replace step by step the dummy implementation by a real one. First we have to import the following
+modules:
+<pre>
+import strus
+import itertools
+import heapq
+import re
+</pre>
 </p>
 <h3>The analyzer configuration</h3>
 <p>If we want to insert and retrieve documents, we have to describe the mapping of information 
@@ -497,41 +503,41 @@ The strusIR.Backend methods to create the document and the query analyzers look 
 <pre>
 # Create the document analyzer for our test collection:
 def createDocumentAnalyzer(self):
-	rt = self.context.createDocumentAnalyzer()
-	# Define the sections that define a document (for multipart documents):
-	rt.defineDocument( "doc", "/list/doc")
-	# Define the terms to search for (inverted index or search index):
-	rt.addSearchIndexFeature(
-			"word", "/list/doc//()",
-			"word", ("lc",("stem","en"),("convdia","en")))
-	# Define the end of sentence markers:
-	rt.addSearchIndexFeature(
-			"sent", "/list/doc//()",
-			("punctuation","en","."), "empty")
-	# Define the placeholders that are referencable by variables:
-	rt.addSearchIndexFeature(
-			"continent_var", "/list/doc/continent@id",
-			"content", "empty", "BindPosSucc")
-	# Define the original terms in the document used for abstraction:
-	rt.addForwardIndexFeature( "orig", "/list/doc//()", "split", "orig")
-	# Define the contents that extracted by variables:
-	rt.addForwardIndexFeature(
-			"continent", "/list/doc/continent@id",
-			"content", "text", "BindPosSucc")
-	# Define the document identifier:
-	rt.defineAttribute( "docid", "/list/doc@id", "content", "text")
-	# Define the doclen attribute needed by BM25:
-	rt.defineAggregatedMetaData( "doclen", ("count", "word"))
-	return rt
+    rt = self.context.createDocumentAnalyzer()
+    # Define the sections that define a document (for multipart documents):
+    rt.defineDocument( "doc", "/list/doc")
+    # Define the terms to search for (inverted index or search index):
+    rt.addSearchIndexFeature(
+            "word", "/list/doc//()",
+            "word", ("lc",("stem","en"),("convdia","en")))
+    # Define the end of sentence markers:
+    rt.addSearchIndexFeature(
+            "sent", "/list/doc//()",
+            ("punctuation","en","."), "empty")
+    # Define the placeholders that are referencable by variables:
+    rt.addSearchIndexFeature(
+            "continent_var", "/list/doc/continent@id",
+            "content", "empty", "BindPosSucc")
+    # Define the original terms in the document used for abstraction:
+    rt.addForwardIndexFeature( "orig", "/list/doc//()", "split", "orig")
+    # Define the contents that extracted by variables:
+    rt.addForwardIndexFeature(
+            "continent", "/list/doc/continent@id",
+            "content", "text", "BindPosSucc")
+    # Define the document identifier:
+    rt.defineAttribute( "docid", "/list/doc@id", "content", "text")
+    # Define the doclen attribute needed by BM25:
+    rt.defineAggregatedMetaData( "doclen", ("count", "word"))
+    return rt
 
 # Create the query analyzer according to the document analyzer configuration:
 def createQueryAnalyzer(self):
-	rt = self.context.createQueryAnalyzer()
-	rt.definePhraseType(
-		"text", "word", "word", 
-		["lc", ["stem", "en"], ["convdia", "en"]]
-	)
-	return rt
+    rt = self.context.createQueryAnalyzer()
+    rt.definePhraseType(
+        "text", "word", "word", 
+        ["lc", ["stem", "en"], ["convdia", "en"]]
+    )
+    return rt
 </pre>
 <p>The following constructs need further explanation:
 <ol>
@@ -573,31 +579,31 @@ The definition of the weighting scheme configuration for BM25 in our case look a
 # a,b,k1 and avg document lenght and title with abstract 
 # as summarization attributes:
 def createQueryEvalBM25(self):
-	rt = self.context.createQueryEval()
-	# Declare the sentence marker feature needed for summarization:
-	rt.addTerm( "sentence", "sent", "")
-	# Declare the feature used for selecting result candidates:
-	rt.addSelectionFeature( "selfeat")
+    rt = self.context.createQueryEval()
+    # Declare the sentence marker feature needed for abstracting:
+    rt.addTerm( "sentence", "sent", "")
+    # Declare the feature used for selecting result candidates:
+    rt.addSelectionFeature( "selfeat")
 
-	# Query evaluation scheme:
-	rt.addWeightingFunction(
-		1.0, "BM25", {
-			"k1": 0.75, "b": 2.1, "avgdoclen": 20,
-			".match": "docfeat"
-		})
-	# Summarizer for getting the document title:
-	rt.addSummarizer(
-		"TITLE", "attribute", {
-			"name": "docid"
-		})
-	# Summarizer for abstracting:
-	rt.addSummarizer(
-		"CONTENT", "matchphrase", {
-			"type": "orig", "len": 40, "nof": 3,
-			"structseek": 30, "mark": '<b>$</b>',
-			".struct": "sentence", ".match": "docfeat"
-		})
-	return rt
+    # Query evaluation scheme:
+    rt.addWeightingFunction(
+        1.0, "BM25", {
+            "k1": 0.75, "b": 2.1, "avgdoclen": 20,
+            ".match": "docfeat"
+        })
+    # Summarizer for getting the document title:
+    rt.addSummarizer(
+        "TITLE", "attribute", {
+            "name": "docid"
+        })
+    # Summarizer for abstracting:
+    rt.addSummarizer(
+        "CONTENT", "matchphrase", {
+            "type": "orig", "len": 40, "nof": 3,
+            "structseek": 30, "mark": '&lt;b&gt;$&lt;/b&gt;',
+            ".struct": "sentence", ".match": "docfeat"
+        })
+    return rt
 </pre>
 <p>The following constructs need further explanation:
 <ol>
@@ -629,27 +635,27 @@ summarizers to present the results look as follows:
 # a,b,k1 and avg document lenght and the weighted extracted
 # entities in the same sentence as matches as query evaluation result:
 def createQueryEvalNBLNK(self):
-	rt = self.context.createQueryEval()
-	# Declare the sentence marker feature needed for the 
-	# summarization features extracting the entities:
-	rt.addTerm( "sentence", "sent", "")
-	# Declare the feature used for selecting result candidates:
-	rt.addSelectionFeature( "selfeat")
-	
-	# Query evaluation scheme for entity extraction candidate selection:
-	rt.addWeightingFunction(
-		1.0, "BM25", {
-			"k1": 0.75, "b": 2.1, "avgdoclen": 500,
-			".match": "docfeat"
-		})
-	# Summarizer to extract the weighted entities:
-	rt.addSummarizer(
-		"ENTITY", "accuvariable", {
-			".match": "sumfeat",
-			"var": "CONTINENT",
-			"type": "continent"
-		})
-	return rt
+    rt = self.context.createQueryEval()
+    # Declare the sentence marker feature needed for the 
+    # summarization features extracting the entities:
+    rt.addTerm( "sentence", "sent", "")
+    # Declare the feature used for selecting result candidates:
+    rt.addSelectionFeature( "selfeat")
+    
+    # Query evaluation scheme for entity extraction candidate selection:
+    rt.addWeightingFunction(
+        1.0, "BM25", {
+            "k1": 0.75, "b": 2.1, "avgdoclen": 500,
+            ".match": "docfeat"
+        })
+    # Summarizer to extract the weighted entities:
+    rt.addSummarizer(
+        "ENTITY", "accuvariable", {
+            ".match": "sumfeat",
+            "var": "CONTINENT",
+            "type": "continent"
+        })
+    return rt
 </pre>
 <p>We have nothing more to explain here. The declarations look similar to BM25.
 We have a different summarizer for the 'continent' extraction defined.
@@ -662,19 +668,19 @@ The constructor of strusIR.Backend looks like follows:
 <pre>
 # Constructor. Initializes the query evaluation schemes and the query and document analyzers:
 def __init__(self, config):
-	if isinstance( config, ( int, long ) ):
-		self.context = strus.Context( "localhost:%u" % config)
-		self.storage = self.context.createStorageClient()
-	else:
-		self.context = strus.Context()
-		self.context.addResourcePath("./resources")
-		self.storage = self.context.createStorageClient( config )
+    if isinstance( config, ( int, long ) ):
+        self.context = strus.Context( "localhost:%u" % config)
+        self.storage = self.context.createStorageClient()
+    else:
+        self.context = strus.Context()
+        self.context.addResourcePath("./resources")
+        self.storage = self.context.createStorageClient( config )
 
-	self.queryAnalyzer = self.createQueryAnalyzer()
-	self.documentAnalyzer = self.createDocumentAnalyzer()
-	self.queryeval = {}
-	self.queryeval["BM25"] = self.createQueryEvalBM25()
-	self.queryeval["NBLNK"] = self.createQueryEvalNBLNK()
+    self.queryAnalyzer = self.createQueryAnalyzer()
+    self.documentAnalyzer = self.createDocumentAnalyzer()
+    self.queryeval = {}
+    self.queryeval["BM25"] = self.createQueryEvalBM25()
+    self.queryeval["NBLNK"] = self.createQueryEvalNBLNK()
 </pre>
 
 <h3>The method to insert a multipart document</h3>
@@ -683,15 +689,15 @@ def __init__(self, config):
 <pre>
 # Insert a multipart document:
 def insertDocuments( self, content):
-	rt = 0
-	docqueue = self.documentAnalyzer.createQueue()
-	docqueue.push( content)
-	while (docqueue.hasMore()):
-		doc = docqueue.fetch()
-		self.storage.insertDocument( doc.docid(), doc)
-		rt += 1
-	self.storage.flush()
-	return rt
+    rt = 0
+    docqueue = self.documentAnalyzer.createQueue()
+    docqueue.push( content)
+    while (docqueue.hasMore()):
+        doc = docqueue.fetch()
+        self.storage.insertDocument( doc.docid(), doc)
+        rt += 1
+    self.storage.flush()
+    return rt
 </pre>
 <p>The method creates a queue with all analyzed document parts in it and fetches them one by one to
 insert them into the storage. This transaction is completed with a call of flush.
@@ -703,41 +709,41 @@ insert them into the storage. This transaction is completed with a call of flush
 <pre>
 # Query evaluation scheme for a classical information retrieval query with BM25:
 def evaluateQueryText( self, querystr, firstrank, nofranks):
-	queryeval = self.queryeval[ "BM25"]
-	query = queryeval.createQuery( self.storage)
-	terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
+    queryeval = self.queryeval[ "BM25"]
+    query = queryeval.createQuery( self.storage)
+    terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
 
-	if len( terms) > 0:
-		selexpr = ["contains"]
-		for term in terms:
-			selexpr.append( [term.type(), term.value()] )
-			query.defineFeature( "docfeat", [term.type(), term.value()], 1.0)
+    if len( terms) > 0:
+        selexpr = ["contains"]
+        for term in terms:
+            selexpr.append( [term.type(), term.value()] )
+            query.defineFeature( "docfeat", [term.type(), term.value()], 1.0)
 
-		query.defineFeature( "selfeat", selexpr, 1.0 )
+        query.defineFeature( "selfeat", selexpr, 1.0 )
 
-	query.setMaxNofRanks( nofranks)
-	query.setMinRank( firstrank)
-	# Evaluate the query:
-	results = query.evaluate()
-	# Rewrite the results:
-	rt = []
-	for result in results:
-		content = ""
-		title = ""
-		for attribute in result.attributes():
-			if attribute.name() == 'CONTENT':
-				if content != "":
-					content += ' ... '
-				content += attribute.value()
-			elif attribute.name() == 'TITLE':
-				title = attribute.value()
-		rt.append( {
-			'docno':result.docno(),
-			'title':title,
-			'weight':result.weight(),
-			'abstract':content
-		})
-	return rt;
+    query.setMaxNofRanks( nofranks)
+    query.setMinRank( firstrank)
+    # Evaluate the query:
+    results = query.evaluate()
+    # Rewrite the results:
+    rt = []
+    for result in results:
+        content = ""
+        title = ""
+        for attribute in result.attributes():
+            if attribute.name() == 'CONTENT':
+                if content != "":
+                    content += ' ... '
+                content += attribute.value()
+            elif attribute.name() == 'TITLE':
+                title = attribute.value()
+        rt.append( {
+            'docno':result.docno(),
+            'title':title,
+            'weight':result.weight(),
+            'abstract':content
+        })
+    return rt;
 </pre>
 <p>The method analyzes the query text and builds one query feature of each term.
 The selection feature is an expression, that selects only the documents, where 
@@ -766,23 +772,23 @@ that is extracted by the summarizer accumulating the weights of all links.
 In Strus variable assignments are bound to one position of an expression match.
 Therefore the item extracted has to define the position of an expression match.
 So we build the summarizer feature expressions around the links we want to extract.
-The following expression shows one example feature built from "indigenous languages":
+The following expression shows one example feature built from "local languages":
 </p>
 <pre>
-	sumexpr = [ "inrange_struct", 50, ["sent"],
-			["=CONTINENT", "continent_var"], 
-			[ "within_struct", 20,
-					["sent"],
-					["word", "indigenous"],
-					["word", "languages"]
-			]
-		]
-	query.defineFeature( "sumfeat", sumexpr, 1.0 )
+    sumexpr = [ "inrange_struct", 50, ["sent"],
+                  ["=CONTINENT", "continent_var"], 
+                  [ "within_struct", 20,
+                      ["sent"],
+                      ["word", "local"],
+                      ["word", "languages"]
+                  ]
+              ]
+    query.defineFeature( "sumfeat", sumexpr, 1.0 )
 </pre>
 <p>
 translated this means: We look inside a structure delimited by sentence delimiters in a distance of maximum 50
 terms for a 'continent' with a variable 'CONTINENT' assigned and for a structure delimited by sentence delimiters 
-in a distance of maximum 20 terms for the words "indigenous" and "languages".
+in a distance of maximum 20 terms for the words "local" and "languages".
 </p>
 <p>
 We introduce now the helper methods to build these summarizer features and finally to the weighting scheme
@@ -793,49 +799,49 @@ using these features to extract the continents:
 # Helper method to define the query features created from terms 
 # of the query string, that are subsequent in the query:
 def __defineSubsequentQueryTermFeatures( self, query, term1, term2):
-	# Pairs of subsequent terms in the query are 
-	# translated into 3 query expressions:
-	#	1+2) search for sequence inside a sentence in documents.
-	#		The summarizer extracts entities within 
-	#		a distance of 50 in the same sentence
-	#	3) search for the terms in a distance smaller than 5 in a sentence.
-	#		The summarizer extracts entities within a distance
-	#		of 50 in the same sentence
-	#	4) search for the terms in a distance smaller than 20 in a sentence.
-	#		The summarizer extracts entities within
-	#		a distance of 50 in the same sentence
-	expr = [
-			[ "sequence_struct", 3,
-				["sent"],
-				[term1.type(), term1.value()],
-				[term2.type(), term2.value()]
-			],
-			[ "sequence_struct", 3,
-				["sent"],
-				[term2.type(), term2.value()],
-				[term1.type(), term1.value()]
-			],
-			[ "within_struct", 5,
-				["sent"],
-				[term1.type(), term1.value()],
-				[term2.type(), term2.value()]
-			],
-			[ "within_struct", 20,
-				["sent"],
-				[term1.type(), term1.value()],
-				[term2.type(), term2.value()]
-			]
-	]
-	weight = [ 3.0, 2.0, 2.0, 1.5 ]
-	ii = 0
-	while ii < 4:
-		# The summarization expression attaches a variable referencing
-		# the entity to extract.
-		# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-		sumexpr = [ "inrange_struct", 50, ["sent"],
-				["=CONTINENT", "continent_var"], expr[ ii] ]
-		query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
-		ii += 1
+    # Pairs of subsequent terms in the query are 
+    # translated into 3 query expressions:
+    #    1+2) search for sequence inside a sentence in documents.
+    #        The summarizer extracts entities within 
+    #        a distance of 50 in the same sentence
+    #    3) search for the terms in a distance smaller than 5 in a sentence.
+    #        The summarizer extracts entities within a distance
+    #        of 50 in the same sentence
+    #    4) search for the terms in a distance smaller than 20 in a sentence.
+    #        The summarizer extracts entities within
+    #        a distance of 50 in the same sentence
+    expr = [
+            [ "sequence_struct", 3,
+                ["sent"],
+                [term1.type(), term1.value()],
+                [term2.type(), term2.value()]
+            ],
+            [ "sequence_struct", 3,
+                ["sent"],
+                [term2.type(), term2.value()],
+                [term1.type(), term1.value()]
+            ],
+            [ "within_struct", 5,
+                ["sent"],
+                [term1.type(), term1.value()],
+                [term2.type(), term2.value()]
+            ],
+            [ "within_struct", 20,
+                ["sent"],
+                [term1.type(), term1.value()],
+                [term2.type(), term2.value()]
+            ]
+    ]
+    weight = [ 3.0, 2.0, 2.0, 1.5 ]
+    ii = 0
+    while ii < 4:
+        # The summarization expression attaches a variable referencing
+        # the entity to extract.
+        # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
+        sumexpr = [ "inrange_struct", 50, ["sent"],
+                ["=CONTINENT", "continent_var"], expr[ ii] ]
+        query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+        ii += 1
 </pre>
 
 <h4>The method to create the summarization features for non neighbour terms in the query</h4>
@@ -843,40 +849,40 @@ def __defineSubsequentQueryTermFeatures( self, query, term1, term2):
 # Helper method to define the query features created from terms 
 # of the query string, that are not subsequent in the query:
 def __defineNonSubsequentQueryTermFeatures( self, query, term1, term2):
-	# Pairs of non subsequent terms in the query are 
-	# translated into two query expressions:
-	#	1) search for the terms in a distance smaller than 5 inside
-	#		a sentence, weight 1.6,
-	#		where d ist the distance of the terms in the query.
-	#		The summarizer extracts entities within a distance
-	#		of 50 in the same sentence
-	#	2) search for the terms in a distance smaller than 20 inside
-	#		a sentence, weight 1.2,
-	#		where d ist the distance of the terms in the query.
-	#		The summarizer extracts entities within a distance
-	#		of 50 in the same sentence
-	expr = [
-			[ "within_struct", 5,
-				["sent"],
-				[term1.type(), term1.value()],
-				[term2.type(), term2.value()]
-			],
-			[ "within_struct", 20,
-				["sent"],
-				[term1.type(), term1.value()],
-				[term2.type(), term2.value()]
-			]
-	]
-	weight = [ 1.6, 1.2 ]
-	ii = 0
-	while ii &lt; 2:
-		# The summarization expression attaches a variable referencing
-		# the entity to extract.
-		# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-		sumexpr = [ "inrange_struct", 50, ["sent"],
-				["=CONTINENT", "continent_var"], expr[ ii] ]
-		query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
-		ii += 1
+    # Pairs of non subsequent terms in the query are 
+    # translated into two query expressions:
+    #    1) search for the terms in a distance smaller than 5 inside
+    #        a sentence, weight 1.6,
+    #        where d ist the distance of the terms in the query.
+    #        The summarizer extracts entities within a distance
+    #        of 50 in the same sentence
+    #    2) search for the terms in a distance smaller than 20 inside
+    #        a sentence, weight 1.2,
+    #        where d ist the distance of the terms in the query.
+    #        The summarizer extracts entities within a distance
+    #        of 50 in the same sentence
+    expr = [
+            [ "within_struct", 5,
+                ["sent"],
+                [term1.type(), term1.value()],
+                [term2.type(), term2.value()]
+            ],
+            [ "within_struct", 20,
+                ["sent"],
+                [term1.type(), term1.value()],
+                [term2.type(), term2.value()]
+            ]
+    ]
+    weight = [ 1.6, 1.2 ]
+    ii = 0
+    while ii &lt; 2:
+        # The summarization expression attaches a variable referencing
+        # the entity to extract.
+        # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
+        sumexpr = [ "inrange_struct", 50, ["sent"],
+                ["=CONTINENT", "continent_var"], expr[ ii] ]
+        query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+        ii += 1
 
 </pre>
 
@@ -885,14 +891,14 @@ def __defineNonSubsequentQueryTermFeatures( self, query, term1, term2):
 # Helper method to define the query features created from a single
 # term query:
 def __defineSingleTermQueryFeatures( self, query, term):
-	# Single term query:
-	expr = [ term.type(), term.value() ]
-	# The summarization expression attaches a variable referencing
-	# the entity to extract.
-	# CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-	sumexpr = [ "inrange_struct", 50, ["sent"],
-			["=CONTINENT", "continent_var"] ]
-	query.defineFeature( "sumfeat", sumexpr, 1.0 )
+    # Single term query:
+    expr = [ term.type(), term.value() ]
+    # The summarization expression attaches a variable referencing
+    # the entity to extract.
+    # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
+    sumexpr = [ "inrange_struct", 50, ["sent"],
+            ["=CONTINENT", "continent_var"] ]
+    query.defineFeature( "sumfeat", sumexpr, 1.0 )
 
 
 </pre>
@@ -902,68 +908,68 @@ def __defineSingleTermQueryFeatures( self, query, term):
 # Query evaluation method that builds a ranked list from the best weighted entities
 # extracted from sentences with matches:
 def evaluateQueryEntities( self, querystr, firstrank, nofranks):
-	queryeval = self.queryeval[ "NBLNK"]
-	query = queryeval.createQuery( self.storage)
-	terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
+    queryeval = self.queryeval[ "NBLNK"]
+    query = queryeval.createQuery( self.storage)
+    terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
 
-	if len( terms) == 0:
-		# Return empty result for empty query:
-		return []
+    if len( terms) == 0:
+        # Return empty result for empty query:
+        return []
 
-	# Build the weighting features. Queries with more than one term are building
-	# the query features from pairs of terms:
-	if len( terms) > 1:
-		# Iterate on all permutation pairs of query features and create
-		# combined features for summarization:
-		for pair in itertools.permutations(
-				itertools.takewhile(
-					lambda x: x&lt;len(terms), itertools.count()), 2):
-			if pair[0] + 1 == pair[1]:
-				self.__defineSubsequentQueryTermFeatures(
-					query, terms[pair[0]], terms[pair[1]])
-			elif pair[0] &lt; pair[0]:
-				self.__defineNonSubsequentQueryTermFeatures(
-					query, terms[pair[0]], terms[pair[1]] )
-	else:
-		self.__defineSingleTermQueryFeatures( query, terms[0] )
+    # Build the weighting features. Queries with more than one term are building
+    # the query features from pairs of terms:
+    if len( terms) > 1:
+        # Iterate on all permutation pairs of query features and create
+        # combined features for summarization:
+        for pair in itertools.permutations(
+                itertools.takewhile(
+                    lambda x: x&lt;len(terms), itertools.count()), 2):
+            if pair[0] + 1 == pair[1]:
+                self.__defineSubsequentQueryTermFeatures(
+                    query, terms[pair[0]], terms[pair[1]])
+            elif pair[0] &lt; pair[0]:
+                self.__defineNonSubsequentQueryTermFeatures(
+                    query, terms[pair[0]], terms[pair[1]] )
+    else:
+        self.__defineSingleTermQueryFeatures( query, terms[0] )
 
-	# Define the selector ("selfeat") as the set of documents that contain all query terms
-	# and define the single term features for weighting and candidate evaluation ("docfeat"):
-	selexpr = ["contains"]
-	for term in terms:
-		selexpr.append( [term.type(), term.value()] )
-		query.defineFeature( "docfeat", [term.type(), term.value()], 1.0 )
-	query.defineFeature( "selfeat", selexpr, 1.0 )
+    # Define the selector ("selfeat") as the set of documents that contain all query terms
+    # and define the single term features for weighting and candidate evaluation ("docfeat"):
+    selexpr = ["contains"]
+    for term in terms:
+        selexpr.append( [term.type(), term.value()] )
+        query.defineFeature( "docfeat", [term.type(), term.value()], 1.0 )
+    query.defineFeature( "selfeat", selexpr, 1.0 )
 
-	# Evaluate the ranked list for getting the documents to inspect for entities close to matches:
-	query.setMaxNofRanks( (firstrank + nofranks) * 50 + 50)
-	query.setMinRank( 0)
-	results = query.evaluate()
+    # Evaluate the ranked list for getting the documents to inspect for entities close to matches:
+    query.setMaxNofRanks( (firstrank + nofranks) * 50 + 50)
+    query.setMinRank( 0)
+    results = query.evaluate()
 
-	# Build the table of all entities with weight of the top ranked documents:
-	entitytab = {}
-	for result in results:
-		for attribute in result.attributes():
-			if attribute.name() == 'ENTITY':
-				weight = 0.0
-				if attribute.value() in entitytab:
-					weight = entitytab[ attribute.value()]
-				entitytab[ attribute.value()] = weight + attribute.weight()
+    # Build the table of all entities with weight of the top ranked documents:
+    entitytab = {}
+    for result in results:
+        for attribute in result.attributes():
+            if attribute.name() == 'ENTITY':
+                weight = 0.0
+                if attribute.value() in entitytab:
+                    weight = entitytab[ attribute.value()]
+                entitytab[ attribute.value()] = weight + attribute.weight()
 
-	# Extract the top weighted documents in entitytab as result:
-	heap = []
-	for key, value in entitytab.iteritems():
-		heapq.heappush( heap, {'entity':key, 'weight':value})
-	topEntities = heapq.nlargest( firstrank + nofranks, heap, lambda k: k['weight'])
-	rt = []
-	idx = 0
-	maxrank = firstrank + nofranks
-	for elem in topEntities[firstrank:maxrank]:
-		rt.append({
-			'title':elem['entity'],
-			'weight':elem['weight']
-		})
-	return rt
+    # Extract the top weighted documents in entitytab as result:
+    heap = []
+    for key, value in entitytab.iteritems():
+        heapq.heappush( heap, {'entity':key, 'weight':value})
+    topEntities = heapq.nlargest( firstrank + nofranks, heap, lambda k: k['weight'])
+    rt = []
+    idx = 0
+    maxrank = firstrank + nofranks
+    for elem in topEntities[firstrank:maxrank]:
+        rt.append({
+            'title':elem['entity'],
+            'weight':elem['weight']
+        })
+    return rt
 </pre>
 
 <h3>The complete strusIR module</h3>
@@ -972,10 +978,11 @@ def evaluateQueryEntities( self, querystr, firstrank, nofranks):
 
 <h2>Step 9: Restart the server and insert the documents with CURL</h2>
 <p>Now as we have replaced our information retrieval module with a real implementation, we can insert the documents.
-First we have to restart the server, so that it loads our new strusIR module:
+First we have to restart the server, so that it loads our new strusIR module.
+We start it in the background, because we need the commandline afterwards to insert the documents:
 </p>
 <pre>
-python strusServer.py
+python strusServer.py &amp;
 </pre>
 <p>and we get
 </p>
@@ -1000,20 +1007,34 @@ OK 201
 issue some queries with our favorite browser:
 </p>
 <pre>
-http://127.0.0.1:40000/query?q=spanish&i=0&n=12&s=BM25
+http://127.0.0.1:40080/query?q=spanish&i=0&n=12&s=BM25
 </pre>
 </p>
 <p>we get:
-<img border=2 style="display:block;" width="90%" src="tutorial3.jpg" alt="result BM25"/>
-</p>
-<p>or if you search with NBLNK with this query string:
+<img border=2 style="display:block;" width="85%" src="tutorial3.jpg" alt="result BM25"/>
+<br/>This result shows the country documents weighting the occurrence of the query term 'spanish' with
+the BM25 weighting scheme.
+<br/>
+If you search with NBLNK with this query string:
 <pre>
-http://127.0.0.1:40000/query?q=spanish&i=0&n=12&s=NBLNK
+http://127.0.0.1:40080/query?q=spanish&i=0&n=12&s=NBLNK
 </pre>
 </p>
 <p>you get
-<img border=2 style="display:block;" width="60%" src="tutorial4.jpg" alt="dummy result NBLNK"/>
+<img border=2 style="display:block;" width="60%" src="tutorial4.jpg" alt="result NBLNK"/>
+<br/>
+This result shows the continents ranked by a weight calculated matching the query against the 
+sentences where the continent entity appears. In case of a single term query this is the
+the number of countries owhere the entity appears in the same sentence. 
+In our example this is the number of countries where Spanish is spoken.
+For multiterm queries like "local language" we get a weight that is artificial:
 </p>
+<img border=2 style="display:block;" width="60%" src="tutorial5.jpg" alt="result NBLNK"/>
+<p>
+<br/>
+It is a trivial task to extract these entities from documents to weight them, but the weighting scheme
+introduced can also be applied to huge collections of data, if the number of documents inspected
+by summarizers can be restricted to a reasonable size.</p>
 
 <h2>License</h2>
 <p>This article, along with any associated source code and files, is licensed under The GNU General Public License (GPLv3)
