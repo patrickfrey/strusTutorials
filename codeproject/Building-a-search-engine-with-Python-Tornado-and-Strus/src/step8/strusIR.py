@@ -99,9 +99,9 @@ class Backend:
         docqueue = self.documentAnalyzer.createQueue()
         docqueue.push( content)
         while (docqueue.hasMore()):
-        doc = docqueue.fetch()
-        self.storage.insertDocument( doc.docid(), doc)
-        rt += 1
+            doc = docqueue.fetch()
+            self.storage.insertDocument( doc.docid(), doc)
+            rt += 1
         self.storage.flush()
         return rt
 
@@ -110,8 +110,11 @@ class Backend:
         queryeval = self.queryeval[ "BM25"]
         query = queryeval.createQuery( self.storage)
         terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
-        if len( terms) > 0:
-            selexpr = ["contains"]
+        if len( terms) == 0:
+            # Return empty result for empty query:
+            return []
+
+        selexpr = ["contains"]
         for term in terms:
             selexpr.append( [term.type(), term.value()] )
             query.defineFeature( "docfeat", [term.type(), term.value()], 1.0)
@@ -129,15 +132,15 @@ class Backend:
                 if attribute.name() == 'CONTENT':
                     if content != "":
                         content += ' ... '
-                        content += attribute.value()
+                    content += attribute.value()
                 elif attribute.name() == 'TITLE':
                     title = attribute.value()
-        rt.append( {
-               'docno':result.docno(),
-               'title':title,
-               'weight':result.weight(),
-               'abstract':content })
-        return rt;
+            rt.append( {
+                   'docno':result.docno(),
+                   'title':title,
+                   'weight':result.weight(),
+                   'abstract':content })
+        return rt
 
     # Helper method to define the query features created from terms 
     # of the query string, that are following subsequently in the query:
@@ -181,7 +184,11 @@ class Backend:
             # The summarization expression attaches a variable referencing an
             # the entity to extract.
             # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-            sumexpr = [ "inrange_struct", 50, ["sent"],
+            sumexpr = [ "chain_struct", 50, ["sent"],
+                          ["=CONTINENT", "continent_var"],
+                          expr[ ii] ]
+            query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+            sumexpr = [ "sequence_struct", -50, ["sent"],
                           ["=CONTINENT", "continent_var"],
                           expr[ ii] ]
             query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
@@ -220,9 +227,13 @@ class Backend:
             # The summarization expression attaches a variable referencing
             # the entity to extract.
             # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-            sumexpr = [ "inrange_struct", 50, ["sent"],
-                          ["=CONTINENT", "continent_var"],
-                          expr[ ii] ]
+            sumexpr = [ "chain_struct", 50, ["sent"],
+                              ["=CONTINENT", "continent_var"],
+                              expr[ ii] ]
+            query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+            sumexpr = [ "sequence_struct", -50, ["sent"],
+                              ["=CONTINENT", "continent_var"],
+                              expr[ ii] ]
             query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
             ii += 1
 
@@ -234,7 +245,11 @@ class Backend:
         # The summarization expression attaches a variable referencing an
         # the entity to extract.
         # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-        sumexpr = [ "inrange_struct", 50, ["sent"],
+        sumexpr = [ "chain_struct", 50, ["sent"],
+                      ["=CONTINENT", "continent_var"],
+                      expr ]
+        query.defineFeature( "sumfeat", sumexpr, 1.0 )
+        sumexpr = [ "sequence_struct", -50, ["sent"],
                       ["=CONTINENT", "continent_var"],
                       expr ]
         query.defineFeature( "sumfeat", sumexpr, 1.0 )

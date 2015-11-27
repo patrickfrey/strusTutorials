@@ -10,14 +10,14 @@ backend = strusIR.Backend( "path=storage; cache=512M")
 
 # [1] Request handlers:
 # Declare the insert document handler (POST request with the multipart document as body):
-    class InsertHandler(tornado.web.RequestHandler):
-        def post(self):
-            try:
-                content = self.request.body
-                nofDocuments = backend.insertDocuments( content)
-                self.write( "OK %u\n" % (nofDocuments))
-            except Exception as e:
-                self.write( "ERR %s\n" % (e))
+class InsertHandler(tornado.web.RequestHandler):
+    def post(self):
+        try:
+            content = self.request.body
+            nofDocuments = backend.insertDocuments( content)
+            self.write( "OK %u\n" % (nofDocuments))
+        except Exception as e:
+            self.write( "ERR %s\n" % (e))
 
 # Declare the query request handler:
 class QueryHandler(tornado.web.RequestHandler):
