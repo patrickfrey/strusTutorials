@@ -1,5 +1,4 @@
 #!/usr/bin/python
-
 import tornado.ioloop
 import tornado.web
 import os
@@ -11,14 +10,14 @@ backend = strusIR.Backend( "path=storage; cache=512M")
 
 # [1] Request handlers:
 # Declare the insert document handler (POST request with the multipart document as body):
-class InsertHandler(tornado.web.RequestHandler):
-    def post(self):
-        try:
-            content = self.request.body
-            nofDocuments = backend.insertDocuments( content)
-            self.write( "OK %u\n" % (nofDocuments))
-        except Exception as e:
-            self.write( "ERR %s\n" % (e))
+    class InsertHandler(tornado.web.RequestHandler):
+        def post(self):
+            try:
+                content = self.request.body
+                nofDocuments = backend.insertDocuments( content)
+                self.write( "OK %u\n" % (nofDocuments))
+            except Exception as e:
+                self.write( "ERR %s\n" % (e))
 
 # Declare the query request handler:
 class QueryHandler(tornado.web.RequestHandler):
@@ -34,30 +33,22 @@ class QueryHandler(tornado.web.RequestHandler):
             scheme = self.get_argument( "s", "BM25")
             if scheme == "BM25":
                 # The evaluation scheme is a classical BM25 (Okapi):
-                results = backend.evaluateQueryText(
-                        querystr, firstrank, nofranks)
-                self.render(
-                    "search_bm25_html.tpl",
-                    scheme=scheme, querystr=querystr,
-                    firstrank=firstrank, nofranks=nofranks,
-                    results=results)
+                results = backend.evaluateQueryText( querystr, firstrank, nofranks)
+                self.render( "search_bm25_html.tpl",
+                             scheme=scheme, querystr=querystr,
+                             firstrank=firstrank, nofranks=nofranks, results=results)
             elif scheme == "NBLNK":
-                # The evaluation scheme is weighting the entity
-                # reference in the matching documents:
-                results = backend.evaluateQueryEntities(
-                        querystr, firstrank, nofranks)
-                self.render(
-                    "search_nblnk_html.tpl",
-                    scheme=scheme, querystr=querystr,
-                    firstrank=firstrank, nofranks=nofranks,
-                    results=results)
+                # The evaluation scheme is weighting the entities in the matching documents:
+                results = backend.evaluateQueryEntities( querystr, firstrank, nofranks)
+                self.render( "search_nblnk_html.tpl",
+                             scheme=scheme, querystr=querystr,
+                             firstrank=firstrank, nofranks=nofranks, results=results)
             else:
                 raise Exception( "unknown query evaluation scheme", scheme)
         except Exception as e:
-            self.render(
-                "search_error_html.tpl",
-                message=e, scheme=scheme, querystr=querystr,
-                firstrank=firstrank, nofranks=nofranks)
+            self.render( "search_error_html.tpl", 
+                         message=e, scheme=scheme, querystr=querystr,
+                         firstrank=firstrank, nofranks=nofranks)
 
 # [2] Dispatcher:
 application = tornado.web.Application([

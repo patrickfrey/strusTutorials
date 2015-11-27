@@ -4,8 +4,7 @@ class Backend:
     def __init__(self, config):
         pass
 
-    # Insert a multipart document as described in step 2
-    # (doing nothing for the moment):
+    # Insert a multipart document as described in step 1 (doing nothing for the moment):
     def insertDocuments( self, content):
         return 0
 
