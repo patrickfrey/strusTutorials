@@ -189,8 +189,9 @@ class Backend:
                           expr[ ii] ]
             query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
             sumexpr = [ "sequence_struct", -50, ["sent"],
+                          expr[ ii],
                           ["=CONTINENT", "continent_var"],
-                          expr[ ii] ]
+                      ]
             query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
             ii += 1
 
@@ -232,8 +233,9 @@ class Backend:
                               expr[ ii] ]
             query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
             sumexpr = [ "sequence_struct", -50, ["sent"],
-                              ["=CONTINENT", "continent_var"],
-                              expr[ ii] ]
+                              expr[ ii],
+                              ["=CONTINENT", "continent_var"]
+                      ]
             query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
             ii += 1
 
@@ -250,8 +252,9 @@ class Backend:
                       expr ]
         query.defineFeature( "sumfeat", sumexpr, 1.0 )
         sumexpr = [ "sequence_struct", -50, ["sent"],
-                      ["=CONTINENT", "continent_var"],
-                      expr ]
+                      expr,
+                      ["=CONTINENT", "continent_var"]
+                  ]
         query.defineFeature( "sumfeat", sumexpr, 1.0 )
 
     # Query evaluation method that builds a ranked list from the best weighted entities

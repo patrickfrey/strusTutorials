@@ -989,12 +989,12 @@ python strusServer.py &amp;
 <pre>
 Starting server ...
 
-Listening on port 8080
+Listening on port 80
 </pre>
 <p>Then we can insert the document with a CURL command:
 </p>
 <pre>
-curl -X POST -d @countries.xml localhost:8080/insert --header "Content-Type:text/xml" 
+curl -X POST -d @countries.xml localhost:80/insert --header "Content-Type:text/xml" 
 </pre>
 <p>and we get
 </p>
