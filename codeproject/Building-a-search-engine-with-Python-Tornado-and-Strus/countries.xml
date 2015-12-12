@@ -46,7 +46,7 @@
 <doc id='Cuba'>In the country Cuba in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish.</doc>
 <doc id='Cyprus'>In the country Cyprus in <continent id='Europe'>Europe</continent> are the following languages spoken: Greek, Turkish,  English.</doc>
 <doc id='Czech Republic'>In the country Czech Republic in <continent id='Europe'>Europe</continent> are the following languages spoken: Czech.</doc>
-<doc id='Denmark'>In the country Denmark in <continent id='Europe'>Europe</continent> are the following languages spoken: Danish, Faroese, Greenlandic,  German; English is the predominant second language.</doc>
+<doc id='Denmark'>In the country Denmark in <continent id='Europe'>Europe</continent> are the following languages spoken: Danish, Faroese, Greenlandic, German, English</doc>
 <doc id='Djibouti'>In the country Djibouti in <continent id='Africa'>Africa</continent> are the following languages spoken: French, Arabic, Somali,  Afar.</doc>
 <doc id='Dominica'>In the country Dominica in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: English,  French patois.</doc>
 <doc id='Dominican Republic'>In the country Dominican Republic in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish.</doc>
@@ -71,15 +71,15 @@
 <doc id='Greece'>In the country Greece in <continent id='Europe'>Europe</continent> are the following languages spoken: Greek, English,  French.</doc>
 <doc id='Grenada'>In the country Grenada in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: English,  French patois.</doc>
 <doc id='Guatemala'>In the country Guatemala in <continent id='South America'>South America</continent> are the following languages spoken: Spanish, Quiche, Cakchiquel, Kekchi, Mam, Garifuna,  Xinca.</doc>
-<doc id='Guinea'>In the country Guinea in <continent id='Africa'>Africa</continent> are the following languages spoken: French; each ethnic group has its own language.</doc>
+<doc id='Guinea'>In the country Guinea in <continent id='Africa'>Africa</continent> are the following languages spoken: French, local languages.</doc>
 <doc id='Guinea-Bissau'>In the country Guinea-Bissau in <continent id='Africa'>Africa</continent> are the following languages spoken: Portuguese, Crioulo, African languages.</doc>
 <doc id='Guyana'>In the country Guyana in <continent id='South America'>South America</continent> are the following languages spoken: English,  Amerindian dialects, Creole, Hindi,  Urdu.</doc>
 <doc id='Haiti'>In the country Haiti in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: French,  Creole.</doc>
 <doc id='Honduras'>In the country Honduras in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish,  Amerindian dialects.</doc>
-<doc id='Hong Kong'>In the country Hong Kong in <continent id='Asia'>Asia</continent> are the following languages spoken: Chinese,  English;.</doc>
+<doc id='Hong Kong'>In the country Hong Kong in <continent id='Asia'>Asia</continent> are the following languages spoken: Chinese,  English.</doc>
 <doc id='Hungary'>In the country Hungary in <continent id='Europe'>Europe</continent> are the following languages spoken: Hungarian, other or unspecified.</doc>
-<doc id='Iceland'>In the country Iceland in <continent id='Europe'>Europe</continent> are the following languages spoken: Icelandic, English, Nordic languages; German widely spoken.</doc>
-<doc id='India'>In the country India in <continent id='Asia'>Asia</continent> are the following languages spoken: Hindi (the national language and primary tongue of of the people), English,(enjoys associate status but is the most important language for national, political, and commercial communication), Bengali, Telugu, Marathi, Tamil, Urdu, Gujarati, Malayalam, Kannada, Oriya, Punjabi, Assamese, Kashmiri, Sindhi,  Sanskrit; Hindustani is a popular variant of Hindi/Urdu spoken widely throughout northern India but is not an official language.</doc>
+<doc id='Iceland'>In the country Iceland in <continent id='Europe'>Europe</continent> are the following languages spoken: Icelandic, English, Nordic languages, German.</doc>
+<doc id='India'>In the country India in <continent id='Asia'>Asia</continent> are the following languages spoken: Hindi (the national language and primary tongue of of the people), English,(enjoys associate status but is the most important language for national, political, and commercial communication), Bengali, Telugu, Marathi, Tamil, Urdu, Gujarati, Malayalam, Kannada, Oriya, Punjabi, Assamese, Kashmiri, Sindhi,  Sanskrit, Hindustani.</doc>
 <doc id='Indonesia'>In the country Indonesia in <continent id='Asia'>Asia</continent> are the following languages spoken: Bahasa Indonesia (modified form of Malay), English, Dutch,  Javanese.</doc>
 <doc id='Iran'>In the country Iran in <continent id='Asia'>Asia</continent> are the following languages spoken: Persian and Persian dialects,  Turkic and Turkic dialects, Kurdish, Luri, Balochi, Arabic, Turkish, other indigenous languages.</doc>
 <doc id='Iraq'>In the country Iraq in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic, Kurdish, Assyrian,  Armenian.</doc>
@@ -88,14 +88,14 @@
 <doc id='Italy'>In the country Italy in <continent id='Europe'>Europe</continent> are the following languages spoken: Italian, German, French,  Slovene.</doc>
 <doc id='Jamaica'>In the country Jamaica in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: English,  English patois.</doc>
 <doc id='Japan'>In the country Japan in <continent id='Asia'>Asia</continent> are the following languages spoken: Japanese.</doc>
-<doc id='Jordan'>In the country Jordan in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic; English widely understood among upper and middle classes.</doc>
+<doc id='Jordan'>In the country Jordan in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic, English.</doc>
 <doc id='Kazakhstan'>In the country Kazakhstan in <continent id='Asia'>Asia</continent> are the following languages spoken: Kazakh,  Russian.</doc>
-<doc id='Kenya'>In the country Kenya in <continent id='Africa'>Africa</continent> are the following languages spoken: English, Kiswahili, numerous indigenous languages.</doc>
+<doc id='Kenya'>In the country Kenya in <continent id='Africa'>Africa</continent> are the following languages spoken: English, Kiswahili, indigenous languages.</doc>
 <doc id='Kiribati'>In the country Kiribati in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: I- I-Kiribati,  English.</doc>
-<doc id='Korea, North'>In the country Korea, North in <continent id='Asia'>Asia</continent> are the following languages spoken: Korean;.</doc>
-<doc id='Korea, South'>In the country Korea, South in <continent id='Asia'>Asia</continent> are the following languages spoken: Korean; English widely taught in junior high and high school.</doc>
+<doc id='Korea, North'>In the country Korea, North in <continent id='Asia'>Asia</continent> are the following languages spoken: Korean.</doc>
+<doc id='Korea, South'>In the country Korea, South in <continent id='Asia'>Asia</continent> are the following languages spoken: Korean, English.</doc>
 <doc id='Kosovo'>In the country Kosovo in <continent id='Europe'>Europe</continent> are the following languages spoken: Albanian, Serbian, Bosnian, Turkish, Gorani, Romani.</doc>
-<doc id='Kuwait'>In the country Kuwait in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic;  English widely spoken.</doc>
+<doc id='Kuwait'>In the country Kuwait in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic,  English.</doc>
 <doc id='Kyrgyzstan'>In the country Kyrgyzstan in <continent id='Asia'>Asia</continent> are the following languages spoken: Kyrgyz,  Russian.</doc>
 <doc id='Laos'>In the country Laos in <continent id='Asia'>Asia</continent> are the following languages spoken: Lao, French, English, various ethnic languages.</doc>
 <doc id='Latvia'>In the country Latvia in <continent id='Europe'>Europe</continent> are the following languages spoken: Latvian, Russian, Lithuanian, other indigenous languages.</doc>
@@ -114,7 +114,7 @@
 <doc id='Maldives'>In the country Maldives in <continent id='Asia'>Asia</continent> are the following languages spoken: Maldivian Dhivehi (dialect of Sinhala, script derived from Arabic),  English.</doc>
 <doc id='Mali'>In the country Mali in <continent id='Africa'>Africa</continent> are the following languages spoken: French, Bambara, numerous African languages.</doc>
 <doc id='Malta'>In the country Malta in <continent id='Europe'>Europe</continent> are the following languages spoken: Maltese,  English.</doc>
-<doc id='Marshall Islands'>In the country Marshall Islands in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Marshallese, English, other languages; English widely spoken as a second language; both Marshallese and English are official languages.</doc>
+<doc id='Marshall Islands'>In the country Marshall Islands in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Marshallese, English, local languages.</doc>
 <doc id='Mauritania'>In the country Mauritania in <continent id='Africa'>Africa</continent> are the following languages spoken: Arabic, Pulaar, Soninke, French, Hassaniya,  Wolof.</doc>
 <doc id='Mauritius'>In the country Mauritius in <continent id='Africa'>Africa</continent> are the following languages spoken: Creole, Bhojpuri, French, English, other and unspecified.</doc>
 <doc id='Mexico'>In the country Mexico in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish, various Mayan, Nahuatl, and other regional indigenous languages.</doc>
@@ -123,30 +123,30 @@
 <doc id='Monaco'>In the country Monaco in <continent id='Europe'>Europe</continent> are the following languages spoken: French, English, Italian,  Monegasque.</doc>
 <doc id='Mongolia'>In the country Mongolia in <continent id='Asia'>Asia</continent> are the following languages spoken: Khalkha Mongol, Turkic,  Russian.</doc>
 <doc id='Montenegro'>In the country Montenegro in <continent id='Europe'>Europe</continent> are the following languages spoken: Serbian.</doc>
-<doc id='Morocco'>In the country Morocco in <continent id='Africa'>Africa</continent> are the following languages spoken: Arabic,  Berber dialects,  French; French often the language of business, government, and diplomacy.</doc>
+<doc id='Morocco'>In the country Morocco in <continent id='Africa'>Africa</continent> are the following languages spoken: Arabic,  Berber dialects,  French.</doc>
 <doc id='Mozambique'>In the country Mozambique in <continent id='Africa'>Africa</continent> are the following languages spoken: Emakhuwa, Xichangana, Portuguese, Elomwe, Cisena, Echuwabo, other Mozambican languages, other foreign languages, English, Afrikaans, German, Oshivambo, Herero,  Nama.</doc>
 <doc id='Myanmar'>In the country Myanmar in <continent id='Asia'>Asia</continent> are the following languages spoken: Burmese, minority ethnic groups have their own languages.</doc>
 <doc id='Namibia'>In the country Namibia in <continent id='Africa'>Africa</continent> are the following languages spoken: Afrikaans, Dama/Nama, German, Herero, Oshiwambo, Rukwangali, Setswana, Silozi.</doc>
 <doc id='Nauru'>In the country Nauru in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Nauruan.</doc>
-<doc id='Nepal'>In the country Nepal in <continent id='Asia'>Asia</continent> are the following languages spoken: Nepali, Maithali, Bhojpuri, Tharu, Tamang, Newar, Magar, Awadhi, other unspecified languages; many in government and business also speak English.</doc>
+<doc id='Nepal'>In the country Nepal in <continent id='Asia'>Asia</continent> are the following languages spoken: Nepali, Maithali, Bhojpuri, Tharu, Tamang, Newar, Magar, Awadhi, other unspecified languages.</doc>
 <doc id='Netherlands'>In the country Netherlands in <continent id='Europe'>Europe</continent> are the following languages spoken: Dutch,  Frisian.</doc>
 <doc id='New Zealand'>In the country New Zealand in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: English,  Maori.</doc>
-<doc id='Nicaragua'>In the country Nicaragua in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish, Miskito, other unspecified languages; English and indigenous languages on Atlantic coast.</doc>
+<doc id='Nicaragua'>In the country Nicaragua in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish, Miskito, other unspecified languages, English, local languages.</doc>
 <doc id='Niger'>In the country Niger in <continent id='Africa'>Africa</continent> are the following languages spoken: French, Hausa,  Djerma.</doc>
 <doc id='Nigeria'>In the country Nigeria in <continent id='Africa'>Africa</continent> are the following languages spoken: English, Hausa, Yoruba, Igbo,  Fulani.</doc>
 <doc id='Niue'>In the country Niue in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Niuean,  English.</doc>
-<doc id='Norway'>In the country Norway in <continent id='Europe'>Europe</continent> are the following languages spoken: Norwegian ( Bokmal Norwegian,  Nynorsk Norwegian), Sami,  Finnish;  small Sami- and Finnish-speaking minorities, Sami is official in six municipalities.</doc>
+<doc id='Norway'>In the country Norway in <continent id='Europe'>Europe</continent> are the following languages spoken: Norwegian ( Bokmal Norwegian,  Nynorsk Norwegian), Sami,  Finnish.</doc>
 <doc id='Oman'>In the country Oman in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic, English, Baluchi, Urdu,  Indian dialects.</doc>
 <doc id='Pakistan'>In the country Pakistan in <continent id='Asia'>Asia</continent> are the following languages spoken: Punjabi, Sindhi, Siraiki, Pashtu, Urdu, Balochi, Hindko, Brahui, English, Burushaski, and other indigenous languages.</doc>
 <doc id='Palau'>In the country Palau in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Palauan, Angaur, Filipino, English, Chinese, Carolinian,  Japanese.</doc>
-<doc id='Panama'>In the country Panama in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish,  English; many Panamanians bilingual.</doc>
-<doc id='Papua New Guinea'>In the country Papua New Guinea in <continent id='Asia'>Asia</continent> are the following languages spoken: Melanesian Pidgin, English,  Motu; 715 indigenous languages - many unrelated.</doc>
+<doc id='Panama'>In the country Panama in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: Spanish,  English.</doc>
+<doc id='Papua New Guinea'>In the country Papua New Guinea in <continent id='Asia'>Asia</continent> are the following languages spoken: Melanesian Pidgin, English,  Motu, local languages.</doc>
 <doc id='Paraguay'>In the country Paraguay in <continent id='South America'>South America</continent> are the following languages spoken: Spanish,  Guarani.</doc>
 <doc id='Peru'>In the country Peru in <continent id='South America'>South America</continent> are the following languages spoken: Spanish, Quechua, Aymara, and a large number of minor Amazonian languages.</doc>
 <doc id='Philippines'>In the country Philippines in <continent id='Asia'>Asia</continent> are the following languages spoken: Tagalog, English, Cebuano, Ilocano,  Hiligaynon or Ilonggo, Bicol, Waray, Pampango,  Pangasinan.</doc>
 <doc id='Poland'>In the country Poland in <continent id='Europe'>Europe</continent> are the following languages spoken: Polish, other and unspecified.</doc>
 <doc id='Portugal'>In the country Portugal in <continent id='Europe'>Europe</continent> are the following languages spoken: Portuguese,  Mirandese.</doc>
-<doc id='Qatar'>In the country Qatar in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic; English commonly used as a second language.</doc>
+<doc id='Qatar'>In the country Qatar in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic, English.</doc>
 <doc id='Romania'>In the country Romania in <continent id='Europe'>Europe</continent> are the following languages spoken: Romanian, Hungarian,  German.</doc>
 <doc id='Russia'>In the country Russia in <continent id='Europe'>Europe</continent> are the following languages spoken: Russian, many minority languages.</doc>
 <doc id='Rwanda'>In the country Rwanda in <continent id='Africa'>Africa</continent> are the following languages spoken: Kinyarwanda, French, English,  Kiswahili.</doc>
@@ -164,16 +164,16 @@
 <doc id='Singapore'>In the country Singapore in <continent id='Asia'>Asia</continent> are the following languages spoken: Mandarin, English, Malay, Hokkien, Cantonese, Teochew, Tamil, other Chinese dialects, other indigenous languages.</doc>
 <doc id='Slovakia'>In the country Slovakia in <continent id='Europe'>Europe</continent> are the following languages spoken: Slovak, Hungarian, Roma, Ukrainian, other or unspecified.</doc>
 <doc id='Slovenia'>In the country Slovenia in <continent id='Europe'>Europe</continent> are the following languages spoken: Slovenian, Serbo- Serbo-Croatian, other or unspecified.</doc>
-<doc id='Solomon Islands'>In the country Solomon Islands in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Melanesian pidgin,  English; 120 indigenous languages.</doc>
+<doc id='Solomon Islands'>In the country Solomon Islands in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Melanesian pidgin, English, local languages.</doc>
 <doc id='Somalia'>In the country Somalia in <continent id='Africa'>Africa</continent> are the following languages spoken: Somali, Arabic, Italian,  English.</doc>
 <doc id='South Africa'>In the country South Africa in <continent id='Africa'>Africa</continent> are the following languages spoken: IsiZulu, IsiXhosa, Afrikaans, Sepedi, English, Setswana, Sesotho, Xitsonga, other indigenous languages.</doc>
 <doc id='Spain'>In the country Spain in <continent id='Europe'>Europe</continent> are the following languages spoken: Castilian Spanish,  Catalan, Galician,  Basque.</doc>
-<doc id='Sri Lanka'>In the country Sri Lanka in <continent id='Asia'>Asia</continent> are the following languages spoken: Sinhala, Tamil, other indigenous languages; English is commonly used in government and is spoken competently by about of the population.</doc>
-<doc id='Sudan'>In the country Sudan in <continent id='Africa'>Africa</continent> are the following languages spoken: Arabic, Nubian,  Ta Bedawie, Nilotic languages, Nilo-Hamitic languages, Sudanic languages, English;  program of Arabization in process.</doc>
+<doc id='Sri Lanka'>In the country Sri Lanka in <continent id='Asia'>Asia</continent> are the following languages spoken: Sinhala, Tamil, other indigenous languages, English.</doc>
+<doc id='Sudan'>In the country Sudan in <continent id='Africa'>Africa</continent> are the following languages spoken: Arabic, Nubian,  Ta Bedawie, Nilotic languages, Nilo-Hamitic languages, Sudanic languages, English.</doc>
 <doc id='Suriname'>In the country Suriname in <continent id='South America'>South America</continent> are the following languages spoken: Dutch, English, Sranang Tongo %28Surinamese%29 Sranang Tongo (Surinamese),  Hindustani,  Javanese.</doc>
 <doc id='Swaziland'>In the country Swaziland in <continent id='Africa'>Africa</continent> are the following languages spoken: English,  siSwati.</doc>
-<doc id='Sweden'>In the country Sweden in <continent id='Europe'>Europe</continent> are the following languages spoken: Swedish, Sami,  Finnish;  small Sami- and Finnish-speaking minorities.</doc>
-<doc id='Switzerland'>In the country Switzerland in <continent id='Europe'>Europe</continent> are the following languages spoken: German, French, Italian, Serbo- Serbo-Croatian,  Albanian, Portuguese, Spanish, English,  Romansch,  other indigenous languages; German, French, Italian, and Romansch  are all national languages, but only the first three are official languages.</doc>
+<doc id='Sweden'>In the country Sweden in <continent id='Europe'>Europe</continent> are the following languages spoken: Swedish, Sami,  Finnish, Sami.</doc>
+<doc id='Switzerland'>In the country Switzerland in <continent id='Europe'>Europe</continent> are the following languages spoken: German, French, Italian, Serbo-Croatian, Albanian, Portuguese, Spanish, English,  Romansch,  local languages, German, French, Italian, and Romansch.</doc>
 <doc id='Syria'>In the country Syria in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic, Kurdish, Armenian, Aramaic, Circassian, French,  English.</doc>
 <doc id='Taiwan'>In the country Taiwan in <continent id='Asia'>Asia</continent> are the following languages spoken: Mandarin Chinese, Taiwanese,  Hakka dialects.</doc>
 <doc id='Tajikistan'>In the country Tajikistan in <continent id='Asia'>Asia</continent> are the following languages spoken: Tajik,  Russian.</doc>
@@ -183,14 +183,14 @@
 <doc id='Tonga'>In the country Tonga in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Tongan,  English.</doc>
 <doc id='Trinidad and Tobago'>In the country Trinidad and Tobago in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: English, Hindi, French, Spanish,  Chinese.</doc>
 <doc id='Tunisia'>In the country Tunisia in <continent id='Africa'>Africa</continent> are the following languages spoken: Arabic,  French.</doc>
-<doc id='Turkey'>In the country Turkey in <continent id='Europe'>Europe</continent> are the following languages spoken: Turkish, Kurdish, Dimli, Azeri,  Kabardian;  Gagauz population in the Europe part of Turkey.</doc>
+<doc id='Turkey'>In the country Turkey in <continent id='Europe'>Europe</continent> are the following languages spoken: Turkish, Kurdish, Dimli, Azeri,  Kabardian.</doc>
 <doc id='Turkmenistan'>In the country Turkmenistan in <continent id='Asia'>Asia</continent> are the following languages spoken: Turkmen, Russian, Uzbek, other indigenous languages.</doc>
 <doc id='Tuvalu'>In the country Tuvalu in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: Tuvaluan, English, Samoan,  Kiribati.</doc>
 <doc id='Uganda'>In the country Uganda in <continent id='Africa'>Africa</continent> are the following languages spoken: English,  Ganda or Luganda,  other Niger-Congo languages, Nilo-Saharan languages, Swahili,  Arabic.</doc>
-<doc id='Ukraine'>In the country Ukraine in <continent id='Europe'>Europe</continent> are the following languages spoken: Ukrainian, Russian, Romanian, Polish,  Hungarian;  small Romanian-, Polish-, and Hungarian-speaking minorities.</doc>
+<doc id='Ukraine'>In the country Ukraine in <continent id='Europe'>Europe</continent> are the following languages spoken: Ukrainian, Russian, Romanian, Polish,  Hungarian.</doc>
 <doc id='United Arab Emirates'>In the country United Arab Emirates in <continent id='Asia'>Asia</continent> are the following languages spoken: Arabic, Persian, English, Hindi,  Urdu.</doc>
 <doc id='United Kingdom'>In the country United Kingdom in <continent id='Europe'>Europe</continent> are the following languages spoken: English, Welsh,  Scottish Gaelic.</doc>
-<doc id='United States of America'>In the country United States of America in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: English, Spanish, Native American indigenous languages; other Indo-European, Asian and Pacific island languages are spoken.</doc>
+<doc id='United States of America'>In the country United States of America in <continent id='North and Central America (Including the Caribbean)'>North and Central America (Including the Caribbean)</continent> are the following languages spoken: English, Spanish, Native American indigenous languages.</doc>
 <doc id='Uruguay'>In the country Uruguay in <continent id='South America'>South America</continent> are the following languages spoken: Spanish, Portunol,  Brazilero.</doc>
 <doc id='Uzbekistan'>In the country Uzbekistan in <continent id='Asia'>Asia</continent> are the following languages spoken: Uzbek, Russian, Tajik, other indigenous languages.</doc>
 <doc id='Vanuatu'>In the country Vanuatu in <continent id='Oceania/Australia'>Oceania/Australia</continent> are the following languages spoken: local languages, pidgin, English, French, other unspecified languages.</doc>

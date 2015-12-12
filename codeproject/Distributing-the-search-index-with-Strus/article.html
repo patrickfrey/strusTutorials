@@ -1,0 +1,159 @@
+<html>
+<head>
+<title>Distributing the search index with Strus</title>
+</head>
+<body>
+<h2>Goals</h2>
+<p>
+The main focus of server applications lays on scalability.
+This article tries to clarify how the project <a href="http://www.project-strus.net">Strus</a>
+meets scalability requirements.
+</p>
+
+<h2>Background</h2>
+<p><a href="http://www.project-strus.net">Strus</a> is a set of libraries and tools
+to build search engines</a>. For tutorials that show how to build a search engine
+with Strus have a look at my previous code project articles:
+<ol>
+<li><a href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial">Building a search engine with Strus</a></li>
+<li><a href="http://www.codeproject.com/Articles/1059766/Building-a-search-engine-with-Python-Tornado-and-S">Building a search engine with Python Tornado and Strus</a></li>
+</ol>
+</p>
+
+<h2>Introduction</h2>
+<p>
+To cap administration costs the industry favors configurationless systems, meaning that
+the software is completely instrumented with an API.
+<br />To scale in performance you need to be
+able to distribute your application on an arbitrary number of machines without system costs
+eating up the performance gain of using more machines. Furthermore it should be possible
+to add new machines anytime without a complete reconfiguration of the system.
+<br />
+The first requirement, a configurationless system, completely instrumentable with an API 
+is fulfilled by Strus. You can check that on your own. Have a look at the previous articles
+and the API and the documentation with examples.
+<br />
+The second issue, distribution of a Strus search application on an arbitrary number 
+of machines and the capability to increase the number of processing nodes anytime 
+is the main subject of this article.
+It will explain what distribution of a full-text search application means in general.
+Then it will show the position of Strus in this landscape and help you to compare Strus
+with other search engines.
+</p>
+
+<h4>Note 1</h4>
+<p><i>We are talking about a distributed search index here and not about a distributed search.
+A distributed search would mean a distributed system, where queries are routed to the nodes that possibly 
+can answer the query. For a search engine this means that nodes propagate their competence to 
+answer a certain question in a P2P network to other nodes and the nodes use this information 
+to route a query. Here we talk about distributing the search index of a full-text search engine
+that sends the query to all nodes (transitively in the case of a tree of nodes) and that merges
+their results to one result list.
+</i></p>
+
+<h4>Note 2</h4>
+<p><i>A search engine evaluates the best matching answers to a query with help of a database 
+storing relations that bring a query into conjunction with a result. For a scalable
+search engine with a distributed index it is important that each node with a part of this 
+split can calculate a part of the result completely so that it can make a decision about 
+what is a candidate for the final result and what not. 
+Preferably the number of items sorted out by the cut is high.
+This implies that the database has to be organized in a way that all information for weighting one
+document, the most common result of an information retrieval query, belongs to one node.
+The informations used for retrieval are therefore assumed to be grouped by document. 
+There are cases of retrieval problems, where the items retrieved are not documents
+and where the cut cannot be made so easily.
+</i></p>
+
+<h2>Distributing the search index</h2>
+<p>A search engine usually assigns a weight to each result row. This weight is used to order
+the results. A search engine calculates the N results with the highest weight.
+For merging results from different nodes to one result, these weights must be comparable.
+If this is the case, then a search engine can delegate the calculation of the best N results 
+to each node and then take the best N results from the merge of the node results.
+<br />
+Many established weighting methods use statistical information that is accumulated from
+values distributed over the complete collection. One example is the <i>df</i>, the document
+frequency of a term. It gives a measure of how rare or how often a term appears in the collection.
+Many statistical methods use this number in the weighting formula used to calculate the 
+weight of a document.
+<br />
+We can now make a distinction of cases of the relation of a node to such a piece of information
+from the point of view of a node and the consequences for our retrieval function and the system:
+<table border=1>
+<tr>
+<td><b>1</b></td>
+<td><b>The information is not provided</b>: We implement only query evaluation schemes without statistical 
+data that is distributed beyond one document.</td>
+<td>This is a solution that scales. Unfortunately it is problematic from the information retrieval point of
+view. It looks like neither query expansion nor document assessments are able to outweigh missing statistical information.
+Well, at least according to my information. If you can solve your problem with this approach, then it is perfect.</td>
+</tr>
+<tr>
+<td><b>2</b></td>
+<td><b>The information is implicitly provided</b>: We use the probability of a random distribution of
+independent items to tend towards an equal distribution of the statistics. A mechanism is used that
+assigns the documents to nodes in a way that we can use the local values of statistics for calculation
+because they are with a high probability globally the same within an error range. 
+</td>
+<td>This is a very pragmatic approach. We can scale in the number
+of documents we can insert, though we cannot simply add and remove nodes and organize them as we
+want. We can organize things only one way and this assignment is left to Mr. Random.
+The missing possibility to organize collections as we want is the strongest argument against this approach.
+</td>
+</tr>
+<tr>
+<td><b>3</b></td>
+<td><b>Every node has access to the information</b>: We use a mechanism to distribute the information to every node
+or we provide an interface for every node to access the information.</td>
+<td>Both approaches are a no go from system point of view. In the first case we get storms of messages when updating
+a node. So you can forget scalability. In the second case we get a system nightmare with the interface to 
+access the information provided to the nodes. The self containment of nodes is lost and thus the scalability.</td>
+</tr>
+<tr>
+<td><b>4</b></td>
+<td><b>The information is passed down with the query</b>: We separate the information from the single node.</td>
+<td>This is a good approach if the amount of information we have to pass down is not significantly complicating
+the query. We can handle the problem of accessing this information on its own. If we can 
+for example use a key/value map as storage for this information, we know that we can scale in this aspect, 
+because for key/value storages there exist solutions that scale. We have to find ways to fetch the 
+information from the nodes accumulating it and put it into the global storage for the statistical 
+information for the query.
+<br/>
+But we also give something away with this solution. Queries that require statistical information of items
+that are taken from the documents retrieved, like for example fetching the statistically best terms from
+documents matching a query for <a href="https://en.wikipedia.org/wiki/Relevance_feedback">relevance feedback</a>, 
+are only possible using local statistics. This is because the information we have to pass down with the 
+query is potentially containing all statistical information in the whole collection or all information
+that possibly could be found in a document. 
+</td>
+</tr>
+</table>
+</p>
+
+<h2>Solutions</h2>
+<p>You can find out on your own how your favorite search engine solves the problem of providing the
+information needed by the query for weighting the items retrieved in a way that search results
+are comparable.
+<br/>
+For Strus we will not discuss the variant <b>1</b>(the information is not provided) because it is trivial.
+<br/>The variant <b>2</b>(the information is implicitly provided) is left to the reader to think about.
+<br/>The variant <b>3</b>(every node has access to the information) is refused because it does not scale.
+<br/>We will only have a look at variant <b>4</b> (the information is passed down with the query) and
+provide some example source code for it.
+</p>
+
+<h4>Note 3</h4>
+<p><i>We will intentionally overlook the fact, that this variant (4) potentially
+cannot solve problems like feature selection based on global term statistics. 
+But there is still reason for optimism to find solutions for this kind of problems
+(For example to use the local statistics information to make a preselection 
+and a cut and to calculate the real weights based on the global statistics outside).
+If you have a solution that scales but is missing the functionality, you'll have a big chance to
+solve your problem with some fantasy and some nice ideas. It is on the other hand nearly impossible
+to take a program, that solves a problem, and to make it scale with some fantasy and some nice ideas.
+</i></p>
+
+</body>
+</html>
+
