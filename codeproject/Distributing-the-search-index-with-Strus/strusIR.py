@@ -71,8 +71,7 @@ class Backend:
     def __init__(self, config):
         # Open local storage on file with configuration specified:
         self.context = strus.Context()
-        self.context.addResourcePath("./resources")
-        self.context.definePeerMessageProcessor( "standard");
+        self.context.defineStatisticsProcessor( "standard");
         self.storage = self.context.createStorageClient( config )
         self.queryAnalyzer = self.createQueryAnalyzer()
         self.documentAnalyzer = self.createDocumentAnalyzer()
@@ -96,21 +95,22 @@ class Backend:
         return rt
 
     # Query evaluation scheme for a classical information retrieval query with BM25:
-    def evaluateQueryText( self, querystr, firstrank, nofranks):
+    def evaluateQueryText( self, terms, collectionsize, firstrank, nofranks):
         queryeval = self.queryeval
         query = queryeval.createQuery( self.storage)
-        terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
         if len( terms) == 0:
             # Return empty result for empty query:
             return []
 
         selexpr = ["contains"]
         for term in terms:
-            selexpr.append( [term.type(), term.value()] )
-            query.defineFeature( "docfeat", [term.type(), term.value()], 1.0)
+            selexpr.append( [term.type, term.value] )
+            query.defineFeature( "docfeat", [term.type, term.value], 1.0)
+            query.defineTermStatistics( term.type, term.value, {'df' : term.df} )
         query.defineFeature( "selfeat", selexpr, 1.0 )
         query.setMaxNofRanks( nofranks)
         query.setMinRank( firstrank)
+        query.defineGlobalStatistics( {'nofdocs' : collectionsize} )
         # Evaluate the query:
         results = query.evaluate()
         # Rewrite the results:

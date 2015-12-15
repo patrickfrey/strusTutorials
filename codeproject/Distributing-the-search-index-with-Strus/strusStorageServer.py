@@ -7,16 +7,17 @@ import sys
 import struct
 import strusIR
 import time
+import collections
 
 # [0] Globals:
 # Information retrieval engine:
 backend = strusIR.Backend( "path=storage; cache=512M")
 # Port of the global statistics server:
 globstatsport = 7183
-# Ports of this storage node:
-myport = 80
+# Port of this storage server:
+myport = 7182
 
-# [1] Request handlers:
+# [1] 
 # Insert a document (POST request with the multipart document as body):
 class InsertHandler( tornado.web.RequestHandler ):
     def post(self):
@@ -30,25 +31,6 @@ class InsertHandler( tornado.web.RequestHandler ):
         except Exception as e:
             self.write( "ERR %s\n" % (e))
 
-# Answer a query:
-class QueryHandler( tornado.web.RequestHandler ):
-    def get(self):
-        try:
-            # q = query terms:
-            querystr = self.get_argument( "q", None)
-            # i = first rank of the result to display (for scrolling):
-            firstrank = int( self.get_argument( "i", 0))
-            # n = maximum number of ranks of the result to display on one page:
-            nofranks = int( self.get_argument( "n", 20))
-            # Evaluate query with BM25 (Okapi):
-            results = backend.evaluateQueryText( querystr, firstrank, nofranks)
-            self.render( "search_bm25_html.tpl",
-                             scheme=scheme, querystr=querystr,
-                             firstrank=firstrank, nofranks=nofranks, results=results)
-        except Exception as e:
-            self.render( "search_error_html.tpl", 
-                         message=e, scheme=scheme, querystr=querystr,
-                         firstrank=firstrank, nofranks=nofranks)
 
 # Answer a query (binary protocol):
 class QueryHandlerBin( tornado.websocket.WebSocketHandler ):
@@ -60,62 +42,67 @@ class QueryHandlerBin( tornado.websocket.WebSocketHandler ):
 
     def get(self):
         try:
+            Term = collections.namedtuple('Term', ['type', 'value', 'df'])
             rt = bytearray()
             nofranks = 20
+            collectionsize = 0
             firstrank = 0
-            querystr = ""
+            terms = []
             messagesize = len(message)
             messageofs = 0
             while (messageofs < messagesize):
                 if (message[ messageofs] == 'I')
                     (firstrank,) = struct.unpack_from( ">H", message, messageofs+1)
-                    messageofs += struct.calcsize( ">HH") + 1
+                    messageofs += struct.calcsize( ">H") + 1
                 elif (message[ messageofs] == 'N')
                     (nofranks,) = struct.unpack_from( ">H", message, messageofs+1)
                     messageofs += struct.calcsize( ">H") + 1
-                elif (message[ messageofs] == 'Q')
-                    (querystrLen,) = struct.unpack_from( ">H", message, messageofs+1)
-                    messageofs += struct.calcsize( ">H") + 1
-                    (querystr,) = struct.unpack_from( "%ds" % (querystrLen), message, messageofs)
-                    messageofs += querystrLen
+                elif (message[ messageofs] == 'S')
+                    (collectionsize,) = struct.unpack_from( ">q", message, messageofs+1)
+                    messageofs += struct.calcsize( ">q") + 1
+                elif (message[ messageofs] == 'T')
+                    (df,typesize,valuesize) = struct.unpack_from( ">qHH", message, messageofs+1)
+                    messageofs += struct.calcsize( ">qHH") + 1
+                    (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
+                    messageofs += typesize + valuesize
+                    terms.append( Term( type, value, df)
                 else:
-                    rt.append( b"E" + errormsg( b"unknown parameter"))
-                    messageofs = messagesize    # ... stop parsing on error
+                    rt = b"E" + errormsg( b"unknown parameter")
+                    self.write_message( rt, binary=True)
+                    return
             # Evaluate query with BM25 (Okapi):
-            results = backend.evaluateQueryText( querystr, firstrank, nofranks)
+            results = backend.evaluateQueryText( terms, collectionsize, firstrank, nofranks)
             # Build the result:
-            rt = bytearray()
+            rt = bytearray("Y")
             for result in results:
+                rt.append( '_')
                 rt.append( 'D')
                 rt.append( struct.pack( ">I", result['docno'])
+                rt.append( 'W')
+                rt.append( struct.pack( ">f", result['weight'])
                 rt.append( 'I')
                 rt.append( packedstr( result['docid']))
                 rt.append( 'T')
                 rt.append( packedstr( result['title']))
                 rt.append( 'A')
                 rt.append( packedstr( result['abstract']))
+            # Send the result back:
             self.write_message( rt, binary=True)
 
         except Exception as e:
-            rt.append( b"E" + errormsg( bytearray( e)))
+            rt = b"E" + errormsg( bytearray( e))
             self.write_message( rt, binary=True)
 
 # [2] Dispatcher:
 application = tornado.web.Application([
     # /insert in the URL triggers the handler for inserting documents:
     (r"/insert", InsertHandler),
-    # /query in the URL triggers the handler for answering queries:
-    (r"/query", QueryHandler),
-    # /query in the URL triggers the handler for answering queries with a binary protocol:
+    # /binquery in the URL triggers the handler for answering queries with a binary protocol:
     (r"/binquery", QueryHandlerBin),
-    # /static in the URL triggers the handler for accessing static 
-    # files like images referenced in tornado templates:
-    (r"/static/(.*)",tornado.web.StaticFileHandler,
-        {"path": os.path.dirname(os.path.realpath(sys.argv[0]))},)
 ])
 
 # [3] Publish statistics:
-@asyncio.coroutine
+@gen.coroutine
 def publishStatisticsCallback( itr):
     # Open connection to server:
     nofTries = 20
@@ -124,7 +111,7 @@ def publishStatisticsCallback( itr):
     while (nofTries > 0 and conn == None):
         try:
             conn = yield from websocket.create_connection(
-                        'ws://{}:{}/dist'.format( 'localhost', globstatsport)))
+                      'ws://{}:{}/publish'.format( 'localhost', globstatsport)))
         except tornado.httpclient.HTTPError as e:
             nofTries -= 1
             errmsg = e
@@ -138,15 +125,15 @@ def publishStatisticsCallback( itr):
             if (reply[0] == 'E'):
                 raise Exception( "error in global statistis server: %s" % reply[ 1:])
             elif if (reply[0] != 'Y'):
-                raise Exception( "protocol error distributing statistics")
+                raise Exception( "protocol error publishing statistics")
             msg = itr.getNext()
         conn.close()
     else:
-        raise Exception( "connection error distributing statistics: %s" % errmsg)
-    print "distributing initial statistics finished"
+        raise Exception( "connection error publishing statistics: %s" % errmsg)
+    print "publishing initial statistics finished"
 
 def publishStatistics( itr):
-    # Initiate the distribution of statistics as task in the eventloop
+    # Initiate the publishing of statistics as task in the eventloop
     tornado.ioloop.IOLoop.current().add_callback(
             callback=lambda: publishStatisticsCallback( itr))
 

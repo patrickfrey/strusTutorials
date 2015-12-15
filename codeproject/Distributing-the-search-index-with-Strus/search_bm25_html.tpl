@@ -1,6 +1,9 @@
 {% extends "search_base_html.tpl" %}
 
 {% block resultblock %}
+{% for message in messages %}
+<p><font color="red">Error: {{message}}</font></p>
+{% end %}
 <table border=1>
 <tr>
 <th align='left'>Docno</th>
