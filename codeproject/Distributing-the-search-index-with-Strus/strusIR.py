@@ -83,14 +83,10 @@ class Backend:
         docqueue = self.documentAnalyzer.createQueue()
         docqueue.push( content)
         transaction = self.storage.createTransaction()
-        nofdocs = 2000
-        transaction.allocateDocnoRange( nofdocs)
         while (docqueue.hasMore()):
             doc = docqueue.fetch()
-            transaction.insertDocument( doc.docid(), doc, True)
+            transaction.insertDocument( doc.docid(), doc)
             rt += 1
-            if (rt % nofdocs == 0):
-                transaction.allocateDocnoRange( nofdocs)
         transaction.commit()
         return rt
 

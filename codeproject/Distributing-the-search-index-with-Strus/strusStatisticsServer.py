@@ -23,10 +23,10 @@ strustat = strusctx.createStatisticsProcessor()
 # [1] Websocket handlers:
 # Increment/decrement global statistics (websocket requests with the peer message blob):
 class PublishHandler( tornado.websocket.WebSocketHandler ):
-    def errormsg( msg)
+    def errormsg( self, msg):
         return struct.pack( ">H%ds" % len(msg), len(msg), msg)
 
-    def on_message(self, message):
+    def on_message( self, message):
         try:
             msg = strustat.decode( message)
             nofdocs += msg.nofDocumentsInsertedChange()
@@ -40,12 +40,12 @@ class PublishHandler( tornado.websocket.WebSocketHandler ):
             self.write_message( b"Y", binary=True)
 
         except Exception as e:
-            rt = b"E" + errormsg( bytearray( e))
-            self.write_message( b"E" + errormsg( bytearray( e)), binary=True)
+            rt = b"E" + self.errormsg( bytearray( e))
+            self.write_message( rt, binary=True)
 
 # Query a list of statistics (web socket request with a binary blob, proprietary protocol):
 class StatsQueryHandler( tornado.websocket.WebSocketHandler ):
-    def errormsg( msg)
+    def errormsg( msg):
         return struct.pack( ">H%ds" % len(msg), len(msg), msg)
 
     def on_message(self, message):
@@ -54,7 +54,7 @@ class StatsQueryHandler( tornado.websocket.WebSocketHandler ):
             messagesize = len(message)
             messageofs = 0
             while (messageofs < messagesize):
-                if (message[ messageofs] == 'T')
+                if (message[ messageofs] == 'T'):
                     # Fetch df of term, message format [T][typesize:16][valuesize:16][type string][value string]:
                     (typesize,valuesize) = struct.unpack_from( ">HH", message, messageofs+1)
                     messageofs += struct.calcsize( ">HH") + 1
@@ -64,16 +64,16 @@ class StatsQueryHandler( tornado.websocket.WebSocketHandler ):
                     key = struct.pack( 'ps', type, value)
                     if key in termDfMap:
                         df = termDfMap[ key]
-                    rt.append( struct.pack( ">q", df)
-                elif (message[ messageofs] == 'N')
+                    rt.append( struct.pack( ">q", df))
+                elif (message[ messageofs] == 'N'):
                     # Fetch N (nof documents), message format [N]:
                     messageofs += 1
-                    rt.append( struct.pack( ">q", nofDocs)
+                    rt.append( struct.pack( ">q", nofDocs))
                 else:
-                    rt = b"E" + errormsg( b"unknown command")
-                    messageofs = messagesize    # ... stop parsing on error
+                    rt = b"E" + self.errormsg( b"unknown command")
+                    break
         except Exception as e:
-            rt = b"E" + errormsg( bytearray( e))
+            rt = b"E" + self.errormsg( bytearray( e))
         self.write_message( rt, binary=True)
 
 # [3] Dispatcher:

@@ -2,18 +2,21 @@
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
+import tornado.gen
 import os
 import sys
 import gen
 import struct
 import collections
 import heapq
+import websocket
+import trollius
 
 # [0] Globals and helper classes:
 # Port of this query server (set to default):
-myport = 7184
-# Port of the global statistics server:
-globstatsport = 7183
+myport = 7182
+# The address of the global statistics server:
+statserver = "localhost:7183"
 # Strus storage server ports:
 storageports = []
 
@@ -31,48 +34,52 @@ ResultRow = collections.namedtuple('ResultRow', ['docno', 'docid', 'weight', 'ti
 # [1] HTTP handlers:
 # Answer a query (issue a query to all storage servers and merge it to one result):
 class QueryHandler( tornado.web.RequestHandler ):
-    @gen.coroutine
+    @tornado.gen.coroutine
     def queryStats( self, terms):
-        statquery = bytearray()
-        for term in terms:
-            statquery.append('T')
-            typesize = len( term.type())
-            valuesize = len( term.value())
-            statquery.append( struct.pack( ">HH", typesize, valuesize)
-            statquery.append( struct.pack( "%ds%ds" % (typesize,valuesize), term.type(), term.value())
-        statquery.append('N')
-        conn = yield from websocket.create_connection(
-                      'ws://{}:{}/stats'.format( 'localhost', globstatsport)))
-        yield from conn.send( msg )
-        stats = yield from websocket.recv()
-        if (stats[0] == 'E'):
-            raise Exception( "failed to query global statistics: %s" % stats[1:])
-        dflist = []
-        statsofs = 1
-        statslen = len(stats)
-        while (statsofs < statslen):
-            statsval = struct.unpack_from( ">q", stats, statsofs)
-            statsofs += struct.calcsize( ">q")
-            if (len(dflist) < len(terms)):
-                dflist.append( statsval)
-            elif (len(rt) == len(terms)
-                collsize = statsval
-            else
-                break
-        if (statsofs != statslen):
-            raise Exception("statistic server result does not match query")
-        return dflist, statsofs
+        try:
+            statquery = bytearray()
+            for term in terms:
+                statquery.append('T')
+                typesize = len( term.type())
+                valuesize = len( term.value())
+                statquery.append( struct.pack( ">HH", typesize, valuesize)
+                statquery.append( struct.pack( "%ds%ds" % (typesize,valuesize), term.type(), term.value())
+            statquery.append('N')
+            conn = yield From( websocket.create_connection(
+                          'ws://{}:{}/stats'.format( 'localhost', globstatsport))))
+            yield From( conn.send( msg))
+            stats = yield From( websocket.recv())
 
-    @gen.coroutine
+            if (stats[0] == 'E'):
+                raise Exception( "failed to query global statistics: %s" % stats[1:])
+            dflist = []
+            statsofs = 1
+            statslen = len(stats)
+            while (statsofs < statslen):
+                statsval = struct.unpack_from( ">q", stats, statsofs)
+                statsofs += struct.calcsize( ">q")
+                if (len(dflist) < len(terms)):
+                    dflist.append( statsval)
+                elif (len(rt) == len(terms)
+                    collsize = statsval
+                else
+                    break
+            if (statsofs != statslen):
+                raise Exception("statistic server result does not match query")
+            return dflist, statsofs
+        except IOError as e:
+            raise Exception("query statistic server failed: %s" % e)
+
+    @tornado.gen.coroutine
     def queryExecute( port, qry):
         result = None
         conn = None
         try:
-            conn = yield from websocket.websocket_connect(
-                  'ws://{}:{}/binquery'.format( 'localhost', port))
+            conn = yield From( websocket.websocket_connect(
+                      'ws://{}:{}/binquery'.format( 'localhost', port)))
+            yield From( conn.send( qry ))
+            reply = yield From( websocket.recv())
 
-            yield from conn.send( qry )
-            reply = yield from websocket.recv()
             if (reply[0] == 'E'):
                 conn.close()
                 return (None, "storage server %u returned error: %s" % (port, reply[1:]))
@@ -123,7 +130,7 @@ class QueryHandler( tornado.web.RequestHandler ):
                 conn.close()
             return (None, "storage server %u connection error: %s" % (port, e))
 
-    @gen.coroutine
+    @tornado.gen.coroutine
     def queryCallback( port, qry):
         return queryExecute( port, qry), gen.Callback( port)
 
@@ -174,7 +181,7 @@ class QueryHandler( tornado.web.RequestHandler ):
             merged.append( result)
         return (result, errors)
 
-    @gen.coroutine
+    @tornado.gen.coroutine
     def evaluateQueryText( self, querystr, firstrank, nofranks):
         terms = analyzer.analyzePhrase( "text", querystr)
         if len( terms) == 0:
