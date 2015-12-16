@@ -7,6 +7,7 @@ import sys
 import gen
 import struct
 import collections
+import heapq
 
 # [0] Globals and helper classes:
 # Port of this query server (set to default):
@@ -46,15 +47,21 @@ class QueryHandler( tornado.web.RequestHandler ):
         stats = yield from websocket.recv()
         if (stats[0] == 'E'):
             raise Exception( "failed to query global statistics: %s" % stats[1:])
-        rt = []
+        dflist = []
         statsofs = 1
         statslen = len(stats)
         while (statsofs < statslen):
-            rt.append( struct.unpack_from( ">q", stats, statsofs)
+            statsval = struct.unpack_from( ">q", stats, statsofs)
             statsofs += struct.calcsize( ">q")
-        if (len(rt) != len(terms)+1):
+            if (len(dflist) < len(terms)):
+                dflist.append( statsval)
+            elif (len(rt) == len(terms)
+                collsize = statsval
+            else
+                break
+        if (statsofs != statslen):
             raise Exception("statistic server result does not match query")
-        return rt
+        return dflist, statsofs
 
     @gen.coroutine
     def queryExecute( port, qry):
@@ -125,18 +132,33 @@ class QueryHandler( tornado.web.RequestHandler ):
         tornado.ioloop.IOLoop.current().add_callback(
                 callback=lambda: queryCallback( port, qry))
 
-    def rowMergeIter( itrs):
-        minweight = sys.float_info.max
-        minitr = None
-        for itr in itrs:
-            if (itr.weight < minweight):
-                minweight = itr.weight
-                minitr = itr
-                itr.next()
-        if (minitr != None):
-            yield minitr
+    # Merge code derived from Python Cookbook (Sébastien Keim, Raymond Hettinger and Danny Yoo)
+    # referenced in from http://wordaligned.org/articles/merging-sorted-streams-in-python:
+    def mergeResultIter( resultlists):
+        # prepare a priority queue whose items are pairs of the form (-weight, resultlistiter):
+        heap = [  ]
+        for resultlist in resultlists:
+            resultlistiter = iter(resultlist)
+            for result in resultlistiter:
+                # subseq is not empty, therefore add this subseq's pair
+                # (current-value, iterator) to the list
+                heap.append((-result.weight, result, resultlistiter))
+                break
+        # make the priority queue into a heap
+        heapq.heapify(heap)
+        while heap:
+            # get and yield the result with the highest weight (minus lowest negative weight):
+            negative_weight, result, resultlistiter = heap[0]
+            yield result
+            for result in resultlistiter:
+                # resultlists is not finished, replace best pair in the priority queue
+                heapq.heapreplace( heap, (-result.weight, result, resultlistiter))
+                break
+            else:
+                # subseq has been exhausted, therefore remove it from the queue
+                heapq.heappop( heap)
 
-    def mergeQueryResults( results):
+    def mergeQueryResults( results, maxnofresults):
         merged = []
         errors = []
         itrs = []
@@ -145,10 +167,12 @@ class QueryHandler( tornado.web.RequestHandler ):
                 errors.append( result[1])
             else:
                 itrs.append( iter( result[0]))
-
-        
-        while (len( results) > 0):
-            
+        ri = 0
+        for result in mergeResultIter( itrs):
+            if (ri == maxnofresults):
+                break
+            merged.append( result)
+        return (result, errors)
 
     @gen.coroutine
     def evaluateQueryText( self, querystr, firstrank, nofranks):
@@ -157,10 +181,9 @@ class QueryHandler( tornado.web.RequestHandler ):
             # Return empty result for empty query:
             return []
         # Get the global statistics:
-        stats = self.queryStats( terms)
+        dflist,collectionsize = self.queryStats( terms)
         # Assemble the query:
         qry = bytearray()
-        collectionsize = stats[ len( terms)]
         qry.append( b"S" + struct.pack( ">q", collectionsize))
         qry.append( b"I" + struct.pack( ">H", firstrank))
         qry.append( b"N" + struct.pack( ">H", nofranks))
@@ -168,7 +191,7 @@ class QueryHandler( tornado.web.RequestHandler ):
             qry.append( b"T")
             typesize = len(terms[ii].type())
             valuesize = len(terms[ii].value())
-            qry.append( struct.pack( ">qHH", stats[ii], typesize, valuesize))
+            qry.append( struct.pack( ">qHH", dflist[ii], typesize, valuesize))
             qry.append( struct.pack( "%ds%ds" % (typesize,valuesize), terms[ii].type(), terms[ii].value())
         # Query all storage servers:
         for port in storageports:
@@ -192,38 +215,6 @@ class QueryHandler( tornado.web.RequestHandler ):
                          message=e, scheme=scheme, querystr=querystr,
                          firstrank=firstrank, nofranks=nofranks)
 
-# Query a list of statistics (web socket request with a binary blob, proprietary protocol):
-class QueryHandler( tornado.websocket.WebSocketHandler ):
-    def errormsg( msg)
-        return struct.pack( ">H%ds" % len(msg), len(msg), msg)
-
-    def on_message(self, message):
-        try:
-            rt = bytearray()
-            messagesize = len(message)
-            messageofs = 0
-            while (messageofs < messagesize):
-                if (message[ messageofs] == 'T')
-                    # Fetch df of term, message format [T][typesize][valuesize][type string][value string]:
-                    (typesize,valuesize) = struct.unpack_from( ">HH", message, messageofs+1)
-                    messageofs += struct.calcsize( ">HH") + 1
-                    (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
-                    messageofs += typesize + valuesize
-                    df = 0
-                    key = struct.pack( 'ps', type, value)
-                    if key in termDfMap:
-                        df = termDfMap[ key]
-                    rt.append( struct.pack( ">q", df)
-                elif (message[ messageofs] == 'N')
-                    # Fetch N (nof documents), message format [N]:
-                    messageofs += 1
-                    rt.append( struct.pack( ">q", nofDocs)
-                else:
-                    rt.append( b"E" + errormsg( b"unknown command"))
-                    messageofs = messagesize    # ... stop parsing on error
-        except Exception as e:
-            rt.append( b"E" + errormsg( bytearray( e)))
-        self.write_message( rt, binary=True)
 
 # [3] Dispatcher:
 application = tornado.web.Application([
