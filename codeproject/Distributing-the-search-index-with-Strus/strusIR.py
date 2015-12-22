@@ -79,15 +79,22 @@ class Backend:
 
     # Insert a multipart document:
     def insertDocuments( self, content):
+        print "+++ strusIR.insertDocuments 1"
         rt = 0
+        print "+++ strusIR.insertDocuments 2"
         docqueue = self.documentAnalyzer.createQueue()
+        print "+++ strusIR.insertDocuments 3"
         docqueue.push( content)
+        print "+++ strusIR.insertDocuments 4"
         transaction = self.storage.createTransaction()
+        print "+++ strusIR.insertDocuments 5"
         while (docqueue.hasMore()):
             doc = docqueue.fetch()
             transaction.insertDocument( doc.docid(), doc)
             rt += 1
+        print "+++ strusIR.insertDocuments 6"
         transaction.commit()
+        print "+++ strusIR.insertDocuments done"
         return rt
 
     # Query evaluation scheme for a classical information retrieval query with BM25:
