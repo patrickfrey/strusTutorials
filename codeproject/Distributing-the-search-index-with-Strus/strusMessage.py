@@ -18,18 +18,11 @@ class TcpConnection( object):
     def on_connect(self):
         try:
             while (True):
-                print('+++ TcpConnection on_connect 1')
                 msgsizemsg = yield self.stream.read_bytes( struct.calcsize(">I"))
-                print( binascii.hexlify( bytes( msgsizemsg)))
-                print('+++ TcpConnection on_connect 2')
                 (msgsize,) = struct.unpack( ">I", msgsizemsg)
-                print('+++ TcpConnection on_connect 3 %u' % msgsize)
                 msg = yield self.stream.read_bytes( msgsize)
-                print('+++ TcpConnection on_connect 4')
                 reply = yield self.command_callback( msg)
-                print('+++ TcpConnection on_connect 5')
                 yield self.stream.write( struct.pack( ">I", len(reply)) + bytes(reply));
-                print('+++ TcpConnection on_connect 6')
         except tornado.iostream.StreamClosedError:
             pass
 
@@ -61,24 +54,12 @@ class RequestServer( tornado.tcpserver.TCPServer):
 class RequestClient( tornado.tcpclient.TCPClient):
     @tornado.gen.coroutine
     def issueRequest( self, stream, msg):
-        print "issueRequest 0"
         blob = struct.pack( ">I", len(msg)) + bytes(msg)
-        print "issueRequest 1"
         stream.write( blob);
-        print "issueRequest 2"
         replysizemsg = yield stream.read_bytes( struct.calcsize(">I"))
-        print "issueRequest 3"
-        print( binascii.hexlify( bytes( replysizemsg)))
-        print "issueRequest 4"
         (replysize,) = struct.unpack( ">I", replysizemsg)
-        print "issueRequest 5 %u" % replysize
         reply = yield stream.read_bytes( replysize)
-        print "issueRequest 6"
         raise tornado.gen.Return( reply)
-
-
-
-
 
 
 

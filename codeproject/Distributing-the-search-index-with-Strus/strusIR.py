@@ -79,34 +79,25 @@ class Backend:
 
     # Insert a multipart document:
     def insertDocuments( self, content):
-        print "+++ strusIR.insertDocuments 1"
         rt = 0
-        print "+++ strusIR.insertDocuments 2"
         docqueue = self.documentAnalyzer.createQueue()
-        print "+++ strusIR.insertDocuments 3"
         docqueue.push( content)
-        print "+++ strusIR.insertDocuments 4"
         transaction = self.storage.createTransaction()
-        print "+++ strusIR.insertDocuments 5"
         while (docqueue.hasMore()):
             doc = docqueue.fetch()
             transaction.insertDocument( doc.docid(), doc)
             rt += 1
-        print "+++ strusIR.insertDocuments 6"
         transaction.commit()
-        print "+++ strusIR.insertDocuments done"
         return rt
 
     # Query evaluation scheme for a classical information retrieval query with BM25:
     def evaluateQuery( self, terms, collectionsize, firstrank, nofranks):
-        print "+++ strusIR.evaluateQuery 1"
         queryeval = self.queryeval
         query = queryeval.createQuery( self.storage)
         if len( terms) == 0:
             # Return empty result for empty query:
             return []
 
-        print "+++ strusIR.evaluateQuery 2"
         selexpr = ["contains"]
         for term in terms:
             selexpr.append( [term.type, term.value] )
@@ -117,16 +108,13 @@ class Backend:
         query.setMinRank( firstrank)
         query.defineGlobalStatistics( {'nofdocs' : int(collectionsize)} )
         # Evaluate the query:
-        print "+++ strusIR.evaluateQuery 3"
         results = query.evaluate()
-        print "+++ strusIR.evaluateQuery 4"
         # Rewrite the results:
         rt = []
         for result in results:
             content = ""
             title = ""
             docid = ""
-            print "+++ strusIR.evaluateQuery 5"
             for attribute in result.attributes():
                 if attribute.name() == 'CONTENT':
                     if content != "":
@@ -142,7 +130,6 @@ class Backend:
                    'title':title,
                    'weight':result.weight(),
                    'abstract':content })
-        print "+++ strusIR.evaluateQuery 6"
         return rt
 
     # Get an iterator on all absolute statistics of the local storage

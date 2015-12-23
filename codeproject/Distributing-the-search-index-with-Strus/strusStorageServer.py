@@ -14,7 +14,6 @@ import trollius
 import strusMessage
 import binascii
 
-# [0] Globals:
 # Information retrieval engine:
 backend = strusIR.Backend( "path=storage; cache=512M")
 # Port of the global statistics server:
@@ -24,11 +23,10 @@ pubstats = False
 # Strus client connection factory:
 msgclient = strusMessage.RequestClient()
 
-# [1] Publish statistics:
+# Call of the statustics server to publish the statistics of this storage on insert:
 @tornado.gen.coroutine
 def publishStatistics( itr):
     # Open connection to statistics server:
-    print "+++ publishStatistics 1"
     try:
         ri = statserver.rindex(':')
         host,port = statserver[:ri],int( statserver[ri+1:])
@@ -36,11 +34,9 @@ def publishStatistics( itr):
     except IOError as e:
         raise Exception( "connection so statistics server %s failed (%s) ... trying again (%u)" % (statserver, e))
 
-    print "+++ publishStatistics 2"
     msg = itr.getNext()
     while (len(msg) > 0):
         try:
-            print "+++ publishStatistics 3"
             reply = yield msgclient.issueRequest( conn, b"P" + bytearray(msg) )
             if (reply[0] == 'E'):
                 raise Exception( "error in statistics server: %s" % reply[ 1:])
@@ -49,12 +45,12 @@ def publishStatistics( itr):
         except tornado.iostream.StreamClosedError:
             raise Exception( "unexpected close of statistics server")
         msg = itr.getNext()
-    print "+++ publishStatistics 4"
 
-# [2] Request handlers
+# Pack a message with its length (processCommand protocol)
 def packedMessage( msg):
     return struct.pack( ">H%ds" % len(msg), len(msg), msg)
 
+# Server callback function that intepretes the client message sent, executes the command and packs the result for the client
 @tornado.gen.coroutine
 def processCommand( message):
     rt = bytearray(b"Y")
@@ -63,29 +59,23 @@ def processCommand( message):
         messageofs = 1
         if (message[0] == 'I'):
             # INSERT:
-            print "+++ handle INSERT 1"
             # Insert documents:
             docblob = str( message[ 1:])
-            print "+++ handle INSERT 2"
             nofDocuments = backend.insertDocuments( docblob.decode("utf-8"))
             # Publish statistic updates:
-            print "+++ called INSERT %u" % nofDocuments
             itr = backend.getUpdateStatisticsIterator()
-            print "+++ CALL publishStatistics"
             yield publishStatistics( itr)
-            print "+++ DONE publishStatistics"
             rt += struct.pack( ">I", nofDocuments)
         elif (message[0] == 'Q'):
             # QUERY:
-            print "+++ handle QUERY 1"
             Term = collections.namedtuple('Term', ['type', 'value', 'df'])
             nofranks = 20
             collectionsize = 0
             firstrank = 0
             terms = []
+            # Build query to evaluate from the request:
             messagesize = len(message)
             messageofs = 1
-            print "+++ handle QUERY 2"
             while (messageofs < messagesize):
                 if (message[ messageofs] == 'I'):
                     (firstrank,) = struct.unpack_from( ">H", message, messageofs+1)
@@ -101,15 +91,12 @@ def processCommand( message):
                     messageofs += struct.calcsize( ">qHH") + 1
                     (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
                     messageofs += typesize + valuesize
-                    print "+++ Term %s '%s' %d" % (type, value, df)
                     terms.append( Term( type, value, df))
                 else:
                     raise tornado.gen.Return( b"Eunknown parameter")
             # Evaluate query with BM25 (Okapi):
-            print "+++ handle QUERY 3"
             results = backend.evaluateQuery( terms, collectionsize, firstrank, nofranks)
-            print "+++ handle QUERY 4"
-            # Build the result:
+            # Build the result and pack it into the reply message for the client:
             for result in results:
                 rt.append( '_')
                 rt.append( 'D')
@@ -122,21 +109,18 @@ def processCommand( message):
                 rt += packedMessage( result['title'])
                 rt.append( 'A')
                 rt += packedMessage( result['abstract'])
-                print "+++ handle QUERY 5"
         else:
-            print "+++ handle QUERY ERR"
             raise Exception( "unknown command")
     except Exception as e:
         raise tornado.gen.Return( bytearray( b"E" + str(e)) )
-    print "+++ handle QUERY 6"
     raise tornado.gen.Return( rt)
 
-
+# Shutdown function that sends the negative statistics to the statistics server (unsubscribe):
 def processShutdown():
     if (pubstats):
         publishStatistics( backend.getDoneStatisticsIterator())
 
-# [4] Server main:
+# Server main:
 if __name__ == "__main__":
     try:
         parser = optparse.OptionParser()
@@ -160,7 +144,6 @@ if __name__ == "__main__":
         if (statserver[0:].isdigit()):
             statserver = '{}:{}'.format( 'localhost', statserver)
 
-        print "+++ statserver %s" % statserver
         if (pubstats):
             # Start publish local statistics:
             print( "Load local statistics to publish ...\n")
