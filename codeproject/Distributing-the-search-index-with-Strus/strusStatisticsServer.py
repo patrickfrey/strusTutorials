@@ -43,10 +43,10 @@ def processCommand( message):
                 key = struct.pack( 'ps', dfchg.type(), dfchg.value())
                 if key in termDfMap:
                     termDfMap[ key ] += dfchg.increment()
-                    print "df %s %s %d %d" % (dfchg.type(), dfchg.value(), termDfMap[key], dfchg.increment())
+                    print "df %s, %s, %d, %d" % (dfchg.type(), dfchg.value(), termDfMap[key], dfchg.increment())
                 else:
                     termDfMap[ key ] = long( dfchg.increment())
-                    print "df %s %s NEW %d" % (dfchg.type(), dfchg.value(), dfchg.increment())
+                    print "df %s, %s, NEW, %d" % (dfchg.type(), dfchg.value(), dfchg.increment())
             print "+++ processCommand PUBLISH 4"
         elif (message[0] == 'Q'):
             # QUERY:

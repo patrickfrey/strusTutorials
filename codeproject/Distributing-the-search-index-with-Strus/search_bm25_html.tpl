@@ -14,11 +14,11 @@
 </tr>
 {% for result in results %}
 <tr>
-<td>{{ result['docno'] }}</td>
-<td>{{ "%.4f" % result['weight'] }}</td>
-<td>{{ result['docid'] }}</td>
-<td>{{ result['title'] }}</td>
-<td>{% raw result['abstract'] %}</td>
+<td>{{ result.docno }}</td>
+<td>{{ "%.4f" % result.weight }}</td>
+<td>{{ result.docid }}</td>
+<td>{{ result.title }}</td>
+<td>{% raw result.abstract %}</td>
 </tr>
 {% end %}
 </table>

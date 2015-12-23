@@ -57,7 +57,7 @@ def packedMessage( msg):
 
 @tornado.gen.coroutine
 def processCommand( message):
-    rt = bytearray("Y")
+    rt = bytearray(b"Y")
     try:
         messagesize = len(message)
         messageofs = 1
@@ -77,14 +77,15 @@ def processCommand( message):
             rt += struct.pack( ">I", nofDocuments)
         elif (message[0] == 'Q'):
             # QUERY:
+            print "+++ handle QUERY 1"
             Term = collections.namedtuple('Term', ['type', 'value', 'df'])
-            rt = bytearray()
             nofranks = 20
             collectionsize = 0
             firstrank = 0
             terms = []
             messagesize = len(message)
             messageofs = 1
+            print "+++ handle QUERY 2"
             while (messageofs < messagesize):
                 if (message[ messageofs] == 'I'):
                     (firstrank,) = struct.unpack_from( ">H", message, messageofs+1)
@@ -100,11 +101,14 @@ def processCommand( message):
                     messageofs += struct.calcsize( ">qHH") + 1
                     (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
                     messageofs += typesize + valuesize
+                    print "+++ Term %s '%s' %d" % (type, value, df)
                     terms.append( Term( type, value, df))
                 else:
                     raise tornado.gen.Return( b"Eunknown parameter")
             # Evaluate query with BM25 (Okapi):
-            results = backend.evaluateQueryText( terms, collectionsize, firstrank, nofranks)
+            print "+++ handle QUERY 3"
+            results = backend.evaluateQuery( terms, collectionsize, firstrank, nofranks)
+            print "+++ handle QUERY 4"
             # Build the result:
             for result in results:
                 rt.append( '_')
@@ -113,15 +117,18 @@ def processCommand( message):
                 rt.append( 'W')
                 rt += struct.pack( ">f", result['weight'])
                 rt.append( 'I')
-                rt += self.packedstr( result['docid'])
+                rt += packedMessage( result['docid'])
                 rt.append( 'T')
-                rt += self.packedstr( result['title'])
+                rt += packedMessage( result['title'])
                 rt.append( 'A')
-                rt += self.packedstr( result['abstract'])
+                rt += packedMessage( result['abstract'])
+                print "+++ handle QUERY 5"
         else:
+            print "+++ handle QUERY ERR"
             raise Exception( "unknown command")
     except Exception as e:
         raise tornado.gen.Return( bytearray( b"E" + str(e)) )
+    print "+++ handle QUERY 6"
     raise tornado.gen.Return( rt)
 
 

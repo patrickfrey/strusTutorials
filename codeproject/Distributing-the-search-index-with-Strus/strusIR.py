@@ -98,30 +98,35 @@ class Backend:
         return rt
 
     # Query evaluation scheme for a classical information retrieval query with BM25:
-    def evaluateQueryText( self, terms, collectionsize, firstrank, nofranks):
+    def evaluateQuery( self, terms, collectionsize, firstrank, nofranks):
+        print "+++ strusIR.evaluateQuery 1"
         queryeval = self.queryeval
         query = queryeval.createQuery( self.storage)
         if len( terms) == 0:
             # Return empty result for empty query:
             return []
 
+        print "+++ strusIR.evaluateQuery 2"
         selexpr = ["contains"]
         for term in terms:
             selexpr.append( [term.type, term.value] )
             query.defineFeature( "docfeat", [term.type, term.value], 1.0)
-            query.defineTermStatistics( term.type, term.value, {'df' : term.df} )
+            query.defineTermStatistics( term.type, term.value, {'df' : int(term.df)} )
         query.defineFeature( "selfeat", selexpr, 1.0 )
         query.setMaxNofRanks( nofranks)
         query.setMinRank( firstrank)
-        query.defineGlobalStatistics( {'nofdocs' : collectionsize} )
+        query.defineGlobalStatistics( {'nofdocs' : int(collectionsize)} )
         # Evaluate the query:
+        print "+++ strusIR.evaluateQuery 3"
         results = query.evaluate()
+        print "+++ strusIR.evaluateQuery 4"
         # Rewrite the results:
         rt = []
         for result in results:
             content = ""
             title = ""
             docid = ""
+            print "+++ strusIR.evaluateQuery 5"
             for attribute in result.attributes():
                 if attribute.name() == 'CONTENT':
                     if content != "":
@@ -137,6 +142,7 @@ class Backend:
                    'title':title,
                    'weight':result.weight(),
                    'abstract':content })
+        print "+++ strusIR.evaluateQuery 6"
         return rt
 
     # Get an iterator on all absolute statistics of the local storage
