@@ -6,13 +6,11 @@ import tornado.iostream
 import os
 import sys
 import struct
-import strusIR
-import time
 import collections
 import optparse
-import trollius
 import strusMessage
 import binascii
+import strusIR
 
 # Information retrieval engine:
 backend = None

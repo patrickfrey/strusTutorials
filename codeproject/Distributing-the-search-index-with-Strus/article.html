@@ -59,7 +59,7 @@ The second issue, distribution of a Strus search application on an arbitrary num
 of machines and the capability to increase the number of processing nodes anytime 
 is the main subject of this article.
 The article will not discuss fundamentals of distributed processing. Costs of sharing data,
-messaging and process synchronization should be familiar for the reader.
+messaging and process synchronization should be familiar to the reader.
 The article will only explain what data is usually shared in a full-text search engine
 and discuss alternatives, how to handle the consequential problems (as sharing data is always
 a problem in distributed systems).
@@ -203,8 +203,7 @@ distributed hashtable fed over persistent queues. But our example server holds t
 for each term in a dicitionary and the total collection size in a variable in memory. Nothing is persistent 
 and thus lost on shutdown.
 <br/>
-The server is implemented as TCP/IP server with a proprietary protocol with two commands (put/get)
-serializing insert and retrieve messages in one single blob. 
+The server is implemented as TCP/IP server with a proprietary protocol with two commands (put/get). 
 </td>
 </tr>
 
@@ -279,18 +278,809 @@ For simplicity we do not hold connections open.
 <h3>The source code</h3>
 <h4>strusStorageServer.py</h4>
 <pre>
+#!/usr/bin/python
+import tornado.ioloop
+import tornado.web
+import tornado.gen
+import tornado.iostream
+import os
+import sys
+import struct
+import collections
+import optparse
+import strusMessage
+import binascii
+import strusIR
+
+# Information retrieval engine:
+backend = None
+# Port of the global statistics server:
+statserver = "localhost:7183"
+# IO loop:
+pubstats = False
+# Strus client connection factory:
+msgclient = strusMessage.RequestClient()
+
+# Call of the statustics server to publish the statistics of this storage on insert:
+@tornado.gen.coroutine
+def publishStatistics( itr):
+    # Open connection to statistics server:
+    try:
+        ri = statserver.rindex(':')
+        host,port = statserver[:ri],int( statserver[ri+1:])
+        conn = yield msgclient.connect( host, port)
+    except IOError as e:
+        raise Exception( "connection so statistics server %s failed (%s)" % (statserver, e))
+
+    msg = itr.getNext()
+    while (len(msg) &gt; 0):
+        try:
+            reply = yield msgclient.issueRequest( conn, b"P" + bytearray(msg) )
+            if (reply[0] == 'E'):
+                raise Exception( "error in statistics server: %s" % reply[ 1:])
+            elif (reply[0] != 'Y'):
+                raise Exception( "protocol error publishing statistics")
+        except tornado.iostream.StreamClosedError:
+            raise Exception( "unexpected close of statistics server")
+        msg = itr.getNext()
+
+# Pack a message with its length (processCommand protocol)
+def packedMessage( msg):
+    return struct.pack( "&gt;H%ds" % len(msg), len(msg), msg)
+
+# Server callback function that intepretes the client message sent, executes the command and packs the result for the client
+@tornado.gen.coroutine
+def processCommand( message):
+    rt = bytearray(b"Y")
+    try:
+        messagesize = len(message)
+        messageofs = 1
+        if (message[0] == 'I'):
+            # INSERT:
+            # Insert documents:
+            docblob = str( message[ 1:])
+            nofDocuments = backend.insertDocuments( docblob.decode("utf-8"))
+            # Publish statistic updates:
+            itr = backend.getUpdateStatisticsIterator()
+            yield publishStatistics( itr)
+            rt += struct.pack( "&gt;I", nofDocuments)
+        elif (message[0] == 'Q'):
+            # QUERY:
+            Term = collections.namedtuple('Term', ['type', 'value', 'df'])
+            nofranks = 20
+            collectionsize = 0
+            firstrank = 0
+            terms = []
+            # Build query to evaluate from the request:
+            messagesize = len(message)
+            messageofs = 1
+            while (messageofs &lt; messagesize):
+                if (message[ messageofs] == 'I'):
+                    (firstrank,) = struct.unpack_from( "&gt;H", message, messageofs+1)
+                    messageofs += struct.calcsize( "&gt;H") + 1
+                elif (message[ messageofs] == 'N'):
+                    (nofranks,) = struct.unpack_from( "&gt;H", message, messageofs+1)
+                    messageofs += struct.calcsize( "&gt;H") + 1
+                elif (message[ messageofs] == 'S'):
+                    (collectionsize,) = struct.unpack_from( "&gt;q", message, messageofs+1)
+                    messageofs += struct.calcsize( "&gt;q") + 1
+                elif (message[ messageofs] == 'T'):
+                    (df,typesize,valuesize) = struct.unpack_from( "&gt;qHH", message, messageofs+1)
+                    messageofs += struct.calcsize( "&gt;qHH") + 1
+                    (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
+                    messageofs += typesize + valuesize
+                    terms.append( Term( type, value, df))
+                else:
+                    raise tornado.gen.Return( b"Eunknown parameter")
+            # Evaluate query with BM25 (Okapi):
+            results = backend.evaluateQuery( terms, collectionsize, firstrank, nofranks)
+            # Build the result and pack it into the reply message for the client:
+            for result in results:
+                rt.append( '_')
+                rt.append( 'D')
+                rt += struct.pack( "&gt;I", result['docno'])
+                rt.append( 'W')
+                rt += struct.pack( "&gt;f", result['weight'])
+                rt.append( 'I')
+                rt += packedMessage( result['docid'])
+                rt.append( 'T')
+                rt += packedMessage( result['title'])
+                rt.append( 'A')
+                rt += packedMessage( result['abstract'])
+        else:
+            raise Exception( "unknown command")
+    except Exception as e:
+        raise tornado.gen.Return( bytearray( b"E" + str(e)) )
+    raise tornado.gen.Return( rt)
+
+# Shutdown function that sends the negative statistics to the statistics server (unsubscribe):
+def processShutdown():
+    if (pubstats):
+        publishStatistics( backend.getDoneStatisticsIterator())
+
+# Server main:
+if __name__ == "__main__":
+    try:
+        # Parse arguments:
+        defaultconfig = "path=storage; cache=512M"
+        parser = optparse.OptionParser()
+        parser.add_option("-p", "--port", dest="port", default=7184,
+                          help="Specify the port of this server as PORT (default %u)" % 7184,
+                          metavar="PORT")
+        parser.add_option("-c", "--config", dest="config", default=defaultconfig,
+                          help="Specify the storage path as FILE (default '%s')" % defaultconfig,
+                          metavar="FILE")
+        parser.add_option("-s", "--statserver", dest="statserver", default=statserver,
+                          help="Specify the address of the statistics server as ADDR (default %s" % statserver,
+                          metavar="ADDR")
+        parser.add_option("-P", "--publish-stats", action="store_true", dest="do_publish_stats", default=False,
+                          help="Tell the node to publish the own storage statistics to the statistics server at startup")
+
+        (options, args) = parser.parse_args()
+        if len(args) &gt; 0:
+            parser.error("no arguments expected")
+            parser.print_help()
+
+        myport = int(options.port)
+        pubstats = options.do_publish_stats
+        statserver = options.statserver
+        backend = strusIR.Backend( options.config)
+
+        if (statserver[0:].isdigit()):
+            statserver = '{}:{}'.format( 'localhost', statserver)
+
+        if (pubstats):
+            # Start publish local statistics:
+            print( "Load local statistics to publish ...\n")
+            publishStatistics( backend.getInitStatisticsIterator())
+
+        # Start server:
+        print( "Starting server ...")
+        server = strusMessage.RequestServer( processCommand, processShutdown)
+        server.start( myport)
+        print( "Terminated\n")
+    except Exception as e:
+        print( e)
 </pre>
+
 <h4>strusStatisticsServer.py</h4>
 <pre>
+#!/usr/bin/python
+import tornado.ioloop
+import tornado.web
+import optparse
+import os
+import sys
+import binascii
+import struct
+import strus
+import collections
+import strusMessage
+
+# [1] Globals:
+# Term df map:
+termDfMap = {}
+# List of ports of associated peer storage nodes:
+collectionSize = 0
+# Strus statistics message processor:
+strusctx = strus.Context()
+strusctx.defineStatisticsProcessor( "standard");
+strustat = strusctx.createStatisticsProcessor()
+
+# [2] Request handlers
+def packedMessage( msg):
+    return struct.pack( "&gt;H%ds" % len(msg), len(msg), msg)
+
+def termDfMapKey( type, value):
+    return "%s~%s" % (type,value)
+
+@tornado.gen.coroutine
+def processCommand( message):
+    rt = bytearray("Y")
+    try:
+        global collectionSize
+        global termDfMap
+
+        if (message[0] == 'P'):
+            # PUBLISH:
+            msg = strustat.decode( bytearray(message[1:]))
+            collectionSize += msg.nofDocumentsInsertedChange()
+            dfchglist = msg.documentFrequencyChangeList()
+            for dfchg in dfchglist:
+                key = termDfMapKey( dfchg.type(), dfchg.value())
+                if key in termDfMap:
+                    termDfMap[ key ] += dfchg.increment()
+                else:
+                    termDfMap[ key ] = long( dfchg.increment())
+        elif (message[0] == 'Q'):
+            # QUERY:
+            messagesize = len(message)
+            messageofs = 1
+            while (messageofs &lt; messagesize):
+                if (message[ messageofs] == 'T'):
+                    # Fetch df of term, message format [T][typesize:16][valuesize:16][type string][value string]:
+                    (typesize,valuesize) = struct.unpack_from( "&gt;HH", message, messageofs+1)
+                    messageofs += struct.calcsize( "&gt;HH") + 1
+                    (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
+                    messageofs += typesize + valuesize
+                    df = 0
+                    key = termDfMapKey( type, value)
+                    if key in termDfMap:
+                        df = termDfMap[ key]
+                    rt += struct.pack( "&gt;q", df)
+                elif (message[ messageofs] == 'N'):
+                    # Fetch N (nof documents), message format [N]:
+                    messageofs += 1
+                    rt += struct.pack( "&gt;q", collectionSize)
+                else:
+                    raise Exception( "unknown statistics server sub command")
+        else:
+            raise Exception( "unknown statistics server command")
+    except Exception as e:
+        raise tornado.gen.Return( bytearray( b"E" + str(e)))
+    raise tornado.gen.Return( rt)
+
+def processShutdown():
+    pass
+
+# [5] Server main:
+if __name__ == "__main__":
+    try:
+        # Parse arguments:
+        parser = optparse.OptionParser()
+        parser.add_option("-p", "--port", dest="port", default=7183,
+                          help="Specify the port of this server as PORT (default %u)" % 7183,
+                          metavar="PORT")
+
+        (options, args) = parser.parse_args()
+        if len(args) &gt; 0:
+            parser.error("no arguments expected")
+            parser.print_help()
+        myport = int(options.port)
+
+        # Start server:
+        print( "Starting server ...")
+        server = strusMessage.RequestServer( processCommand, processShutdown)
+        server.start( myport)
+        print( "Terminated\n")
+    except Exception as e:
+        print( e)
 </pre>
+
 <h4>strusHttpServer.py</h4>
 <pre>
+#!/usr/bin/python
+import tornado.ioloop
+import tornado.web
+import tornado.websocket
+import tornado.gen
+import os
+import sys
+import struct
+import binascii
+import collections
+import heapq
+import optparse
+import signal
+import strus
+import strusMessage
+
+# [0] Globals and helper classes:
+# The address of the global statistics server:
+statserver = "localhost:7183"
+# Strus storage server addresses:
+storageservers = []
+# Strus client connection factory:
+msgclient = strusMessage.RequestClient()
+
+# Query analyzer structures:
+strusctx = strus.Context()
+analyzer = strusctx.createQueryAnalyzer()
+analyzer.definePhraseType(
+        "text", "word", "word", 
+        ["lc", ["stem", "en"], ["convdia", "en"]]
+    )
+# Query evaluation structures:
+ResultRow = collections.namedtuple('ResultRow', ['docno', 'docid', 'weight', 'title', 'abstract'])
+
+
+# [1] HTTP handlers:
+# Answer a query (issue a query to all storage servers and merge it to one result):
+class QueryHandler( tornado.web.RequestHandler ):
+    @tornado.gen.coroutine
+    def queryStats( self, terms):
+        rt = ([],0,None)
+        try:
+            statquery = bytearray("Q")
+            for term in terms:
+                statquery.append('T')
+                typesize = len( term.type())
+                valuesize = len( term.value())
+                statquery += struct.pack( "&gt;HH", typesize, valuesize)
+                statquery += struct.pack( "%ds%ds" % (typesize,valuesize), term.type(), term.value())
+            statquery.append('N')
+            ri = statserver.rindex(':')
+            host,port = statserver[:ri],int( statserver[ri+1:])
+            conn = yield msgclient.connect( host, port)
+            statreply = yield msgclient.issueRequest( conn, statquery)
+
+            if (statreply[0] == 'E'):
+                raise Exception( "failed to query global statistics: %s" % statreply[1:])
+            elif (statreply[0] != 'Y'):
+                raise Exception( "protocol error loading global statistics")
+            dflist = []
+            collsize = 0
+            statsofs = 1
+            statslen = len(statreply)
+            while (statsofs &lt; statslen):
+                (statsval,) = struct.unpack_from( "&gt;q", statreply, statsofs)
+                statsofs += struct.calcsize( "&gt;q")
+                if (len(dflist) &lt; len(terms)):
+                    dflist.append( statsval)
+                elif (len(dflist) == len(terms)):
+                    collsize = statsval
+                else:
+                    break
+            if (statsofs != statslen):
+                raise Exception("result does not match query")
+            rt = (dflist, collsize, None)
+        except Exception as e:
+            rt = ([],0,"query statistic server failed: %s" % e)
+        raise tornado.gen.Return( rt)
+
+    @tornado.gen.coroutine
+    def issueQuery( self, serveraddr, qryblob):
+        rt = (None,None)
+        ri = serveraddr.rindex(':')
+        host,port = serveraddr[:ri],int( serveraddr[ri+1:])
+        result = None
+        conn = None
+        try:
+            conn = yield msgclient.connect( host, port)
+            reply = yield msgclient.issueRequest( conn, qryblob)
+            if (reply[0] == 'E'):
+                rt = (None, "storage server %s:%d returned error: %s" % (host, port, reply[1:]))
+            elif (reply[0] == 'Y'):
+                result = []
+                row_docno = 0
+                row_docid = None
+                row_weight = 0.0
+                row_title = ""
+                row_abstract = ""
+                replyofs = 1
+                replysize = len(reply)-1
+                while (replyofs &lt; replysize):
+                    if (reply[ replyofs] == '_'):
+                        if (row_docid != None):
+                            result.append( ResultRow( row_docno, row_docid, row_weight, row_title, row_abstract))
+                        row_docno = 0
+                        row_docid = None
+                        row_weight = 0.0
+                        row_title = ""
+                        row_abstract = ""
+                        replyofs += 1
+                    elif (reply[ replyofs] == 'D'):
+                        (row_docno,) = struct.unpack_from( "&gt;I", reply, replyofs+1)
+                        replyofs += struct.calcsize( "&gt;I") + 1
+                    elif (reply[ replyofs] == 'W'):
+                        (row_weight,) = struct.unpack_from( "&gt;f", reply, replyofs+1)
+                        replyofs += struct.calcsize( "&gt;f") + 1
+                    elif (reply[ replyofs] == 'I'):
+                        (docidlen,) = struct.unpack_from( "&gt;H", reply, replyofs+1)
+                        replyofs += struct.calcsize( "&gt;H") + 1
+                        (row_docid,) = struct.unpack_from( "%us" % docidlen, reply, replyofs)
+                        replyofs += docidlen
+                    elif (reply[ replyofs] == 'T'):
+                        (titlelen,) = struct.unpack_from( "&gt;H", reply, replyofs+1)
+                        replyofs += struct.calcsize( "&gt;H") + 1
+                        (row_title,) = struct.unpack_from( "%us" % titlelen, reply, replyofs)
+                        replyofs += titlelen
+                    elif (reply[ replyofs] == 'A'):
+                        (abstractlen,) = struct.unpack_from( "&gt;H", reply, replyofs+1)
+                        replyofs += struct.calcsize( "&gt;H") + 1
+                        (row_abstract,) = struct.unpack_from( "%us" % abstractlen, reply, replyofs)
+                        replyofs += abstractlen
+                    else:
+                        rt = (None, "storage server %s:%u protocol error: unknown result column name" % (host,port))
+                        row_docid = None
+                        break;
+                if (row_docid != None):
+                    result.append( ResultRow( row_docno, row_docid, row_weight, row_title, row_abstract))
+                rt = (result, None)
+            else:
+                rt = (None, "protocol error storage %s:%u query: unknown header %s" % (host,port,reply[0]))
+        except Exception as e:
+            rt = (None, "storage server %s:%u connection error: %s" % (host, port, str(e)))
+        raise tornado.gen.Return( rt)
+
+    @tornado.gen.coroutine
+    def issueQueries( self, servers, qryblob):
+        results = None
+        try:
+            results = yield [ self.issueQuery( addr, qryblob) for addr in servers ]
+        except Exception as e:
+            raise tornado.gen.Return( [], ["error issueing query: %s" % str(e)])
+        raise tornado.gen.Return( results)
+
+    # Merge code derived from Python Cookbook (Sebastien Keim, Raymond Hettinger and Danny Yoo)
+    # referenced in from http://wordaligned.org/articles/merging-sorted-streams-in-python:
+    def mergeResultIter( self, resultlists):
+        # prepare a priority queue whose items are pairs of the form (-weight, resultlistiter):
+        heap = [  ]
+        for resultlist in resultlists:
+            resultlistiter = iter(resultlist)
+            for result in resultlistiter:
+                # subseq is not empty, therefore add this subseq's pair
+                # (current-value, iterator) to the list
+                heap.append((-result.weight, result, resultlistiter))
+                break
+        # make the priority queue into a heap
+        heapq.heapify(heap)
+        while heap:
+            # get and yield the result with the highest weight (minus lowest negative weight):
+            negative_weight, result, resultlistiter = heap[0]
+            yield result
+            for result in resultlistiter:
+                # resultlists is not finished, replace best pair in the priority queue
+                heapq.heapreplace( heap, (-result.weight, result, resultlistiter))
+                break
+            else:
+                # subseq has been exhausted, therefore remove it from the queue
+                heapq.heappop( heap)
+
+    def mergeQueryResults( self, results, firstrank, nofranks):
+        merged = []
+        errors = []
+        itrs = []
+        maxnofresults = firstrank + nofranks
+        for result in results:
+            if (result[0] == None):
+                errors.append( result[1])
+            else:
+                itrs.append( iter( result[0]))
+        ri = 0
+        for result in self.mergeResultIter( itrs):
+            if (ri == maxnofresults):
+                break
+            merged.append( result)
+            ri += 1
+        return (merged[ firstrank:maxnofresults], errors)
+
+    @tornado.gen.coroutine
+    def evaluateQueryText( self, querystr, firstrank, nofranks):
+        rt = None
+        try:
+            maxnofresults = firstrank + nofranks
+            terms = analyzer.analyzePhrase( "text", querystr)
+            if len( terms) == 0:
+                # Return empty result for empty query:
+                raise tornado.gen.Return( [] )
+            # Get the global statistics:
+            dflist,collectionsize,error = yield self.queryStats( terms)
+            if (error != None):
+                raise Exception( error)
+            # Assemble the query:
+            qry = bytearray(b"Q")
+            qry += bytearray( b"S") + struct.pack( "&gt;q", collectionsize)
+            qry += bytearray( b"I") + struct.pack( "&gt;H", 0)
+            qry += bytearray( b"N") + struct.pack( "&gt;H", maxnofresults)
+            for ii in range( 0, len( terms)):
+                qry += bytearray( b"T")
+                typesize = len(terms[ii].type())
+                valuesize = len(terms[ii].value())
+                qry += struct.pack( "&gt;qHH", dflist[ii], typesize, valuesize)
+                qry += struct.pack( "%ds%ds" % (typesize,valuesize), terms[ii].type(), terms[ii].value())
+            # Query all storage servers:
+            results = yield self.issueQueries( storageservers, qry)
+            rt = self.mergeQueryResults( results, firstrank, nofranks)
+        except Exception as e:
+            rt = ([], ["error evaluation query: %s" % str(e)])
+        raise tornado.gen.Return( rt)
+
+    @tornado.gen.coroutine
+    def get(self):
+        try:
+            # q = query terms:
+            querystr = self.get_argument( "q", None)
+            # i = firstrank:
+            firstrank = int( self.get_argument( "i", 0))
+            # n = nofranks:
+            nofranks = int( self.get_argument( "n", 20))
+            # Evaluate query with BM25 (Okapi):
+            result = yield self.evaluateQueryText( querystr, firstrank, nofranks)
+            # Render the results:
+            self.render( "search_bm25_html.tpl", results=result[0], messages=result[1])
+        except Exception as e:
+            self.render( "search_error_html.tpl", message=e)
+
+# Insert a multipart document (POST request):
+class InsertHandler( tornado.web.RequestHandler ):
+    @tornado.gen.coroutine
+    def post(self, port):
+        try:
+            # Insert documents:
+            conn = yield msgclient.connect( 'localhost', int(port))
+
+            reply = yield msgclient.issueRequest( conn, b"I" + bytearray( self.request.body))
+            if (reply[0] == 'E'):
+                raise Exception( bytes( reply[1:]))
+            elif (reply[0] != 'Y'):
+                raise Exception( "protocol error server reply on insert")
+
+            (nofDocuments,) = struct.unpack( "&gt;I", reply[1:])
+            self.write( "OK %u\n" % (nofDocuments))
+        except Exception as e:
+            self.write( "ERR %s\n" % str(e))
+
+# [3] Dispatcher:
+application = tornado.web.Application([
+    # /query in the URL triggers the handler for answering queries:
+    (r"/query", QueryHandler),
+    # /insert in the URL triggers the post handler for insert requests:
+    (r"/insert/([0-9]+)", InsertHandler),
+    # /static in the URL triggers the handler for accessing static 
+    # files like images referenced in tornado templates:
+    (r"/static/(.*)",tornado.web.StaticFileHandler,
+        {"path": os.path.dirname(os.path.realpath(sys.argv[0]))},)
+])
+
+def on_shutdown():
+    print('Shutting down')
+    tornado.ioloop.IOLoop.current().stop()
+
+# [5] Server main:
+if __name__ == "__main__":
+    try:
+        # Parse arguments:
+        usage = "usage: %prog [options] {&lt;storage server port&gt;}"
+        parser = optparse.OptionParser( usage=usage)
+        parser.add_option("-p", "--port", dest="port", default=80,
+                          help="Specify the port of this server as PORT (default %u)" % 80,
+                          metavar="PORT")
+        parser.add_option("-s", "--statserver", dest="statserver", default=statserver,
+                          help="Specify the address of the statistics server as ADDR (default %s" % statserver,
+                          metavar="ADDR")
+
+        (options, args) = parser.parse_args()
+        myport = int(options.port)
+        statserver = options.statserver
+        if (statserver[0:].isdigit()):
+            statserver = '{}:{}'.format( 'localhost', statserver)
+
+        # Positional arguments are storage server addresses, if empty use default at localhost:7184
+        for arg in args:
+            if (arg[0:].isdigit()):
+                storageservers.append( '{}:{}'.format( 'localhost', arg))
+            else:
+                storageservers.append( arg)
+        if (len( storageservers) == 0):
+            storageservers.append( "localhost:7184")
+
+        # Start server:
+        print( "Starting server ...\n")
+        application.listen( myport )
+        print( "Listening on port %u\n" % myport )
+        ioloop = tornado.ioloop.IOLoop.current()
+        signal.signal( signal.SIGINT, lambda sig, frame: ioloop.add_callback_from_signal(on_shutdown))
+        ioloop.start()
+        print( "Terminated\n")
+    except Exception as e:
+        print( e)
 </pre>
+
 <h4>strusIR.py</h4>
 <pre>
+import strus
+import itertools
+import heapq
+import re
+
+class Backend:
+    # Create the document analyzer for our test collection:
+    # Create the document analyzer for our test collection:
+    def createDocumentAnalyzer(self):
+        rt = self.context.createDocumentAnalyzer()
+        # Define the sections that define a document (for multipart documents):
+        rt.defineDocument( "doc", "/list/item")
+
+        # Define the terms to search for (inverted index or search index):
+        rt.addSearchIndexFeature( "word", "/list/item/title()",
+                                  "word", ("lc",("stem","en"),("convdia","en")))
+        rt.addSearchIndexFeature( "word", "/list/item/artist()",
+                                  "word", ("lc",("stem","en"),("convdia","en")))
+        rt.addSearchIndexFeature( "word", "/list/item/note()",
+                                  "word", ("lc",("stem","en"),("convdia","en")))
+
+        # Define the terms to search for (inverted index or search index):
+        rt.addForwardIndexFeature( "orig", "/list/item/title()", "split", "orig")
+        rt.addForwardIndexFeature( "orig", "/list/item/artist()", "split", "orig")
+        rt.addForwardIndexFeature( "orig", "/list/item/note()", "split", "orig")
+
+        # Define the document attributes:
+        rt.defineAttribute( "docid", "/list/item/id()", "content", "text")
+        rt.defineAttribute( "title", "/list/item/title()", "content", "text")
+        rt.defineAttribute( "upc", "/list/item/upc()", "content", "text")
+        rt.defineAttribute( "note", "/list/item/note()", "content", "text")
+
+        # Define the document meta data:
+        rt.defineMetaData( "date", "/list/item/date()", "content", [("date2int", "d 1877-01-01", "%Y-%m-%d %H:%M:%s *")]);
+
+        # Define the doclen attribute needed by BM25:
+        rt.defineAggregatedMetaData( "doclen",("count", "word"))
+        return rt
+
+    # Create the query analyzer according to the document analyzer configuration:
+    def createQueryAnalyzer(self):
+        rt = self.context.createQueryAnalyzer()
+        rt.definePhraseType(
+            "text", "word", "word", 
+            ["lc", ["stem", "en"], ["convdia", "en"]]
+        )
+        return rt
+
+    # Create a simple BM25 query evaluation scheme with fixed
+    # a,b,k1 and avg document lenght and title with abstract
+    # as summarization attributes:
+    def createQueryEvalBM25(self):
+        rt = self.context.createQueryEval()
+        # Declare the sentence marker feature needed for abstracting:
+        rt.addTerm( "sentence", "sent", "")
+        # Declare the feature used for selecting result candidates:
+        rt.addSelectionFeature( "selfeat")
+        # Query evaluation scheme:
+        rt.addWeightingFunction( 1.0, "BM25", {
+                     "k1": 0.75, "b": 2.1, "avgdoclen": 20, ".match": "docfeat" })
+        # Summarizer for getting the document title:
+        rt.addSummarizer( "DOCID", "attribute", { "name": "docid" })
+        rt.addSummarizer( "TITLE", "attribute", { "name": "title" })
+        # Summarizer for abstracting:
+        rt.addSummarizer( "CONTENT", "matchphrase", {
+                  "type": "orig", "len": 40, "nof": 3,
+                  "mark": '&lt;b&gt;$&lt;/b&gt;', ".match": "docfeat" })
+        return rt
+
+    # Constructor. Initializes the query evaluation schemes and the query and document analyzers:
+    def __init__(self, config):
+        # Open local storage on file with configuration specified:
+        self.context = strus.Context()
+        self.context.defineStatisticsProcessor( "standard");
+        self.storage = self.context.createStorageClient( config )
+        self.queryAnalyzer = self.createQueryAnalyzer()
+        self.documentAnalyzer = self.createDocumentAnalyzer()
+        self.queryeval = self.createQueryEvalBM25()
+
+    # Insert a multipart document:
+    def insertDocuments( self, content):
+        rt = 0
+        docqueue = self.documentAnalyzer.createQueue()
+        docqueue.push( content)
+        transaction = self.storage.createTransaction()
+        while (docqueue.hasMore()):
+            doc = docqueue.fetch()
+            transaction.insertDocument( doc.docid(), doc)
+            rt += 1
+        transaction.commit()
+        return rt
+
+    # Query evaluation scheme for a classical information retrieval query with BM25:
+    def evaluateQuery( self, terms, collectionsize, firstrank, nofranks):
+        queryeval = self.queryeval
+        query = queryeval.createQuery( self.storage)
+        if len( terms) == 0:
+            # Return empty result for empty query:
+            return []
+
+        selexpr = ["contains"]
+        for term in terms:
+            selexpr.append( [term.type, term.value] )
+            query.defineFeature( "docfeat", [term.type, term.value], 1.0)
+            query.defineTermStatistics( term.type, term.value, {'df' : int(term.df)} )
+        query.defineFeature( "selfeat", selexpr, 1.0 )
+        query.setMaxNofRanks( nofranks)
+        query.setMinRank( firstrank)
+        query.defineGlobalStatistics( {'nofdocs' : int(collectionsize)} )
+        # Evaluate the query:
+        results = query.evaluate()
+        # Rewrite the results:
+        rt = []
+        for result in results:
+            content = ""
+            title = ""
+            docid = ""
+            for attribute in result.attributes():
+                if attribute.name() == 'CONTENT':
+                    if content != "":
+                        content += ' ... '
+                    content += attribute.value()
+                elif attribute.name() == 'DOCID':
+                        docid = attribute.value()
+                elif attribute.name() == 'TITLE':
+                        title = attribute.value()
+            rt.append( {
+                   'docno':result.docno(),
+                   'docid':docid,
+                   'title':title,
+                   'weight':result.weight(),
+                   'abstract':content })
+        return rt
+
+    # Get an iterator on all absolute statistics of the local storage
+    def getInitStatisticsIterator( self):
+        return self.storage.createInitStatisticsIterator( True)
+
+    # Get an iterator on all absolute statistics of the local storage
+    def getDoneStatisticsIterator( self):
+        return self.storage.createInitPeerMessageIterator( False)
+    
+    # Get an iterator on updates to be sent to peers
+    def getUpdateStatisticsIterator( self):
+        return self.storage.createUpdateStatisticsIterator()
 </pre>
+
 <h4>strusMessage.py</h4>
 <pre>
+#!/usr/bin/python
+import tornado.ioloop
+import tornado.gen
+import tornado.tcpclient
+import tornado.tcpserver
+import signal
+import os
+import sys
+import struct
+import binascii
+
+class TcpConnection( object):
+    def __init__(self, stream, command_callback):
+        self.stream = stream
+        self.command_callback = command_callback
+
+    @tornado.gen.coroutine
+    def on_connect(self):
+        try:
+            while (True):
+                msgsizemsg = yield self.stream.read_bytes( struct.calcsize("&gt;I"))
+                (msgsize,) = struct.unpack( "&gt;I", msgsizemsg)
+                msg = yield self.stream.read_bytes( msgsize)
+                reply = yield self.command_callback( msg)
+                yield self.stream.write( struct.pack( "&gt;I", len(reply)) + bytes(reply));
+        except tornado.iostream.StreamClosedError:
+            pass
+
+class RequestServer( tornado.tcpserver.TCPServer):
+    def __init__(self, command_callback, shutdown_callback):
+        tornado.tcpserver.TCPServer.__init__(self)
+        self.command_callback = command_callback
+        self.shutdown_callback = shutdown_callback
+        self.io_loop = tornado.ioloop.IOLoop.current()
+
+    def do_shutdown( self, signum, frame):
+        print('Shutting down')
+        self.shutdown_callback()
+        self.io_loop.stop()
+
+    @tornado.gen.coroutine
+    def handle_stream( self, stream, address):
+        connection = TcpConnection( stream, self.command_callback)
+        yield connection.on_connect()
+
+    def start( self, port):
+        host = "0.0.0.0"
+        self.listen( port, host)
+        print("Listening on %s:%d..." % (host, port))
+        signal.signal( signal.SIGINT, self.do_shutdown)
+        self.io_loop.start()
+
+
+class RequestClient( tornado.tcpclient.TCPClient):
+    @tornado.gen.coroutine
+    def issueRequest( self, stream, msg):
+        blob = struct.pack( "&gt;I", len(msg)) + bytes(msg)
+        stream.write( blob);
+        replysizemsg = yield stream.read_bytes( struct.calcsize("&gt;I"))
+        (replysize,) = struct.unpack( "&gt;I", replysizemsg)
+        reply = yield stream.read_bytes( replysize)
+        raise tornado.gen.Return( reply)
 </pre>
 
 <h2>Running the example</h2>
@@ -306,7 +1096,7 @@ docker run -p 40080:80 -t -i patrickfrey/strus-ub1404-torndist:v0_3 /bin/bash
 <p>and you a prompt like this
 </p>
 <pre>
-root@8cbc7f49f3cf:/home/strus#
+root@3810f0b27943:/home/strus#
 </pre>
 <p>
 The following shell commands are executed in the docker image.
@@ -378,7 +1168,7 @@ strusCreate -s "path=storage; metadata=doclen UINT16, date UINT32"
 We first start the statistics server:
 </p>
 <pre>
-./strusStatisticsServer.py &
+./strusStatisticsServer.py &amp;
 </pre>
 <p>and we get</p>
 <pre>
@@ -388,7 +1178,7 @@ Listening on 0.0.0.0:7183...
 <p>Then we start one storage server.
 </p>
 <pre>
-./strusStorageServer.py &
+./strusStorageServer.py &amp;
 </pre>
 <p>and we get</p>
 <pre>
@@ -398,7 +1188,7 @@ Listening on 0.0.0.0:7184...
 <p>Then we start the HTTP server.
 </p>
 <pre>
-./strusHttpServer.py &
+./strusHttpServer.py &amp;
 </pre>
 <p>and we get</p>
 <pre>
@@ -454,7 +1244,7 @@ OK 9751
 <p>Now you can issue the query "Music India" with your favorite browser with the following URL:
 </p>
 <pre>
-http://127.0.0.1:8080/query?q=Music%20India&i=0&n=20
+http://127.0.0.1:40080/query?q=Music%20India&i=0&n=20
 </pre>
 <p>
 You get the following results. The document we seletected from the first file is marked in the ranklist:
@@ -464,7 +1254,7 @@ You get the following results. The document we seletected from the first file is
 
 <h3>Distribute the search index</h3>
 <p>
-We first shutdown all servers:
+Now we build the same collection on three storage nodes. We first shutdown all servers:
 </p>
 <pre>
 ps -fe | grep python | grep strus | awk '{print $2}' | xargs kill -s SIGTERM
@@ -481,7 +1271,8 @@ strusCreate -s "path=storage7186; metadata=doclen UINT16, date UINT32"
 and we get
 </p>
 <pre>
-storage successfully destroyed.
+storage successfully created.
+storage successfully created.
 storage successfully created.
 </pre>
 <p>
@@ -489,7 +1280,7 @@ Now we restart all servers again, but this time with 3 storage servers on port 7
 First we start the statistics server:
 </p>
 <pre>
-./strusStatisticsServer.py -p 7183
+./strusStatisticsServer.py -p 7183 &amp;
 </pre>
 <p>
 and we get
@@ -498,11 +1289,11 @@ and we get
 Starting server ...
 Listening on 0.0.0.0:7183...
 </pre>
-<p>then the others
+<p>then the storage servers
 <pre>
-./strusStorageServer.py -P -p 7184 -c "path=storage7184; cache=512M" &
-./strusStorageServer.py -P -p 7185 -c "path=storage7185; cache=512M" &
-./strusStorageServer.py -P -p 7186 -c "path=storage7186; cache=512M" &
+./strusStorageServer.py -P -p 7184 -c "path=storage7184; cache=512M" &amp;
+./strusStorageServer.py -P -p 7185 -c "path=storage7185; cache=512M" &amp;
+./strusStorageServer.py -P -p 7186 -c "path=storage7186; cache=512M" &amp;
 </pre>
 <p>
 and we get
@@ -525,10 +1316,10 @@ Load local statistics to publish ...
 </pre>
 <p>
 The HTTP server is started with the ports of the storage servers as arguments. When we started
-it with one argument, it used the default storage server port as only server to query.
+it without argument, it used the default storage server port as only server to query.
 </p>
 <pre>
-./strusHttpServer.py 7184 7185 7186 &
+./strusHttpServer.py 7184 7185 7186 &amp;
 </pre>
 <p>and we get</p>
 <pre>
@@ -540,9 +1331,9 @@ As explained in the beginning, we insert one multipart document into the storage
 into the second (7185) and the rest into the third (7186). We do this with our insert_docs command:
 </p>
 <pre>
-./insert_docs.sh 7184 0 0 &
-./insert_docs.sh 7185 1 2 &
-./insert_docs.sh 7186 2 33 &
+./insert_docs.sh 7184 0 0 &amp;
+./insert_docs.sh 7185 1 2 &amp;
+./insert_docs.sh 7186 3 33 &amp;
 </pre>
 
 <p>
@@ -581,7 +1372,42 @@ own. Document numbers should not be used as identifier for a document because of
 <li>Results with the same weight are ordered differently because the document number is taken as order criterion, if
 two weights are the equal. This is due to stability reasons that are important for browsing the results.</li>
 </ol>
+<h4>Remark</h4>
+<p><i>Something is fishy here with the docid and the docno. They seem to be mixed. Take the title and the
+weight as reference. I will fix this small bug in the presentation of the result as soon as possible.</i></p>
 
+<h2>Resume</h2>
+<p>In my previous articles I have shown that it is possible to build simple
+as well as complex search applications with Strus. The model of strus allows to match regular 
+language patterns (with terms as alphabet) and extract tuples of tokens related to matches. 
+You can implement classical information retrieval weighting documents as well as alternative retrieval 
+methods that are accumulating content from documents for presentation or further processing.
+<br/>
+Strus has a competitive performance that allows you to it feed a single storage node with millions of documents 
+within a day, and to query such collections with an immediate response. The Wikipedia demo search illustrates this. 
+If you run a query twice in a row, you get the response time without accessing disk. 
+There is no query result cache involved. The machine is old and the amount of memory a single
+process can use is about 4G. That is below the minimum value recommended by Leveldb for a key/value 
+storage if you consider the search index size of 50G. Furthermore the maximum number of files
+that can be kept open on this machine is much smaller (128) than the Leveldb storage would like to keep open.
+<br/>
+In this article we saw that Strus is a scalable search engine. It could potentially run on a cluster
+with thusands of machines providing search on a collection of billions of documents.
+</p>
+
+<h2>Conclusion</h2>
+<p>
+Strus matches regular patterns with help of search index and allows to weight documents containing
+the matches and extract tuples related to matches for further processing. Nothing more.
+If this can provide you a small brick for solving your problem, you maybe think about using Strus.
+<br/>
+The computer science world got very competitive in the last decade.
+Software ecomomy wants to profit by this competition.
+<br/>
+The Strus core needed less than one man year of development and the data storage is based
+on 3rd party software (LevelDB or alternatives). This opens it to competition.
+It is up to you to decide, wheter it is worth a try or not.
+</p>
 </body>
 </html>
 

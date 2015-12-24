@@ -10,7 +10,6 @@ import binascii
 import collections
 import heapq
 import optparse
-import trollius
 import signal
 import strus
 import strusMessage
