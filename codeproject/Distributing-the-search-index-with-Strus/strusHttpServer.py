@@ -55,7 +55,7 @@ class QueryHandler( tornado.web.RequestHandler ):
             statreply = yield msgclient.issueRequest( conn, statquery)
 
             if (statreply[0] == 'E'):
-                raise Exception( "failed to query global statistics: %s" % stats[1:])
+                raise Exception( "failed to query global statistics: %s" % statreply[1:])
             elif (statreply[0] != 'Y'):
                 raise Exception( "protocol error loading global statistics")
             dflist = []
@@ -283,8 +283,8 @@ if __name__ == "__main__":
     try:
         # Port of this query server (set to default):
         parser = optparse.OptionParser()
-        parser.add_option("-p", "--port", dest="port", default=8080,
-                          help="Specify the port of this server as PORT (default %u)" % 8080,
+        parser.add_option("-p", "--port", dest="port", default=80,
+                          help="Specify the port of this server as PORT (default %u)" % 80,
                           metavar="PORT")
         parser.add_option("-s", "--statserver", dest="statserver", default=statserver,
                           help="Specify the address of the statistics server as ADDR (default %s" % statserver,
@@ -294,7 +294,7 @@ if __name__ == "__main__":
         if len(args) > 0:
             parser.error("no arguments expected")
             parser.print_help()
-        myport = options.port
+        myport = int(options.port)
         statserver = options.statserver
         if (statserver[0:].isdigit()):
             statserver = '{}:{}'.format( 'localhost', statserver)

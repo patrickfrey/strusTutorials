@@ -24,6 +24,9 @@ strustat = strusctx.createStatisticsProcessor()
 def packedMessage( msg):
     return struct.pack( ">H%ds" % len(msg), len(msg), msg)
 
+def termDfMapKey( type, value):
+    return "%s~%s" % (type,value)
+
 @tornado.gen.coroutine
 def processCommand( message):
     rt = bytearray("Y")
@@ -37,7 +40,7 @@ def processCommand( message):
             collectionSize += msg.nofDocumentsInsertedChange()
             dfchglist = msg.documentFrequencyChangeList()
             for dfchg in dfchglist:
-                key = struct.pack( 'ps', dfchg.type(), dfchg.value())
+                key = termDfMapKey( dfchg.type(), dfchg.value())
                 if key in termDfMap:
                     termDfMap[ key ] += dfchg.increment()
                 else:
@@ -54,7 +57,7 @@ def processCommand( message):
                     (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
                     messageofs += typesize + valuesize
                     df = 0
-                    key = struct.pack( 'ps', type, value)
+                    key = termDfMapKey( type, value)
                     if key in termDfMap:
                         df = termDfMap[ key]
                     rt += struct.pack( ">q", df)

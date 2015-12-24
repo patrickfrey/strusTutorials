@@ -121,9 +121,9 @@ class Backend:
                         content += ' ... '
                     content += attribute.value()
                 elif attribute.name() == 'DOCID':
-                        title = attribute.value()
-                elif attribute.name() == 'TITLE':
                         docid = attribute.value()
+                elif attribute.name() == 'TITLE':
+                        title = attribute.value()
             rt.append( {
                    'docno':result.docno(),
                    'docid':docid,

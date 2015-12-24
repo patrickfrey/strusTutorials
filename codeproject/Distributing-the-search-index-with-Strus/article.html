@@ -6,8 +6,8 @@
 <h2>Goals</h2>
 <p>
 The main focus of server applications lays on scalability.
-This article tries to clarify how the project <a href="http://www.project-strus.net">Strus</a>
-meets scalability requirements.
+This article tries to investigate, what implications scalability requirements have for full-text search engines
+and how the project <a href="http://www.project-strus.net">Strus</a> meets these requirements.
 </p>
 
 <h2>Background</h2>
@@ -15,9 +15,31 @@ meets scalability requirements.
 to build search engines</a>. For tutorials that show how to build a search engine
 with Strus have a look at my previous code project articles:
 <ol>
-<li><a href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial">Building a search engine with Strus</a></li>
-<li><a href="http://www.codeproject.com/Articles/1059766/Building-a-search-engine-with-Python-Tornado-and-S">Building a search engine with Python Tornado and Strus</a></li>
+<li><a href="http://www.codeproject.com/Articles/1009582/Building-a-search-engine-with-Strus-tutorial">Building a search engine with Strus</a>:
+<br/>
+This tutorial shows how to implement a simple PHP Webservice implementing search on a strus storage.
+Only the query part of the interface is implemented as Webservice. The test collection is inserted with command line 
+tools.
+</li>
+<li><a href="http://www.codeproject.com/Articles/1059766/Building-a-search-engine-with-Python-Tornado-and-S">Building a search engine with Python Tornado and Strus</a>
+This tutorial shows how to implement a more complex search application with Python and Strus. 
+Two query evaluation methods are implemented. One is a classical BM25. The other shows how complex 
+query expressions can be built and how alternative information retrieval methods can be implemented,
+that rank extracted content from documents rather that weighting documents based on the query.
+If you have a closer look you will find out that Strus is an engine that can match
+patterns of regular languages (with terms and not characters as alphabet) by relating its
+expressions to iterable operations on the sets of postings:
+<pre>{(d,p) :d->document number, p->position}</pre>
+The set of regular languages covers the set of languages that are entirely mappable
+to set operations.
+<br/>
+</li>
 </ol>
+</p>
+
+<h2>Prerequisites</h2>
+<p>
+For running the examples in a docker image, you need <a href="https://docs.docker.com/engine/installation">docker installed</a>.
 </p>
 
 <h2>Introduction</h2>
@@ -57,7 +79,7 @@ storing relations that bring a query into conjunction with a result. For a scala
 search engine with a distributed index it is important that each node with a part of this 
 split can calculate a part of the result completely so that it can make a decision about 
 what is a candidate for the final result and what not. 
-Preferably the number of items sorted out by the cut is high.
+Preferably the number of items selected with this cut as candidates for the final result is small.
 This implies that the database has to be organized in a way that all information for weighting one
 document, the most common result of an information retrieval query, belongs to one node.
 The informations used for retrieval are therefore assumed to be grouped by document. 
@@ -69,7 +91,7 @@ and where the cut cannot be made so easily.
 <p>A search engine usually assigns a weight to each result row. This weight is used to order
 the results. A search engine calculates the N results with the highest weight.
 For merging results from different nodes to one result, these weights must be comparable.
-If this is the case, then a search engine can delegate the calculation of the best N results 
+If this is the case, then a search engine can delegate the calculation of the best results 
 to each node and then take the best N results from the merge of the node results.
 <br />
 Many established weighting methods use statistical information that is accumulated from
@@ -100,6 +122,8 @@ because they are with a high probability globally the same within an error range
 of documents we can insert, though we cannot simply add and remove nodes and organize them as we
 want. We can organize things only one way and this assignment is left to Mr. Random.
 The missing possibility to organize collections as we want is the strongest argument against this approach.
+Another problem is the high costs of reorganisation if the maximum number of documents (the decline of the
+search performance with the growth of the inserts sets the limit) is reached.
 </td>
 </tr>
 <tr>
@@ -113,9 +137,9 @@ access the information provided to the nodes. The self containment of nodes is l
 <tr>
 <td><b>4</b></td>
 <td><b>The information is passed down with the query</b>: We separate the information from the single node.</td>
-<td>This is a good approach if the amount of information we have to pass down is not significantly complicating
-the query. We can handle the problem of accessing this information on its own. If we can 
-for example use a key/value map as storage for this information, we know that we can scale in this aspect, 
+<td>This is a good approach, if the amount of information we have to pass down is not significantly complicating
+the query. We can handle the problem of accessing this information on its own.  
+For example by using a key/value map as storage for this information. We know that we can scale in this aspect, 
 because for key/value storages there exist solutions that scale. We have to find ways to fetch the 
 information from the nodes accumulating it and put it into the global storage for the statistical 
 information for the query.
@@ -132,7 +156,7 @@ that possibly could be found in a document.
 </p>
 
 <h2>Solutions</h2>
-<p>You can find out on your own how your favorite search engine solves the problem of providing the
+<p>You can find out on your own, how your favorite search engine solves the problem of providing the
 information needed by the query for weighting the items retrieved in a way that search results
 are comparable.
 <br/>
@@ -154,6 +178,262 @@ solve your problem with some fantasy and some nice ideas. It is on the other han
 to take a program, that solves a problem, and to make it scale with some fantasy and some nice ideas.
 </i></p>
 
+<h2>Example implementation with Strus</h2>
+<p>This demo provides a docker image to run the examples. But you can also download them and run on your own.
+The Python sources of this article are examples not intended for production or even a test application.
+There are no real transactions implemented and error handling is not involving recovery from all kind of errors.
+There are 3 servers implemented, each of them representing one component of the distributed search engine.
+You might think about the architecture on your own and find a suitable solution for your needs.
+Then you will implement the components needed from scratch. The examples here are just a scetch and a
+proof of concept.
+In this section we will introduce the components needed with an example. The following table gives you an
+overview.
+</p>
+<h3>The servers</h3>
+<table border=1>
+<tr>
+<td><b>strusStatisticsServer.py</b>
+</td>
+<td>A statistics server holds the global statistics. It might be implemented as interface to a
+distributed hashtable fed over persistent queues. But our example server holds the global statistics
+for each term in a dicitionary and the total collection size in a variable in memory. Nothing is persistent 
+and thus lost on shutdown.
+<br/>
+The server is implemented as TCP/IP server with a proprietary protocol with two commands (put/get)
+serializing insert and retrieve messages in one single blob. 
+</td>
+</tr>
+
+<tr>
+<td><b>strusStorageServer.py</b>
+</td>
+<td>A storage server provides access to one storage. It is a node in our distributed search.
+It provides two commands, one for insert and one for query. 
+<br/>
+The insert will analyze and 
+store the multipart document passed within one transaction. After the transaction commit
+it iterates on its global statistics updates, a set of increment/decrement operations.
+These operations (packed in chunks of data blobs) are sent to the statistics server. 
+Currently there is no possibility to get the statistic updates before the commit.
+There is room for improvement here in Strus.
+<br/>
+The query is passed as list of terms with their global statistics to a storage server.
+The storage server builds the query with the global term statistics and the global collection
+size, excutes it and sends the result back.
+</td>
+</tr>
+
+<tr>
+<td><b>strusHttpServer.py</b>
+</td>
+<td>A strus HTTP server provides two operations insert and query.
+<br/>
+The insert is a POST request with the port of the local storage server, where to insert
+the document in the URL and the multipart document in the request body. The insert
+command takes the document and forwards it to the storage server addressed with the
+command URL.
+<br/>
+The query is a GET request with the querystring and the result
+range as parameter. The query command analyzes the query to get the normalized query 
+terms and sends them first to the statistics server to get the statistics for each term
+and the global collection size. The query with the statistics is packed and sent to
+each storage node. The results received from each server are merged into one result 
+and rendered with tornado templates to an HTML page. For siplicity the example 
+implements only a list of terms as query. 
+It's left to the reader to think about how to analyze a query language, 
+getting the statistics of the terms and serialize the query tree.
+<br/>
+</td>
+</tr>
+</table>
+
+<h3>Some helper modules</h3>
+<table border=1>
+<tr>
+<td><b>strusIR.py</b>
+</td>
+<td>The strus information retrieval module provides an abstraction for accessing the storage and
+analyze the document. As we already noticed is the query analysis done outside in the HttpServer.
+In a decent design, the sources for query and document analysis would be at the same place because
+they belong together. But we don't look at a proper way of organizing the code in details we do not
+intend to bring into focus in this article.
+</td>
+</tr>
+
+<tr>
+<td><b>strusMessage.py</b>
+</td>
+<td>The messaging module provides an abstraction for server and client used for
+the TCP/IP messaging of the storage and the statistics servers. It allows the client to
+open a session and send one or several requests to the server.
+<br/>
+For simplicity we do not hold connections open. 
+</td>
+</tr>
+</table>
+
+<h3>The source code</h3>
+<h4>strusStorageServer.py</h4>
+<pre>
+</pre>
+<h4>strusStatisticsServer.py</h4>
+<pre>
+</pre>
+<h4>strusHttpServer.py</h4>
+<pre>
+</pre>
+<h4>strusIR.py</h4>
+<pre>
+</pre>
+<h4>strusMessage.py</h4>
+<pre>
+</pre>
+
+<h2>Running the example</h2>
+<p>
+The dataset used in this article is from MusicBrainz (musicbrainz.org). 
+<b>Please respect <a href="https://musicbrainz.org/doc/About/Data_License">the license</a> of this dataset !</b>
+<br/>
+The docker image is started with</p>
+<pre>
+docker run -p 40080:80 -t -i patrickfrey/strus-ub1404-torndist:v0_3 /bin/bash
+</pre>
+<p>and you a prompt like this
+</p>
+<pre>
+root@8cbc7f49f3cf:/home/strus#
+</pre>
+<p>
+The following shell commands are executed in the docker image.
+<br/>
+The document collection used in the examples is from <a href="https://musicbrainz.org">musicbrainz</a>.
+It contains a list of music recordings.
+<br/>
+To download and prepare the documents you run the shell script
+</p>
+<pre>
+./prepare.sh
+</pre>
+<p>We see that a directory data has been created that contains some files and directory.
+One subdirectory created is 'doc'. We type
+</p>
+<pre>
+ls data/doc/
+</pre>
+<p>
+to see its content
+</p>
+<pre>
+</p>0.xml   12.xml  15.xml  18.xml  20.xml  23.xml  26.xml  29.xml  31.xml  3.xml  6.xml  9.xml
+10.xml  13.xml  16.xml  19.xml  21.xml  24.xml  27.xml  2.xml   32.xml  4.xml  7.xml
+11.xml  14.xml  17.xml  1.xml   22.xml  25.xml  28.xml  30.xml  33.xml  5.xml  8.xml
+</pre>
+<p>
+We have a look at the multipart document <i>0.xml</i>. Later we will make a very unbalanced 
+collection split with one storage server containing the documents of this file, another server
+containing the documents of the file <i>1.xml</i> and <i>2.xml</i>  and the third server containing
+the rest of the documents. We will show that the weighting of the result documents is the same
+as if we would have used one server only. The goal is to show that strus allows us to distribute
+the search index arbitrarily without affecting weighting, because in both cases we use the same 
+statistics for weighting.
+<br/>
+First we chose an entry in the first document that we want to have within the best matches.
+This way we show that the weighting is also stable for the smallest sub-collection.
+</p>
+<pre>
+less data/doc/0.xml
+</pre>
+<p>
+It shows us the following list
+</p>
+<pre>
+&lt;?xml version="1.0" encoding="UTF-8" standalone="yes" ?&gt;
+&lt;list&gt;
+&lt;item&gt;&lt;id&gt;25&lt;/id&gt;&lt;title&gt;Dead Love Songs&lt;/title&gt;&lt;artist&gt;The Black&lt;/artist&gt;&lt;date&gt;2008-11-25 05:43:04.124028+00&lt;/date&gt;&lt;upc&gt;&lt;/upc&gt;&lt;note&gt;&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;46&lt;/id&gt;&lt;title&gt;Music of India - Volume 1 (SANTOOR)&lt;/title&gt;&lt;artist&gt;Musenalp&lt;/artist&gt;&lt;date&gt;2008-11-25 17:31:54.456355+00&lt;/date&gt;&lt;upc&gt;&lt;/upc&gt;&lt;note&gt;&lt;/note&gt;&lt;/item&gt;
+&lt;item&gt;&lt;id&gt;2616&lt;/id&gt;&lt;title&gt;Vianoce&lt;/title&gt;&lt;artist&gt;Sklo&lt;/artist&gt;&lt;date&gt;2008-12-19 20:49:47.115832+00&lt;/date&gt;&lt;upc&gt;&lt;/upc&gt;&lt;note&gt;&lt;/note&gt;&lt;/item&gt;
+....
+</pre>
+<p>
+The second entry with id <i>46</i> contains the words "Music" and "India". This will be our example query terms.
+As ground truth we will first insert the whole collection into one storage. The resulting ranklist of one server
+for the query "Music India" will be our reference ranklist.
+<br/>
+We first start the statistics server:
+</p>
+<pre>
+./strusStatisticsServer.py &
+</pre>
+<p>and we get</p>
+<pre>
+Starting server ...
+Listening on 0.0.0.0:7183...
+</pre>
+<p>Then we start one storage server.
+</p>
+<pre>
+./strusStorageServer.py &
+</pre>
+<p>and we get</p>
+<pre>
+Starting server ...
+Listening on 0.0.0.0:7184...
+</pre>
+<p>Then we start the HTTP server.
+</p>
+<pre>
+./strusHttpServer.py &
+</pre>
+<p>and we get</p>
+<pre>
+Starting server ...
+
+Listening on port 80
+
+</pre>
+<p>
+Now we use cURL to insert the collection. We use a prepared script for this. The script looks as follows:
+</p>
+<pre>
+#!/bin/sh
+
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 &lt;server-port&gt; &lt;start-range&gt; [&lt;end-range&gt;]" &gt;&2
+    exit 1
+fi
+
+port=`expr 0 \+ $1`
+start=`expr 0 \+ $2`
+if [ "$#" -lt 3 ]; then
+    end=$start
+else
+    end=`expr 0 \+ $3`
+fi
+for i in $(seq $start $end)
+do
+    curl -X POST -d @data/doc/$i.xml localhost:80/insert/$port --header "Content-Type:text/xml"
+done
+</pre>
+<p>
+The script takes the HTTP server port and the range of documents to insert as argument.
+The call to insert the complete collection looks as follows:
+</p>
+<pre>
+./insert_docs.sh 7184 0 33
+</pre>
+<p>and we get a list of 34 replies with the number of documents inserted with each call of cURL that looks like this:
+</p>
+<pre>
+OK 5090
+OK 5513
+OK 8560
+OK 9736
+OK 9708
+OK 9751
+....
+</pre>
+<p>Now you can issue your query with your favorite browser with the following URL:
+</p>
 </body>
 </html>
 
