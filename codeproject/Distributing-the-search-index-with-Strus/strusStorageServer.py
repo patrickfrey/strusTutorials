@@ -15,7 +15,7 @@ import strusMessage
 import binascii
 
 # Information retrieval engine:
-backend = strusIR.Backend( "path=storage; cache=512M")
+backend = None
 # Port of the global statistics server:
 statserver = "localhost:7183"
 # IO loop:
@@ -32,7 +32,7 @@ def publishStatistics( itr):
         host,port = statserver[:ri],int( statserver[ri+1:])
         conn = yield msgclient.connect( host, port)
     except IOError as e:
-        raise Exception( "connection so statistics server %s failed (%s) ... trying again (%u)" % (statserver, e))
+        raise Exception( "connection so statistics server %s failed (%s)" % (statserver, e))
 
     msg = itr.getNext()
     while (len(msg) > 0):
@@ -123,10 +123,15 @@ def processShutdown():
 # Server main:
 if __name__ == "__main__":
     try:
+        # Parse arguments:
+        defaultconfig = "path=storage; cache=512M"
         parser = optparse.OptionParser()
         parser.add_option("-p", "--port", dest="port", default=7184,
                           help="Specify the port of this server as PORT (default %u)" % 7184,
                           metavar="PORT")
+        parser.add_option("-c", "--config", dest="config", default=defaultconfig,
+                          help="Specify the storage path as FILE (default '%s')" % defaultconfig,
+                          metavar="FILE")
         parser.add_option("-s", "--statserver", dest="statserver", default=statserver,
                           help="Specify the address of the statistics server as ADDR (default %s" % statserver,
                           metavar="ADDR")
@@ -138,9 +143,11 @@ if __name__ == "__main__":
             parser.error("no arguments expected")
             parser.print_help()
 
-        myport = options.port
+        myport = int(options.port)
         pubstats = options.do_publish_stats
         statserver = options.statserver
+        backend = strusIR.Backend( options.config)
+
         if (statserver[0:].isdigit()):
             statserver = '{}:{}'.format( 'localhost', statserver)
 

@@ -79,6 +79,7 @@ def processShutdown():
 # [5] Server main:
 if __name__ == "__main__":
     try:
+        # Parse arguments:
         parser = optparse.OptionParser()
         parser.add_option("-p", "--port", dest="port", default=7183,
                           help="Specify the port of this server as PORT (default %u)" % 7183,
@@ -88,7 +89,7 @@ if __name__ == "__main__":
         if len(args) > 0:
             parser.error("no arguments expected")
             parser.print_help()
-        myport = options.port
+        myport = int(options.port)
 
         # Start server:
         print( "Starting server ...")

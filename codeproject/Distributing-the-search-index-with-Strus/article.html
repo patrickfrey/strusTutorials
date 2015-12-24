@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Distributing the search index with Strus</title>
+<title>Distributing a search index with Strus</title>
 </head>
 <body>
 <h2>Goals</h2>
@@ -58,7 +58,11 @@ and the API and the documentation with examples.
 The second issue, distribution of a Strus search application on an arbitrary number 
 of machines and the capability to increase the number of processing nodes anytime 
 is the main subject of this article.
-It will explain what distribution of a full-text search application means in general.
+The article will not discuss fundamentals of distributed processing. Costs of sharing data,
+messaging and process synchronization should be familiar for the reader.
+The article will only explain what data is usually shared in a full-text search engine
+and discuss alternatives, how to handle the consequential problems (as sharing data is always
+a problem in distributed systems).
 Then it will show the position of Strus in this landscape and help you to compare Strus
 with other search engines.
 </p>
@@ -290,6 +294,7 @@ For simplicity we do not hold connections open.
 </pre>
 
 <h2>Running the example</h2>
+<h3>Start the docker image and create the document collection</h3>
 <p>
 The dataset used in this article is from MusicBrainz (musicbrainz.org). 
 <b>Please respect <a href="https://musicbrainz.org/doc/About/Data_License">the license</a> of this dataset !</b>
@@ -358,7 +363,18 @@ It shows us the following list
 The second entry with id <i>46</i> contains the words "Music" and "India". This will be our example query terms.
 As ground truth we will first insert the whole collection into one storage. The resulting ranklist of one server
 for the query "Music India" will be our reference ranklist.
-<br/>
+</p>
+<h3>Create the document storage</h3>
+<p>
+We create the storage with command line tools. We could also create it with the strus API, but commands to create
+a storage are not part of the example implementation of this article. The storage is created with the following
+command:
+</p>
+<pre>
+strusCreate -s "path=storage; metadata=doclen UINT16, date UINT32"
+</pre>
+<h3>Start the servers</h3>
+<p>
 We first start the statistics server:
 </p>
 <pre>
@@ -391,6 +407,7 @@ Starting server ...
 Listening on port 80
 
 </pre>
+<h3>Insert all documents into one storage</h3>
 <p>
 Now we use cURL to insert the collection. We use a prepared script for this. The script looks as follows:
 </p>
@@ -432,8 +449,139 @@ OK 9708
 OK 9751
 ....
 </pre>
-<p>Now you can issue your query with your favorite browser with the following URL:
+
+<h3>Issue the example query (one storage)</h3>
+<p>Now you can issue the query "Music India" with your favorite browser with the following URL:
 </p>
+<pre>
+http://127.0.0.1:8080/query?q=Music%20India&i=0&n=20
+</pre>
+<p>
+You get the following results. The document we seletected from the first file is marked in the ranklist:
+<img border=2 style="display:block;" width="40%" src="browser_query_url.jpg" alt="query URL"/>
+<img border=2 style="display:block;" width="80%" src="ranklist_1server.jpg" alt="BM25 results one server"/>
+</p>
+
+<h3>Distribute the search index</h3>
+<p>
+We first shutdown all servers:
+</p>
+<pre>
+ps -fe | grep python | grep strus | awk '{print $2}' | xargs kill -s SIGTERM
+</pre>
+<p>
+and we create 3 search indexes (we include the server port in the file name):
+</p>
+<pre>
+strusCreate -s "path=storage7184; metadata=doclen UINT16, date UINT32"
+strusCreate -s "path=storage7185; metadata=doclen UINT16, date UINT32"
+strusCreate -s "path=storage7186; metadata=doclen UINT16, date UINT32"
+</pre>
+<p>
+and we get
+</p>
+<pre>
+storage successfully destroyed.
+storage successfully created.
+</pre>
+<p>
+Now we restart all servers again, but this time with 3 storage servers on port 7184,7185 and 7186.
+First we start the statistics server:
+</p>
+<pre>
+./strusStatisticsServer.py -p 7183
+</pre>
+<p>
+and we get
+</p>
+<pre>
+Starting server ...
+Listening on 0.0.0.0:7183...
+</pre>
+<p>then the others
+<pre>
+./strusStorageServer.py -P -p 7184 -c "path=storage7184; cache=512M" &
+./strusStorageServer.py -P -p 7185 -c "path=storage7185; cache=512M" &
+./strusStorageServer.py -P -p 7186 -c "path=storage7186; cache=512M" &
+</pre>
+<p>
+and we get
+</p>
+<pre>
+Starting server ...
+Listening on 0.0.0.0:7183...
+
+Starting server ...
+Listening on 0.0.0.0:7184...
+Load local statistics to publish ...
+
+Starting server ...
+Listening on 0.0.0.0:7185...
+Load local statistics to publish ...
+
+Starting server ...
+Listening on 0.0.0.0:7186...
+Load local statistics to publish ...
+</pre>
+<p>
+The HTTP server is started with the ports of the storage servers as arguments. When we started
+it with one argument, it used the default storage server port as only server to query.
+</p>
+<pre>
+./strusHttpServer.py 7184 7185 7186 &
+</pre>
+<p>and we get</p>
+<pre>
+Starting server ...
+Listening on port 80
+</pre>
+<p>
+As explained in the beginning, we insert one multipart document into the storage (7184), two of them
+into the second (7185) and the rest into the third (7186). We do this with our insert_docs command:
+</p>
+<pre>
+./insert_docs.sh 7184 0 0 &
+./insert_docs.sh 7185 1 2 &
+./insert_docs.sh 7186 2 33 &
+</pre>
+
+<p>
+When all scripts are finished, we verify, that the documents went really to different servers.
+For this we check the index sizes:
+</p>
+<pre>
+ls -lh storage718* | grep total
+</pre>
+<p>
+and we see that the storage index sizes are really different:
+</p>
+<pre>
+total 1.9M
+total 5.9M
+total 97M
+</pre>
+
+<h3>Issue the example query (distributed index)</h3>
+<p>Now we issue the same query "Music India" again:
+</p>
+<pre>
+http://127.0.0.1:40080/query?q=Music%20India&i=0&n=20
+</pre>
+<p>
+And we get the following results. The document we seletected from the mulipart document inserted 
+is marked in the ranklist as in the result for one server:
+</p>
+<img border=2 style="display:block;" width="40%" src="browser_query_url.jpg" alt="query URL"/>
+<img border=2 style="display:block;" width="80%" src="ranklist_3server.jpg" alt="BM25 results 3 servers"/>
+<p>
+We see that the ranklists with one or three servers are the same with the following exeptions:
+<ol>
+<li>The document numbers are different. Document numbers are not shared and calculated by each server on its
+own. Document numbers should not be used as identifier for a document because of this. Use the document id instead.</li>
+<li>Results with the same weight are ordered differently because the document number is taken as order criterion, if
+two weights are the equal. This is due to stability reasons that are important for browsing the results.</li>
+</ol>
+
 </body>
 </html>
 

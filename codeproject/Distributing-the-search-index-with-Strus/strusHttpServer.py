@@ -281,8 +281,9 @@ def on_shutdown():
 # [5] Server main:
 if __name__ == "__main__":
     try:
-        # Port of this query server (set to default):
-        parser = optparse.OptionParser()
+        # Parse arguments:
+        usage = "usage: %prog [options] {<storage server port>}"
+        parser = optparse.OptionParser( usage=usage)
         parser.add_option("-p", "--port", dest="port", default=80,
                           help="Specify the port of this server as PORT (default %u)" % 80,
                           metavar="PORT")
@@ -291,9 +292,6 @@ if __name__ == "__main__":
                           metavar="ADDR")
 
         (options, args) = parser.parse_args()
-        if len(args) > 0:
-            parser.error("no arguments expected")
-            parser.print_help()
         myport = int(options.port)
         statserver = options.statserver
         if (statserver[0:].isdigit()):
