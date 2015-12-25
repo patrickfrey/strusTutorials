@@ -13,7 +13,7 @@ import strusMessage
 # [1] Globals:
 # Term df map:
 termDfMap = {}
-# List of ports of associated peer storage nodes:
+# Collection size (number of documents):
 collectionSize = 0
 # Strus statistics message processor:
 strusctx = strus.Context()

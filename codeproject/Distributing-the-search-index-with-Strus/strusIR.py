@@ -132,15 +132,15 @@ class Backend:
                    'abstract':content })
         return rt
 
-    # Get an iterator on all absolute statistics of the local storage
+    # Get an iterator on all absolute statistics of the storage
     def getInitStatisticsIterator( self):
         return self.storage.createInitStatisticsIterator( True)
 
-    # Get an iterator on all absolute statistics of the local storage
+    # Get an iterator on all absolute statistics of the storage
     def getDoneStatisticsIterator( self):
         return self.storage.createInitPeerMessageIterator( False)
     
-    # Get an iterator on updates to be sent to peers
+    # Get an iterator on statistic updates of the storage
     def getUpdateStatisticsIterator( self):
         return self.storage.createUpdateStatisticsIterator()
 

@@ -1,12 +1,12 @@
 <html>
 <head>
-<title>Distributing a search index with Strus</title>
+<title>Distributing a search engine index with Strus</title>
 </head>
 <body>
 <h2>Goals</h2>
 <p>
 The main focus of server applications lays on scalability.
-This article tries to investigate, what implications scalability requirements have for full-text search engines
+This article tries to investigate, what implications scalability requirements have on full-text search engines
 and how the project <a href="http://www.project-strus.net">Strus</a> meets these requirements.
 </p>
 
@@ -25,7 +25,7 @@ tools.
 This tutorial shows how to implement a more complex search application with Python and Strus. 
 Two query evaluation methods are implemented. One is a classical BM25. The other shows how complex 
 query expressions can be built and how alternative information retrieval methods can be implemented,
-that rank extracted content from documents rather that weighting documents based on the query.
+that weight extracted content instead of documents based on the query.
 If you have a closer look you will find out that Strus is an engine that can match
 patterns of regular languages (with terms and not characters as alphabet) by relating its
 expressions to iterable operations on the sets of postings:
@@ -200,7 +200,7 @@ overview.
 </td>
 <td>A statistics server holds the global statistics. It might be implemented as interface to a
 distributed hashtable fed over persistent queues. But our example server holds the global statistics
-for each term in a dicitionary and the total collection size in a variable in memory. Nothing is persistent 
+for each term in a dicitionary and the total collection size in variables in memory. Nothing is persistent 
 and thus lost on shutdown.
 <br/>
 The server is implemented as TCP/IP server with a proprietary protocol with two commands (put/get). 
@@ -310,7 +310,7 @@ def publishStatistics( itr):
         host,port = statserver[:ri],int( statserver[ri+1:])
         conn = yield msgclient.connect( host, port)
     except IOError as e:
-        raise Exception( "connection so statistics server %s failed (%s)" % (statserver, e))
+        raise Exception( "connection to statistics server %s failed (%s)" % (statserver, e))
 
     msg = itr.getNext()
     while (len(msg) &gt; 0):
@@ -1384,7 +1384,8 @@ You can implement classical information retrieval weighting documents as well as
 methods that are accumulating content from documents for presentation or further processing.
 <br/>
 Strus has a competitive performance that allows you to it feed a single storage node with millions of documents 
-within a day, and to query such collections with an immediate response. The Wikipedia demo search illustrates this. 
+within a day, and to query such collections with an immediate response.
+The <a href="http://demo.project-strus.net/strus.html">Wikipedia demo search</a> illustrates this. 
 If you run a query twice in a row, you get the response time without accessing disk. 
 There is no query result cache involved. The machine is old and the amount of memory a single
 process can use is about 4G. That is below the minimum value recommended by Leveldb for a key/value 

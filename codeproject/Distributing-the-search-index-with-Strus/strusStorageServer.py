@@ -30,7 +30,7 @@ def publishStatistics( itr):
         host,port = statserver[:ri],int( statserver[ri+1:])
         conn = yield msgclient.connect( host, port)
     except IOError as e:
-        raise Exception( "connection so statistics server %s failed (%s)" % (statserver, e))
+        raise Exception( "connection to statistics server %s failed (%s)" % (statserver, e))
 
     msg = itr.getNext()
     while (len(msg) > 0):
@@ -128,8 +128,8 @@ if __name__ == "__main__":
                           help="Specify the port of this server as PORT (default %u)" % 7184,
                           metavar="PORT")
         parser.add_option("-c", "--config", dest="config", default=defaultconfig,
-                          help="Specify the storage path as FILE (default '%s')" % defaultconfig,
-                          metavar="FILE")
+                          help="Specify the storage path as CONF (default '%s')" % defaultconfig,
+                          metavar="CONF")
         parser.add_option("-s", "--statserver", dest="statserver", default=statserver,
                           help="Specify the address of the statistics server as ADDR (default %s" % statserver,
                           metavar="ADDR")
