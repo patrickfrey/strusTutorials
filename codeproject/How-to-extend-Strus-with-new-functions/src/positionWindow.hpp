@@ -1,7 +1,6 @@
 #ifndef _STRUS_POSITION_WINDOW_HPP_INCLUDED
 #define _STRUS_POSITION_WINDOW_HPP_INCLUDED
 #include "strus/index.hpp"
-#include "strus/reference.hpp"
 #include "strus/postingIteratorInterface.hpp"
 #include <set>
 
@@ -38,7 +37,7 @@ public:
 	// Constructor that fills the sliding window implemented as set 
 	// with the argument element start positions:
 	PositionWindow( 
-		const std::vector<Reference< PostingIteratorInterface> >& args,
+		const std::vector<PostingIteratorInterface*>& args,
 		unsigned int range_,
 		unsigned int cardinality_,
 		Index firstpos_);
@@ -60,7 +59,7 @@ private:
 	std::set<Element>::iterator getWinTopElement();
 
 private:
-	std::vector<Reference< PostingIteratorInterface> > m_args;
+	std::vector<PostingIteratorInterface*> m_args;
 	std::set<Element> m_set;	// ... set used for sliding window
 	unsigned int m_setsize;		// ... current size of m_set
 	unsigned int m_range;		// ... maximum proximity range

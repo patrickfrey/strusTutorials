@@ -8,8 +8,9 @@
 using namespace strus;
 
 // Helper for boilerplate code catching exceptions and reporting them
-// via an error buffer interface, returning a value that indicates a
-// failed operation:
+// via an error buffer interface, returning an undefined value.
+// The caller of the function can check for a failed operation by inspecting
+// the ErrorBufferInterface passed to the object (ErrorBufferInterface::hasError()):
 #define CATCH_ERROR_MAP_RETURN( HND, VALUE)\
 	catch( const std::bad_alloc&)\
 	{\
@@ -32,9 +33,11 @@ static Index getFirstAllMatchDocnoSubset(
 		std::vector<Reference< PostingIteratorInterface> >& args,
 		Index docno,
 		bool allowEmpty,
-		std::size_t cardinality)
+		std::size_t cardinality,
+		std::vector<PostingIteratorInterface*>& candidate_set)
 {
 	if (args.empty()) return 0;
+	candidate_set.clear();
 
 	Index docno_iter = docno;
 	for (;;)
@@ -44,7 +47,6 @@ static Index getFirstAllMatchDocnoSubset(
 
 		std::size_t nof_matches = 0;
 		Index match_docno = 0;
-		std::vector<PostingIteratorInterface*> candidate_set;
 
 		// Iterate on all arguments:
 		for (; ai != ae; ++ai)
@@ -92,20 +94,26 @@ static Index getFirstAllMatchDocnoSubset(
 			if (!allowEmpty)
 			{
 				// ... we need to check the arguments to be real matches:
-				std::vector<PostingIteratorInterface*>::const_iterator
+				std::vector<PostingIteratorInterface*>::iterator
 					ci = candidate_set.begin(),
 					ce = candidate_set.end();
-				for (; ci != ce; ++ci)
+				while (ci != ce)
 				{
 					if (match_docno != (*ci)->skipDoc( match_docno))
 					{
 						--nof_matches;
 						if (nof_matches < cardinality) break;
+						candidate_set.erase( ci);
+					}
+					else
+					{
+						++ci;
 					}
 				}
 				if (nof_matches < cardinality)
 				{
 					docno_iter = match_docno+1;
+					candidate_set.clear();
 					continue;
 				}
 			}
@@ -163,12 +171,15 @@ public:
 		try
 		{
 			m_docno = getFirstAllMatchDocnoSubset(
-						m_argar, docno_, false, m_cardinality);
+					m_argar, docno_, false,
+					m_cardinality, m_candidate_set);
 			while (m_docno && skipPos(0) == 0)
 			{
 				m_docno = getFirstAllMatchDocnoSubset(
-						m_argar, m_docno+1, false, m_cardinality);
+						m_argar, m_docno+1, false,
+						m_cardinality, m_candidate_set);
 			}
+			return m_docno;
 		}
 		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_docno=0))
 	}
@@ -178,7 +189,9 @@ public:
 	{
 		try
 		{
-			return m_docno=getFirstAllMatchDocnoSubset( m_argar, docno_, true, m_cardinality);
+			return m_docno=getFirstAllMatchDocnoSubset(
+						m_argar, docno_, true,
+						m_cardinality, m_candidate_set);
 		}
 		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_docno=0))
 	}
@@ -190,7 +203,7 @@ public:
 	{
 		try
 		{
-			PositionWindow win( m_argar, m_range, m_cardinality, posno_);
+			PositionWindow win( m_candidate_set, m_range, m_cardinality, posno_);
 			if (!win.first()) return m_posno=0;
 			return m_posno=win.pos();
 		}
@@ -206,7 +219,7 @@ public:
 	// The document frequency cannot be calculated without a fullscan of the 
 	// index for all matching documents also inspecting position.
 	// This is considered as too expensive. So is estimating.
-	// So we return the minimum document frequency of the arguments:
+	// So we return the minimum document frequency of the arguments.:
 	virtual Index documentFrequency() const
 	{
 		try
@@ -269,6 +282,8 @@ private:
 	unsigned int m_range;
 	// Required cardinality of the result:
 	unsigned int m_cardinality;
+	// Current set of matching document candidates:
+	std::vector<PostingIteratorInterface*> m_candidate_set;
 	// Buffer for error messages (for exception free interfaces):
 	ErrorBufferInterface* m_errorhnd;
 };
@@ -324,7 +339,7 @@ private:
 
 // Exported function constructing the PostingJoinOperatorInterface realizing an 
 // iterator on windows of a given maximum size:
-PostingJoinOperatorInterface* createMinWinJoinOperator( ErrorBufferInterface* errorhnd)
+PostingJoinOperatorInterface* strus::createWindowJoinOperator( ErrorBufferInterface* errorhnd)
 {
 	return new WindowPostingJoinOperator( errorhnd);
 }
