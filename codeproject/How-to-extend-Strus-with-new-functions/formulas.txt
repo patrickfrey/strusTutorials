@@ -1,0 +1,2 @@
+pred(A) = \{(d,p) | p \epsilon \mathbb{N}^+, (d,p+1)\epsilon A\}
+

@@ -104,14 +104,14 @@ bool PositionWindow::next()
 }
 
 // Return the size of the current window:
-unsigned int PositionWindow::size()
+unsigned int PositionWindow::size() const
 {
 	std::set<Element>::iterator si = getWinTopElement();
 	return si->pos - m_set.begin()->pos;
 }
 
 // Return the starting position of the current window:
-unsigned int PositionWindow::pos()
+unsigned int PositionWindow::pos() const
 {
 	return (m_setsize >= m_cardinality)?m_set.begin()->pos:0;
 }

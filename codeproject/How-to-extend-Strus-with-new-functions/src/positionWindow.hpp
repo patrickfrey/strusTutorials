@@ -49,10 +49,10 @@ public:
 	bool next();
 
 	// Return the size of the current window:
-	unsigned int size();
+	unsigned int size() const;
 
 	// Return the starting position of the current window:
-	unsigned int pos();
+	unsigned int pos() const;
 
 private:
 	// Get the top element of the current window:
