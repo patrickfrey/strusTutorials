@@ -11,7 +11,7 @@ using namespace strus;
 // via an error buffer interface, returning an undefined value.
 // The caller of the function can check for a failed operation by inspecting
 // the ErrorBufferInterface passed to the object (ErrorBufferInterface::hasError()):
-#define CATCH_ERROR_MAP_RETURN( HND, VALUE)\
+#define CATCH_ERROR_MAP_RETURN( HND, VALUE, MSG)\
 	catch( const std::bad_alloc&)\
 	{\
 		(HND).report( "out of memory in window iterator");\
@@ -19,9 +19,9 @@ using namespace strus;
 	}\
 	catch( const std::runtime_error& err)\
 	{\
-		(HND).report( "error in minwin window iterator: %s", err.what());\
+		(HND).report( "error in minwin window iterator %s: %s", MSG, err.what());\
 		return VALUE;\
-	}\
+	}
 
 // Try to find a subset of args with a size of at least cardinality with each 
 // element having the same upper bound of docno as match. Return the smallest
@@ -131,7 +131,7 @@ static Index getFirstAllMatchDocnoSubset(
 	return 0;
 }
 
-// Window iterator class:
+// Window posting iterator class:
 class WindowPostingIterator
 	:public PostingIteratorInterface
 {
@@ -181,7 +181,7 @@ public:
 			}
 			return m_docno;
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_docno=0))
+		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_docno=0), "in skip document")
 	}
 
 	// The skip document candidate method uses the getFirstAllMatchDocnoSubset introduced:
@@ -193,7 +193,7 @@ public:
 						m_argar, docno_, true,
 						m_cardinality, m_candidate_set);
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_docno=0))
+		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_docno=0), "in skip document candidate")
 	}
 
 	// The skip position method uses a sliding window for finding the next match fulfilling
@@ -207,7 +207,7 @@ public:
 			if (!win.first()) return m_posno=0;
 			return m_posno=win.pos();
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_posno=0))
+		CATCH_ERROR_MAP_RETURN( *m_errorhnd, (m_posno=0), "in skip position")
 	}
 
 	// Return a reference to the identifier built in the constructor:
@@ -242,7 +242,7 @@ public:
 			}
 			return m_documentFrequency;
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, 0)
+		CATCH_ERROR_MAP_RETURN( *m_errorhnd, 0, "in document freqency calculation")
 	}
 
 	// The frequency is calculated by iterating on all
@@ -288,7 +288,7 @@ private:
 	ErrorBufferInterface* m_errorhnd;
 };
 
-// Window iterator constructor class:
+// Window posting join operator class:
 class WindowPostingJoinOperator
 	:public PostingJoinOperatorInterface
 {
@@ -317,7 +317,7 @@ public:
 					argitrs, (unsigned int)range,
 					cardinality, m_errorhnd);
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, 0)
+		CATCH_ERROR_MAP_RETURN( *m_errorhnd, 0, "in create result iterator")
 	}
 
 
@@ -330,7 +330,7 @@ public:
 				"iterator on windows of a maximum size (range) "
 				"containing a defined subset of features (cardinality)");
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, Description())
+		CATCH_ERROR_MAP_RETURN( *m_errorhnd, Description(), "in get description")
 	}
 
 private:
@@ -341,7 +341,11 @@ private:
 // iterator on windows of a given maximum size:
 PostingJoinOperatorInterface* strus::createWindowJoinOperator( ErrorBufferInterface* errorhnd)
 {
-	return new WindowPostingJoinOperator( errorhnd);
+	try
+	{
+		return new WindowPostingJoinOperator( errorhnd);
+	}
+	CATCH_ERROR_MAP_RETURN( *errorhnd, 0, "in create join operator")
 }
 
 
