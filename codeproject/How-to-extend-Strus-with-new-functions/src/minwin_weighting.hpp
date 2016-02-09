@@ -8,7 +8,7 @@ class WeightingFunctionInterface;
 class ErrorBufferInterface;
 
 // Weighting function constructor:
-WeightingFunctionInterface* createWeightingFunction(
+WeightingFunctionInterface* createMinWinWeightingFunction(
 	ErrorBufferInterface* errorhnd);
 
 }//namespace

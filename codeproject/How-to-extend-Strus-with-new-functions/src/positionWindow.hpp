@@ -56,7 +56,7 @@ public:
 
 private:
 	// Get the top element of the current window:
-	std::set<Element>::iterator getWinTopElement();
+	std::set<Element>::iterator getWinTopElement() const;
 
 private:
 	std::vector<PostingIteratorInterface*> m_args;

@@ -35,7 +35,7 @@ PositionWindow::PositionWindow(
 }
 
 // Get the top element of the current window:
-std::set<PositionWindow::Element>::iterator PositionWindow::getWinTopElement()
+std::set<PositionWindow::Element>::iterator PositionWindow::getWinTopElement() const
 {
 	if (m_cardinality == 0) return m_set.end();
 	unsigned int ii=0;

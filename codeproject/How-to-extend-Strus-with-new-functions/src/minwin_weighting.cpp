@@ -1,4 +1,5 @@
 #include "minwin_weighting.hpp"
+#include "positionWindow.hpp"
 #include "strus/weightingFunctionInterface.hpp"
 #include "strus/weightingFunctionInstanceInterface.hpp"
 #include "strus/weightingFunctionContextInterface.hpp"
@@ -7,6 +8,9 @@
 #include "strus/metaDataReaderInterface.hpp"
 #include "strus/postingIteratorInterface.hpp"
 #include "strus/errorBufferInterface.hpp"
+#include <sstream>
+#include <iostream>
+#include <stdexcept>
 
 using namespace strus;
 
@@ -17,22 +21,22 @@ using namespace strus;
 #define CATCH_ERROR_MAP_RETURN( HND, VALUE, MSG)\
 	catch( const std::bad_alloc&)\
 	{\
-		(HND).report( "out of memory in window weighting function");\
+		(HND).report( "out of memory in minimal weighting function");\
 		return VALUE;\
 	}\
 	catch( const std::runtime_error& err)\
 	{\
-		(HND).report( "%s (minwin window weighting function): %s", MSG, err.what());\
+		(HND).report( "%s (minimal window weighting function): %s", MSG, err.what());\
 		return VALUE;\
 	}
 #define CATCH_ERROR_MAP( HND, MSG)\
 	catch( const std::bad_alloc&)\
 	{\
-		(HND).report( "out of memory in window weighting function");\
+		(HND).report( "out of memory in minimal window weighting function");\
 	}\
 	catch( const std::runtime_error& err)\
 	{\
-		(HND).report( "%s (minwin window weighting function): %s", MSG, err.what());\
+		(HND).report( "%s (minimal window weighting function): %s", MSG, err.what());\
 	}
 
 class MinWinWeightingFunctionContext
@@ -63,37 +67,48 @@ public:
 				throw std::runtime_error( "unknown weighting feature name");
 			}
 		}
-		CATCH_ERROR_MAP( *m_errhnd);
+		CATCH_ERROR_MAP( *m_errhnd, "in add weighting feature");
 	}
 
 	virtual double call( const Index& docno)
 	{
 		try
 		{
-			std::vector<PostingIteratorInterface*>::const_iterator ai = m_arg.begin(), ae = m_arg.end();
+			// Initialize the features to weight:
+			std::vector<PostingIteratorInterface*>::const_iterator
+				ai = m_arg.begin(), ae = m_arg.end();
 			std::vector<PostingIteratorInterface*> matches;
 			matches.reserve( m_arg.size());
 			for (; ai != ae; ++ai)
 			{
-				if (docno == ai->skipDoc( docno))
+				if (docno == (*ai)->skipDoc( docno))
 				{
 					matches.push_back( *ai);
 				}
 			}
+			// Calculate the minimal window size:
 			PositionWindow win( matches, m_range, m_cardinality, 0);
-			unsigned int maxwinsize = m_range+1;
+			unsigned int minwinsize = m_range+1;
 			bool more = win.first();
 			for (;more; more = win.next())
 			{
 				unsigned int winsize = win.size();
-				if (winsize < maxwinsize)
+				if (winsize < minwinsize)
 				{
-					maxwinsize = winsize;
+					minwinsize = winsize;
 				}
 			}
-			return 1.0/(maxwinsize+1);
+			// Return the weight depending on the minimal window size:
+			if (minwinsize < (unsigned int)m_range)
+			{
+				return 1.0/(minwinsize+1);
+			}
+			else
+			{
+				return 0.0;
+			}
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0.0);
+		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0.0, "in call")
 	}
 
 private:
@@ -117,19 +132,19 @@ public:
 		{
 			throw std::runtime_error( std::string( "unknown numeric parameter ") + name);
 		}
-		CATCH_ERROR_MAP( *m_errhnd);
+		CATCH_ERROR_MAP( *m_errhnd, "in add string parameter");
 	}
 
 	virtual void addNumericParameter( const std::string& name, const ArithmeticVariant& value)
 	{
 		try
 		{
-			if (name_ == "maxwinsize")
+			if (name == "maxwinsize")
 			{
 				m_range = value.toint();
 				if (m_range <= 0) throw std::runtime_error("illegal proximity range parameter (negative or null)");
 			}
-			else if (name_ == "cardinality")
+			else if (name == "cardinality")
 			{
 				if (value.type != ArithmeticVariant::UInt && value.type != ArithmeticVariant::Int)
 				{
@@ -142,7 +157,7 @@ public:
 				throw std::runtime_error( std::string( "unknown numeric parameter ") + name);
 			}
 		}
-		CATCH_ERROR_MAP( *m_errhnd);
+		CATCH_ERROR_MAP( *m_errhnd, "in add numeric parameter");
 	}
 
 	virtual WeightingFunctionContextInterface* createFunctionContext(
@@ -154,7 +169,7 @@ public:
 		{
 			return new MinWinWeightingFunctionContext( m_errhnd, m_range, m_cardinality);
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0);
+		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0, "in create function context");
 	}
 
 	virtual std::string tostring() const
@@ -162,10 +177,10 @@ public:
 		try
 		{
 			std::ostringstream rt;
-			rt << "maxwinsize=" << m_maxwinsize << ", cardinality=" << m_cardinality;
+			rt << "maxwinsize=" << m_range << ", cardinality=" << m_cardinality;
 			return rt.str();
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, );
+		CATCH_ERROR_MAP_RETURN( *m_errhnd, std::string(), "in tostring");
 	}
 
 private:
@@ -192,12 +207,16 @@ public:
 		{
 			return new MinWinWeightingFunctionInstance( m_errhnd);
 		}
-		CATCH_ERROR_MAP_RETURN( *m_errorhnd, 0);
+		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0, "in create instance");
 	}
 
 	virtual Description getDescription() const
 	{
-		
+		Description rt("Calculate the document weight as the inverse of the minimal window size containing a subset of the document features");
+		rt( Description::Param::Feature, "match", "defines the query features to find in a window");
+		rt( Description::Param::Numeric, "maxwinsize", "the maximum size of a window to search for");
+		rt( Description::Param::Numeric, "cardinality", "the number of features to find at least in a window");
+		return rt;
 	}
 
 private:
@@ -205,15 +224,15 @@ private:
 };
 
 // Exported function for creating a weighting function object for calculating the inverse of the minimal window size:
-WeightingFunctionInterface* createWeightingFunction(
+WeightingFunctionInterface* createMinWinWeightingFunction(
 	ErrorBufferInterface* errorhnd)
 {
 	try
 	{
 		return new MinWinWeightingFunction( errorhnd);
 	}
-	CATCH_ERROR_MAP_RETURN( *errorhnd, 0);
+	CATCH_ERROR_MAP_RETURN( *errorhnd, 0, "in create function");
 }
 
-#endif
+
 
