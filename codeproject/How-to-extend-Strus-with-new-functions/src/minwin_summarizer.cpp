@@ -132,7 +132,7 @@ public:
 					--minwinsize;
 					++pos;
 				}
-				rt.push_back( SummaryElement( text));
+				rt.push_back( SummaryElement( "minwin", text));
 			}
 			return rt;
 		}

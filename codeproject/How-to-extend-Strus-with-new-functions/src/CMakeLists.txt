@@ -4,7 +4,7 @@ set( strus_INCLUDE_DIRS "/usr/local/include/strus" )
 set( strus_LIBRARY_DIRS "/usr/local/lib/strus" )
 set( LIB_INSTALL_DIR "/usr/local/lib" )
 
-set( CMAKE_CXX_FLAGS "-std=c++98  -Wall -pedantic -g -Wfatal-errors -fvisibility=default -fPIC -O0" )
+set( CMAKE_CXX_FLAGS "-std=c++98  -Wall -pedantic -g -Wfatal-errors -fvisibility=hidden -fPIC -O0" )
 
 # --------------------------------------
 # SOURCES AND INCLUDES
