@@ -3,7 +3,7 @@
 #include "strus/weightingFunctionInterface.hpp"
 #include "strus/weightingFunctionInstanceInterface.hpp"
 #include "strus/weightingFunctionContextInterface.hpp"
-#include "strus/arithmeticVariant.hpp"
+#include "strus/numericVariant.hpp"
 #include "strus/storageClientInterface.hpp"
 #include "strus/metaDataReaderInterface.hpp"
 #include "strus/postingIteratorInterface.hpp"
@@ -135,7 +135,7 @@ public:
 		CATCH_ERROR_MAP( *m_errhnd, "in add string parameter");
 	}
 
-	virtual void addNumericParameter( const std::string& name, const ArithmeticVariant& value)
+	virtual void addNumericParameter( const std::string& name, const NumericVariant& value)
 	{
 		try
 		{
@@ -146,7 +146,7 @@ public:
 			}
 			else if (name == "cardinality")
 			{
-				if (value.type != ArithmeticVariant::UInt && value.type != ArithmeticVariant::Int)
+				if (value.type != NumericVariant::UInt && value.type != NumericVariant::Int)
 				{
 					throw std::runtime_error("illegal cardinality parameter");
 				}
