@@ -7,6 +7,7 @@
 #include "strus/storageClientInterface.hpp"
 #include "strus/metaDataReaderInterface.hpp"
 #include "strus/postingIteratorInterface.hpp"
+#include "strus/queryProcessorInterface.hpp"
 #include "strus/errorBufferInterface.hpp"
 #include <sstream>
 #include <iostream>
@@ -201,7 +202,7 @@ public:
 
 	virtual ~MinWinWeightingFunction(){}
 
-	virtual WeightingFunctionInstanceInterface* createInstance() const
+	virtual WeightingFunctionInstanceInterface* createInstance( const QueryProcessorInterface*) const
 	{
 		try
 		{
@@ -210,12 +211,13 @@ public:
 		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0, "in create instance");
 	}
 
-	virtual Description getDescription() const
+	virtual FunctionDescription getDescription() const
 	{
-		Description rt("Calculate the document weight as the inverse of the minimal window size containing a subset of the document features");
-		rt( Description::Param::Feature, "match", "defines the query features to find in a window");
-		rt( Description::Param::Numeric, "maxwinsize", "the maximum size of a window to search for");
-		rt( Description::Param::Numeric, "cardinality", "the number of features to find at least in a window");
+		typedef FunctionDescription::Parameter P;
+		FunctionDescription rt("Calculate the document weight as the inverse of the minimal window size containing a subset of the document features");
+		rt( P::Feature, "match", "defines the query features to find in a window");
+		rt( P::Numeric, "maxwinsize", "the maximum size of a window to search for");
+		rt( P::Numeric, "cardinality", "the number of features to find at least in a window");
 		return rt;
 	}
 

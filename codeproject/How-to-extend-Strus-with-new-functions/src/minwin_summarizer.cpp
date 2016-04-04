@@ -254,18 +254,15 @@ public:
 		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0, "in create instance");
 	}
 
-	virtual Description getDescription() const
+	virtual FunctionDescription getDescription() const
 	{
-		Description rt("Get the passage of the forward index inside the "
+		typedef FunctionDescription::Parameter P;
+		FunctionDescription rt("Get the passage of the forward index inside the "
 				"minimal window containing a subset of the document features");
-		rt( Description::Param::Feature, "match",
-				"defines the query features to find in a window");
-		rt( Description::Param::Numeric, "maxwinsize",
-				"the maximum size of a window to search for");
-		rt( Description::Param::Numeric, "cardinality",
-				"the number of features to find at least in a window");
-		rt( Description::Param::String, "type",
-				"forward index feature type for building the result");
+		rt( P::Feature, "match", "defines the query features to find in a window");
+		rt( P::Numeric, "maxwinsize", "the maximum size of a window to search for");
+		rt( P::Numeric, "cardinality", "the number of features to find at least in a window");
+		rt( P::String, "type", "forward index feature type for building the result");
 		return rt;
 	}
 
