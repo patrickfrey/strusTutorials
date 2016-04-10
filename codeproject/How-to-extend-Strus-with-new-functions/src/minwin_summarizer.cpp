@@ -64,7 +64,7 @@ public:
 			const std::string& name_,
 			PostingIteratorInterface* postingIterator_,
 			const std::vector<SummarizationVariable>& /*variables_*/,
-			float /*weight_*/,
+			double /*weight_*/,
 			const TermStatistics& /*stats_*/)
 	{
 		try
