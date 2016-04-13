@@ -1,4 +1,4 @@
-#include "strus/private/dll_tags.hpp"
+#include "dll_tags.hpp"
 #include "strus/storageModule.hpp"
 #include "window_joinop.hpp"
 #include "minwin_weighting.hpp"

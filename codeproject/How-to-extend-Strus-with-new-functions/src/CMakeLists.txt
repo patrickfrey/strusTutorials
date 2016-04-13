@@ -28,7 +28,7 @@ target_link_libraries( modstrus_storage_example strus_module )
 # TESTS
 # ------------------------------------
 add_executable( testModStorageExample testModStorageExample.cpp positionWindow.cpp window_joinop.cpp minwin_weighting.cpp minwin_summarizer.cpp )
-target_link_libraries( testModStorageExample boost_system strus_utils strus_error strus_storage ${Boost_LIBRARIES} )
+target_link_libraries( testModStorageExample boost_system strus_base strus_error strus_storage ${Boost_LIBRARIES} )
 add_test( ModStorageExample ./testModStorageExample )
 
 # ------------------------------
