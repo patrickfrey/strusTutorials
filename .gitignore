@@ -3,4 +3,9 @@ codeproject/How-to-extend-Strus-with-new-functions/src/CMakeFiles/
 codeproject/How-to-extend-Strus-with-new-functions/src/Makefile
 codeproject/How-to-extend-Strus-with-new-functions/src/modstrus_storage_example.so
 codeproject/How-to-extend-Strus-with-new-functions/src/testModStorageExample
+codeproject/Method-call-traces-for-Strus/src/CMakeCache.txt
+codeproject/Method-call-traces-for-Strus/src/CMakeFiles/
+codeproject/Method-call-traces-for-Strus/src/Makefile
+codeproject/Method-call-traces-for-Strus/src/cmake_install.cmake
+codeproject/Method-call-traces-for-Strus/src/modstrus_trace_example.so
 *.txt.user

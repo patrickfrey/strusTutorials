@@ -13,7 +13,7 @@
 #include <limits>
 #include <cstdarg>
 #include <memory>
-#include <stdint.h>
+#include "strus/base/stdint.h"
 
 #undef STRUS_LOWLEVEL_DEBUG
 
