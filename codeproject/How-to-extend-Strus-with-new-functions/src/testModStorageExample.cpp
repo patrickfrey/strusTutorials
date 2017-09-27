@@ -13,7 +13,7 @@
 #include <limits>
 #include <cstdarg>
 #include <memory>
-#include "strus/base/stdint.h"
+#include <stdint.h>
 
 #undef STRUS_LOWLEVEL_DEBUG
 
@@ -230,6 +230,11 @@ public:
 		return m_posno;
 	}
 
+	virtual strus::Index length() const
+	{
+		return 1;
+	}
+
 private:
 	char m_featureid[ 32];
 	std::vector<TestDocument>::const_iterator m_dbegin;
@@ -306,6 +311,11 @@ public:
 	virtual strus::Index posno() const
 	{
 		return m_posno;
+	}
+
+	virtual strus::Index length() const
+	{
+		return 1;
 	}
 
 private:

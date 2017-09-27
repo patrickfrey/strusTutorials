@@ -267,6 +267,11 @@ public:
 		return m_posno;
 	}
 
+	virtual strus::Index length() const
+	{
+		return 1;
+	}
+
 private:
 	// Current document:
 	Index m_docno;
@@ -326,9 +331,11 @@ public:
 	{
 		try
 		{
-			return Description( 
-				"iterator on windows of a maximum size (range) "
-				"containing a defined subset of features (cardinality)");
+			return Description(
+				"window",
+				"iterator on windows of a maximum size "
+				"(range) containing a defined subset "
+				"of features (cardinality)");
 		}
 		CATCH_ERROR_MAP_RETURN( *m_errorhnd, Description(), "in get description")
 	}

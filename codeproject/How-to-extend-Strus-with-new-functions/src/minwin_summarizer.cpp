@@ -49,10 +49,12 @@ public:
 	MinWinSummarizerFunctionContext(
 			ErrorBufferInterface* errorhnd_,
 			const StorageClientInterface* storage_,
+			const std::string& resultname_,
 			int range_,
 			unsigned int cardinality_,
 			const std::string& type_)
 		:m_errhnd(errorhnd_)
+		,m_resultname(resultname_)
 		,m_forwardindex(storage_->createForwardIterator( type_))
 		,m_range(range_)
 		,m_cardinality(cardinality_)
@@ -79,6 +81,11 @@ public:
 			}
 		}
 		CATCH_ERROR_MAP( *m_errhnd, "in add summarization feature");
+	}
+
+	virtual void setVariableValue( const std::string& name, double value)
+	{
+		m_errhnd->report( "no variables defined for 'minwin' summarizer method");
 	}
 
 	virtual std::vector<SummaryElement> getSummary( const Index& docno)
@@ -132,15 +139,87 @@ public:
 					--minwinsize;
 					++pos;
 				}
-				rt.push_back( SummaryElement( "minwin", text));
+				rt.push_back( SummaryElement( m_resultname, text));
 			}
 			return rt;
 		}
 		CATCH_ERROR_MAP_RETURN( *m_errhnd, std::vector<SummaryElement>(), "in call");
 	}
 
+	virtual std::string debugCall( const Index& docno)
+	{
+		try
+		{
+			std::ostringstream out;
+			out << "summarizer 'minwin':" << std::endl;
+
+			// Initialize the features to weight and the forward index:
+			m_forwardindex->skipDoc( docno);
+			std::vector<SummaryElement> rt;
+			std::vector<PostingIteratorInterface*>::const_iterator
+				ai = m_arg.begin(), ae = m_arg.end();
+			std::vector<PostingIteratorInterface*> matches;
+			matches.reserve( m_arg.size());
+			for (int aidx=0; ai != ae; ++ai,++aidx)
+			{
+				if (docno == (*ai)->skipDoc( docno))
+				{
+					out << "feature " << aidx << " matches" << std::endl;
+					matches.push_back( *ai);
+				}
+				else
+				{
+					out << "feature " << aidx << " does not match" << std::endl;
+				}
+			}
+			// Calculate the minimal window size and position:
+			PositionWindow win( matches, m_range, m_cardinality, 0);
+			unsigned int minwinsize = m_range+1;
+			Index minwinpos = 0;
+			bool more = win.first();
+			for (;more; more = win.next())
+			{
+				unsigned int winsize = win.size();
+				if (winsize < minwinsize)
+				{
+					minwinsize = winsize;
+					minwinpos = win.pos();
+					out << "found minimum window at " << minwinpos << " size " << winsize << std::endl;
+				}
+				else
+				{
+					out << "found window at " << win.pos() << " size " << winsize << std::endl;
+				}
+			}
+			// Build the summary phrase and append it to the result:
+			if (minwinsize < (unsigned int)m_range)
+			{
+				std::string text;
+				Index pos = minwinpos;
+				while (minwinsize)
+				{
+					if (pos == m_forwardindex->skipPos( pos))
+					{
+						if (!text.empty()) text.push_back( ' ');
+						text.append( m_forwardindex->fetch());
+					}
+					else
+					{
+						text.append( "..");
+					}
+					--minwinsize;
+					++pos;
+				}
+				out << "summary " << m_resultname << ": '" << text << "'" << std::endl;
+			}
+			return out.str();
+		}
+		CATCH_ERROR_MAP_RETURN( *m_errhnd, std::string(), "in call");
+	}
+
 private:
 	ErrorBufferInterface* m_errhnd;
+	std::string m_resultname;
 	Reference<ForwardIteratorInterface> m_forwardindex;
 	std::vector<PostingIteratorInterface*> m_arg;
 	int m_range;
@@ -153,7 +232,7 @@ class MinWinSummarizerFunctionInstance
 {
 public:
 	MinWinSummarizerFunctionInstance( ErrorBufferInterface* errhnd_)
-		:m_errhnd(errhnd_),m_range(1000),m_cardinality(0),m_type(){}
+		:m_errhnd(errhnd_),m_resultname("minwin"),m_range(1000),m_cardinality(0),m_type(){}
 
 	virtual ~MinWinSummarizerFunctionInstance(){}
 
@@ -201,6 +280,29 @@ public:
 		CATCH_ERROR_MAP( *m_errhnd, "in add numeric parameter");
 	}
 
+	virtual void defineResultName(
+			const std::string& resultname,
+			const std::string& itemname)
+	{
+		try
+		{
+			if (itemname == "minwin")
+			{
+				m_resultname = resultname;
+			}
+			else
+			{
+				throw std::runtime_error( "result item to rename not defined");
+			}
+		}
+		CATCH_ERROR_MAP( *m_errhnd, "in define result name");
+	}
+
+	virtual std::vector<std::string> getVariables() const
+	{
+		return std::vector<std::string>();
+	}
+	
 	virtual SummarizerFunctionContextInterface* createFunctionContext(
 			const StorageClientInterface* storage_,
 			MetaDataReaderInterface* /*metadata_*/,
@@ -209,7 +311,7 @@ public:
 		try
 		{
 			return new MinWinSummarizerFunctionContext(
-					m_errhnd, storage_, m_range, m_cardinality, m_type);
+					m_errhnd, storage_, m_resultname, m_range, m_cardinality, m_type);
 		}
 		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0, "in create function context");
 	}
@@ -227,6 +329,7 @@ public:
 
 private:
 	ErrorBufferInterface* m_errhnd;
+	std::string m_resultname;
 	std::vector<PostingIteratorInterface*> m_arg;
 	int m_range;
 	unsigned int m_cardinality;

@@ -71,6 +71,11 @@ public:
 		CATCH_ERROR_MAP( *m_errhnd, "in add weighting feature");
 	}
 
+	virtual void setVariableValue( const std::string& name, double value)
+	{
+		m_errhnd->report( "no variables defined for 'minwin' weighting method");
+	}
+
 	virtual double call( const Index& docno)
 	{
 		try
@@ -110,6 +115,63 @@ public:
 			}
 		}
 		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0.0, "in call")
+	}
+
+	virtual std::string debugCall( const Index& docno)
+	{
+		try
+		{
+			std::ostringstream out;
+			out << "weighting 'minwin':" << std::endl;
+
+			// Initialize the features to weight:
+			std::vector<PostingIteratorInterface*>::const_iterator
+				ai = m_arg.begin(), ae = m_arg.end();
+			std::vector<PostingIteratorInterface*> matches;
+			matches.reserve( m_arg.size());
+			for (int aidx=0; ai != ae; ++ai,++aidx)
+			{
+				if (docno == (*ai)->skipDoc( docno))
+				{
+					out << "feature " << aidx << " matches" << std::endl;
+					matches.push_back( *ai);
+				}
+				else
+				{
+					out << "feature " << aidx << " does not match" << std::endl;
+				}
+			}
+			// Calculate the minimal window size:
+			PositionWindow win( matches, m_range, m_cardinality, 0);
+			unsigned int minwinsize = m_range+1;
+			bool more = win.first();
+			for (;more; more = win.next())
+			{
+				unsigned int winsize = win.size();
+				if (winsize < minwinsize)
+				{
+					out << "found minimum window at " << win.pos() << " size " << winsize << std::endl;
+					minwinsize = winsize;
+				}
+				else
+				{
+					out << "found window at " << win.pos() << " size " << winsize << std::endl;
+				}
+			}
+			// Return the weight depending on the minimal window size:
+			double weight;
+			if (minwinsize < (unsigned int)m_range)
+			{
+				weight = 1.0/(minwinsize+1);
+			}
+			else
+			{
+				weight = 0.0;
+			}
+			out << "result: " << weight << std::endl;
+			return out.str();
+		}
+		CATCH_ERROR_MAP_RETURN( *m_errhnd, std::string(), "in call")
 	}
 
 private:
@@ -171,6 +233,11 @@ public:
 			return new MinWinWeightingFunctionContext( m_errhnd, m_range, m_cardinality);
 		}
 		CATCH_ERROR_MAP_RETURN( *m_errhnd, 0, "in create function context");
+	}
+
+	virtual std::vector<std::string> getVariables() const
+	{
+		return std::vector<std::string>();
 	}
 
 	virtual std::string tostring() const

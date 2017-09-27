@@ -1,4 +1,4 @@
-# Install script for directory: /home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/src
+# Install script for directory: /home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/tmp/src
 
 # Set the install prefix
 IF(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -47,7 +47,7 @@ IF(NOT CMAKE_INSTALL_COMPONENT OR "${CMAKE_INSTALL_COMPONENT}" STREQUAL "Unspeci
   IF (CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
     message(FATAL_ERROR "ABSOLUTE path INSTALL DESTINATION forbidden (by caller): ${CMAKE_ABSOLUTE_DESTINATION_FILES}")
   ENDIF (CMAKE_ERROR_ON_ABSOLUTE_INSTALL_DESTINATION)
-FILE(INSTALL DESTINATION "/usr/local/lib/strus/modules" TYPE MODULE FILES "/home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/src/modstrus_storage_example.so")
+FILE(INSTALL DESTINATION "/usr/local/lib/strus/modules" TYPE MODULE FILES "/home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/tmp/src/modstrus_storage_example.so")
   IF(EXISTS "$ENV{DESTDIR}/usr/local/lib/strus/modules/modstrus_storage_example.so" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}/usr/local/lib/strus/modules/modstrus_storage_example.so")
     FILE(RPATH_REMOVE
@@ -64,7 +64,7 @@ ELSE(CMAKE_INSTALL_COMPONENT)
   SET(CMAKE_INSTALL_MANIFEST "install_manifest.txt")
 ENDIF(CMAKE_INSTALL_COMPONENT)
 
-FILE(WRITE "/home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/src/${CMAKE_INSTALL_MANIFEST}" "")
+FILE(WRITE "/home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/tmp/src/${CMAKE_INSTALL_MANIFEST}" "")
 FOREACH(file ${CMAKE_INSTALL_MANIFEST_FILES})
-  FILE(APPEND "/home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/src/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
+  FILE(APPEND "/home/patrick/Projects/github/strusTutorials/codeproject/How-to-extend-Strus-with-new-functions/tmp/src/${CMAKE_INSTALL_MANIFEST}" "${file}\n")
 ENDFOREACH(file)
