@@ -18,7 +18,7 @@
 	note = orig content /list/item/note();
 
 [MetaData]
-	date = date2int("d 1877-01-01", "%Y-%m-%d %H:%M:%s *") content /list/item/date();
+	date = date2int("d 1877-01-01", "%Y-%m-%d %H:%M:%s") regex("[0-9\-]{8,10} [0-9:]{6,8}") /list/item/date();
 
 [Aggregator]
 	doclen = count(word);
