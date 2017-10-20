@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import tornado.ioloop
 import tornado.web
 import optparse
@@ -17,8 +17,6 @@ termDfMap = {}
 collectionSize = 0
 # Strus statistics message processor:
 strusctx = strus.Context()
-strusctx.defineStatisticsProcessor( "standard");
-strustat = strusctx.createStatisticsProcessor()
 
 # [2] Request handlers
 def packedMessage( msg):
@@ -29,28 +27,27 @@ def termDfMapKey( type, value):
 
 @tornado.gen.coroutine
 def processCommand( message):
-    rt = bytearray("Y")
+    rt = b"Y"
     try:
         global collectionSize
         global termDfMap
 
-        if (message[0] == 'P'):
+        if (message[0] == ord('P')):
             # PUBLISH:
-            msg = strustat.decode( bytearray(message[1:]))
-            collectionSize += msg.nofDocumentsInsertedChange()
-            dfchglist = msg.documentFrequencyChangeList()
-            for dfchg in dfchglist:
-                key = termDfMapKey( dfchg.type(), dfchg.value())
+            statview = strusctx.unpackStatisticBlob( message[1:])
+            collectionSize += statview[ "nofdocs"]
+            for dfchg in statview[ "dfchange"]:
+                key = termDfMapKey( dfchg['type'], dfchg['value'])
                 if key in termDfMap:
-                    termDfMap[ key ] += dfchg.increment()
+                    termDfMap[ key ] += int( dfchg['increment'])
                 else:
-                    termDfMap[ key ] = long( dfchg.increment())
-        elif (message[0] == 'Q'):
+                    termDfMap[ key ] = int( dfchg['increment'])
+        elif (message[0] == ord('Q')):
             # QUERY:
             messagesize = len(message)
             messageofs = 1
             while (messageofs < messagesize):
-                if (message[ messageofs] == 'T'):
+                if (message[ messageofs] == ord('T')):
                     # Fetch df of term, message format [T][typesize:16][valuesize:16][type string][value string]:
                     (typesize,valuesize) = struct.unpack_from( ">HH", message, messageofs+1)
                     messageofs += struct.calcsize( ">HH") + 1
@@ -61,7 +58,7 @@ def processCommand( message):
                     if key in termDfMap:
                         df = termDfMap[ key]
                     rt += struct.pack( ">q", df)
-                elif (message[ messageofs] == 'N'):
+                elif (message[ messageofs] == ord('N')):
                     # Fetch N (nof documents), message format [N]:
                     messageofs += 1
                     rt += struct.pack( ">q", collectionSize)
@@ -70,7 +67,7 @@ def processCommand( message):
         else:
             raise Exception( "unknown statistics server command")
     except Exception as e:
-        raise tornado.gen.Return( bytearray( b"E" + str(e)))
+        raise tornado.gen.Return( b"E" + str(e).encode('utf-8'))
     raise tornado.gen.Return( rt)
 
 def processShutdown():

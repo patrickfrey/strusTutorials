@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import tornado.ioloop
 import tornado.web
 import tornado.gen
@@ -32,39 +32,39 @@ def publishStatistics( itr):
     except IOError as e:
         raise Exception( "connection to statistics server %s failed (%s)" % (statserver, e))
 
-    msg = itr.getNext()
-    while (len(msg) > 0):
+    for msg in itr:
         try:
-            reply = yield msgclient.issueRequest( conn, b"P" + bytearray(msg) )
-            if (reply[0] == 'E'):
-                raise Exception( "error in statistics server: %s" % reply[ 1:])
-            elif (reply[0] != 'Y'):
+            reply = yield msgclient.issueRequest( conn, b"P" + msg)
+            if (reply[0] == ord('E')):
+                raise Exception( "error in statistics server: %s" % reply[ 1:].decode('utf-8'))
+            elif (reply[0] != ord('Y')):
                 raise Exception( "protocol error publishing statistics")
         except tornado.iostream.StreamClosedError:
             raise Exception( "unexpected close of statistics server")
-        msg = itr.getNext()
 
 # Pack a message with its length (processCommand protocol)
 def packedMessage( msg):
-    return struct.pack( ">H%ds" % len(msg), len(msg), msg)
+    return struct.pack( ">H%ds" % len(msg), len(msg), msg.encode('utf-8'))
 
-# Server callback function that intepretes the client message sent, executes the command and packs the result for the client
+# Server callback function that intepretes the client message sent,
+# executes the command and packs the result for the client
 @tornado.gen.coroutine
 def processCommand( message):
-    rt = bytearray(b"Y")
+    rt = b"Y"
     try:
         messagesize = len(message)
         messageofs = 1
-        if (message[0] == 'I'):
+        if (message[0] == ord('I')):
             # INSERT:
             # Insert documents:
-            docblob = str( message[ 1:])
-            nofDocuments = backend.insertDocuments( docblob.decode("utf-8"))
+            docblob = message[ 1:]
+            nofDocuments = backend.insertDocuments( docblob)
             # Publish statistic updates:
-            itr = backend.getUpdateStatisticsIterator()
-            yield publishStatistics( itr)
+            if (pubstats):
+                itr = backend.getUpdateStatisticsIterator()
+                yield publishStatistics( itr)
             rt += struct.pack( ">I", nofDocuments)
-        elif (message[0] == 'Q'):
+        elif (message[0] == ord('Q')):
             # QUERY:
             Term = collections.namedtuple('Term', ['type', 'value', 'df'])
             nofranks = 20
@@ -75,16 +75,16 @@ def processCommand( message):
             messagesize = len(message)
             messageofs = 1
             while (messageofs < messagesize):
-                if (message[ messageofs] == 'I'):
+                if (message[ messageofs] == ord('I')):
                     (firstrank,) = struct.unpack_from( ">H", message, messageofs+1)
                     messageofs += struct.calcsize( ">H") + 1
-                elif (message[ messageofs] == 'N'):
+                elif (message[ messageofs] == ord('N')):
                     (nofranks,) = struct.unpack_from( ">H", message, messageofs+1)
                     messageofs += struct.calcsize( ">H") + 1
-                elif (message[ messageofs] == 'S'):
+                elif (message[ messageofs] == ord('S')):
                     (collectionsize,) = struct.unpack_from( ">q", message, messageofs+1)
                     messageofs += struct.calcsize( ">q") + 1
-                elif (message[ messageofs] == 'T'):
+                elif (message[ messageofs] == ord('T')):
                     (df,typesize,valuesize) = struct.unpack_from( ">qHH", message, messageofs+1)
                     messageofs += struct.calcsize( ">qHH") + 1
                     (type,value) = struct.unpack_from( "%ds%ds" % (typesize,valuesize), message, messageofs)
@@ -96,21 +96,20 @@ def processCommand( message):
             results = backend.evaluateQuery( terms, collectionsize, firstrank, nofranks)
             # Build the result and pack it into the reply message for the client:
             for result in results:
-                rt.append( '_')
-                rt.append( 'D')
+                rt += b'_D'
                 rt += struct.pack( ">I", result['docno'])
-                rt.append( 'W')
+                rt += b'W'
                 rt += struct.pack( ">f", result['weight'])
-                rt.append( 'I')
+                rt += b'I'
                 rt += packedMessage( result['docid'])
-                rt.append( 'T')
+                rt += b'T'
                 rt += packedMessage( result['title'])
-                rt.append( 'A')
+                rt += b'A'
                 rt += packedMessage( result['abstract'])
         else:
             raise Exception( "unknown command")
     except Exception as e:
-        raise tornado.gen.Return( bytearray( b"E" + str(e)) )
+        raise tornado.gen.Return( b"E" + str(e).encode('utf-8'))
     raise tornado.gen.Return( rt)
 
 # Shutdown function that sends the negative statistics to the statistics server (unsubscribe):
@@ -122,7 +121,7 @@ def processShutdown():
 if __name__ == "__main__":
     try:
         # Parse arguments:
-        defaultconfig = "path=storage; cache=512M"
+        defaultconfig = "path=storage; cache=512M; statsproc=default"
         parser = optparse.OptionParser()
         parser.add_option("-p", "--port", dest="port", default=7184,
                           help="Specify the port of this server as PORT (default %u)" % 7184,
@@ -134,7 +133,8 @@ if __name__ == "__main__":
                           help="Specify the address of the statistics server as ADDR (default %s" % statserver,
                           metavar="ADDR")
         parser.add_option("-P", "--publish-stats", action="store_true", dest="do_publish_stats", default=False,
-                          help="Tell the node to publish the own storage statistics to the statistics server at startup")
+                          help="Tell the node to publish the own storage statistics "
+                               "to the statistics server at startup")
 
         (options, args) = parser.parse_args()
         if len(args) > 0:

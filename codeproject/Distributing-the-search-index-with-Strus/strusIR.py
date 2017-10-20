@@ -7,7 +7,7 @@ class Backend:
     # Create the document analyzer for our test collection:
     # Create the document analyzer for our test collection:
     def createDocumentAnalyzer(self):
-        rt = self.context.createDocumentAnalyzer()
+        rt = self.context.createDocumentAnalyzer( {"mimetype":"xml"} )
         # Define the sections that define a document (for multipart documents):
         rt.defineDocument( "doc", "/list/item")
 
@@ -31,19 +31,12 @@ class Backend:
         rt.defineAttribute( "note", "/list/item/note()", "content", "text")
 
         # Define the document meta data:
-        rt.defineMetaData( "date", "/list/item/date()", "content", [("date2int", "d 1877-01-01", "%Y-%m-%d %H:%M:%s *")]);
+        rt.defineMetaData( "date", "/list/item/date()",
+                                          ("regex","[0-9\-]{8,10} [0-9:]{6,8}"),
+                                          [("date2int", "d 1877-01-01", "%Y-%m-%d %H:%M:%s")]);
 
         # Define the doclen attribute needed by BM25:
         rt.defineAggregatedMetaData( "doclen",("count", "word"))
-        return rt
-
-    # Create the query analyzer according to the document analyzer configuration:
-    def createQueryAnalyzer(self):
-        rt = self.context.createQueryAnalyzer()
-        rt.definePhraseType(
-            "text", "word", "word", 
-            ["lc", ["stem", "en"], ["convdia", "en"]]
-        )
         return rt
 
     # Create a simple BM25 query evaluation scheme with fixed
@@ -56,36 +49,33 @@ class Backend:
         # Declare the feature used for selecting result candidates:
         rt.addSelectionFeature( "selfeat")
         # Query evaluation scheme:
-        rt.addWeightingFunction( 1.0, "BM25", {
-                     "k1": 0.75, "b": 2.1, "avgdoclen": 20, ".match": "docfeat" })
+        rt.addWeightingFunction( "BM25", {
+                     "k1": 1.2, "b": 0.75, "avgdoclen": 20, "match": {"feature":"docfeat"} })
         # Summarizer for getting the document title:
-        rt.addSummarizer( "DOCID", "attribute", { "name": "docid" })
-        rt.addSummarizer( "TITLE", "attribute", { "name": "title" })
+        rt.addSummarizer( "attribute", { "name": "docid" })
+        rt.addSummarizer( "attribute", { "name": "title" })
         # Summarizer for abstracting:
-        rt.addSummarizer( "CONTENT", "matchphrase", {
-                  "type": "orig", "len": 40, "nof": 3,
-                  "mark": '<b>$</b>', ".match": "docfeat" })
+        rt.addSummarizer( "matchphrase", {
+                  "type": "orig", "windowsize": 40,
+                  "matchmark": '$<b>$</b>', "match": {"feature":"docfeat"} })
         return rt
 
     # Constructor. Initializes the query evaluation schemes and the query and document analyzers:
     def __init__(self, config):
         # Open local storage on file with configuration specified:
         self.context = strus.Context()
-        self.context.defineStatisticsProcessor( "standard");
         self.storage = self.context.createStorageClient( config )
-        self.queryAnalyzer = self.createQueryAnalyzer()
         self.documentAnalyzer = self.createDocumentAnalyzer()
         self.queryeval = self.createQueryEvalBM25()
 
     # Insert a multipart document:
     def insertDocuments( self, content):
         rt = 0
-        docqueue = self.documentAnalyzer.createQueue()
-        docqueue.push( content)
+        docs = self.documentAnalyzer.analyzeMultiPart( content, {"mimetype":"xml", "encoding":"utf-8"})
         transaction = self.storage.createTransaction()
-        while (docqueue.hasMore()):
-            doc = docqueue.fetch()
-            transaction.insertDocument( doc.docid(), doc)
+        for doc in docs:
+            docid = doc['attribute']['docid']
+            transaction.insertDocument( docid, doc)
             rt += 1
         transaction.commit()
         return rt
@@ -101,9 +91,9 @@ class Backend:
         selexpr = ["contains"]
         for term in terms:
             selexpr.append( [term.type, term.value] )
-            query.defineFeature( "docfeat", [term.type, term.value], 1.0)
+            query.addFeature( "docfeat", [term.type, term.value])
             query.defineTermStatistics( term.type, term.value, {'df' : int(term.df)} )
-        query.defineFeature( "selfeat", selexpr, 1.0 )
+        query.addFeature( "selfeat", selexpr)
         query.setMaxNofRanks( nofranks)
         query.setMinRank( firstrank)
         query.defineGlobalStatistics( {'nofdocs' : int(collectionsize)} )
@@ -111,37 +101,37 @@ class Backend:
         results = query.evaluate()
         # Rewrite the results:
         rt = []
-        for result in results:
+        for result in results['ranks']:
             content = ""
             title = ""
             docid = ""
-            for attribute in result.attributes():
-                if attribute.name() == 'CONTENT':
+            for attribute in result['summary']:
+                if attribute['name'] == 'phrase':
                     if content != "":
                         content += ' ... '
-                    content += attribute.value()
-                elif attribute.name() == 'DOCID':
-                        docid = attribute.value()
-                elif attribute.name() == 'TITLE':
-                        title = attribute.value()
+                    content += attribute['value']
+                elif attribute['name'] == 'docid':
+                        docid = attribute['value']
+                elif attribute['name'] == 'title':
+                        title = attribute['value']
             rt.append( {
-                   'docno':result.docno(),
+                   'docno':result['docno'],
                    'docid':docid,
                    'title':title,
-                   'weight':result.weight(),
+                   'weight':result['weight'],
                    'abstract':content })
         return rt
 
     # Get an iterator on all absolute statistics of the storage
     def getInitStatisticsIterator( self):
-        return self.storage.createInitStatisticsIterator( True)
+        return self.storage.getAllStatistics( True)
 
     # Get an iterator on all absolute statistics of the storage
     def getDoneStatisticsIterator( self):
-        return self.storage.createInitPeerMessageIterator( False)
+        return self.storage.getAllStatistics( False)
     
     # Get an iterator on statistic updates of the storage
     def getUpdateStatisticsIterator( self):
-        return self.storage.createUpdateStatisticsIterator()
+        return self.storage.getChangeStatistics()
 
 

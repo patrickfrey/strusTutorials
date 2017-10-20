@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
@@ -22,15 +22,14 @@ storageservers = []
 # Strus client connection factory:
 msgclient = strusMessage.RequestClient()
 
-# Query analyzer structures:
+# Query analyzer structures (parallel to document analyzer definition in strusIR):
 strusctx = strus.Context()
 analyzer = strusctx.createQueryAnalyzer()
-analyzer.definePhraseType(
-        "text", "word", "word", 
-        ["lc", ["stem", "en"], ["convdia", "en"]]
-    )
+analyzer.addElement( "word", "text", "word", ["lc", ["stem", "en"], ["convdia", "en"]])
+
 # Query evaluation structures:
-ResultRow = collections.namedtuple('ResultRow', ['docno', 'docid', 'weight', 'title', 'abstract'])
+ResultRow = collections.namedtuple(
+              'ResultRow', ['docno', 'docid', 'weight', 'title', 'abstract'])
 
 
 # [1] HTTP handlers:
@@ -40,22 +39,24 @@ class QueryHandler( tornado.web.RequestHandler ):
     def queryStats( self, terms):
         rt = ([],0,None)
         try:
-            statquery = bytearray("Q")
+            statquery = b"Q"
             for term in terms:
-                statquery.append('T')
-                typesize = len( term.type())
-                valuesize = len( term.value())
+                ttype = term['type'].encode('utf-8')
+                tvalue = term['value'].encode('utf-8')
+                statquery += b'T'
+                typesize = len( ttype)
+                valuesize = len( tvalue)
                 statquery += struct.pack( ">HH", typesize, valuesize)
-                statquery += struct.pack( "%ds%ds" % (typesize,valuesize), term.type(), term.value())
-            statquery.append('N')
+                statquery += struct.pack( "%ds%ds" % (typesize,valuesize), ttype, tvalue)
+            statquery += b'N'
             ri = statserver.rindex(':')
             host,port = statserver[:ri],int( statserver[ri+1:])
             conn = yield msgclient.connect( host, port)
             statreply = yield msgclient.issueRequest( conn, statquery)
 
-            if (statreply[0] == 'E'):
+            if (statreply[0] == ord('E')):
                 raise Exception( "failed to query global statistics: %s" % statreply[1:])
-            elif (statreply[0] != 'Y'):
+            elif (statreply[0] != ord('Y')):
                 raise Exception( "protocol error loading global statistics")
             dflist = []
             collsize = 0
@@ -87,9 +88,10 @@ class QueryHandler( tornado.web.RequestHandler ):
         try:
             conn = yield msgclient.connect( host, port)
             reply = yield msgclient.issueRequest( conn, qryblob)
-            if (reply[0] == 'E'):
-                rt = (None, "storage server %s:%d returned error: %s" % (host, port, reply[1:]))
-            elif (reply[0] == 'Y'):
+            if (reply[0] == ord('E')):
+                rt = (None, "storage server %s:%d returned error: %s"
+                              % (host, port, reply[1:]))
+            elif (reply[0] == ord('Y')):
                 result = []
                 row_docno = 0
                 row_docid = None
@@ -99,47 +101,52 @@ class QueryHandler( tornado.web.RequestHandler ):
                 replyofs = 1
                 replysize = len(reply)-1
                 while (replyofs < replysize):
-                    if (reply[ replyofs] == '_'):
+                    if (reply[ replyofs] == ord('_')):
                         if (row_docid != None):
-                            result.append( ResultRow( row_docno, row_docid, row_weight, row_title, row_abstract))
+                            result.append( ResultRow(
+                                 row_docno, row_docid, row_weight, row_title, row_abstract))
                         row_docno = 0
                         row_docid = None
                         row_weight = 0.0
                         row_title = ""
                         row_abstract = ""
                         replyofs += 1
-                    elif (reply[ replyofs] == 'D'):
+                    elif (reply[ replyofs] == ord('D')):
                         (row_docno,) = struct.unpack_from( ">I", reply, replyofs+1)
                         replyofs += struct.calcsize( ">I") + 1
-                    elif (reply[ replyofs] == 'W'):
+                    elif (reply[ replyofs] == ord('W')):
                         (row_weight,) = struct.unpack_from( ">f", reply, replyofs+1)
                         replyofs += struct.calcsize( ">f") + 1
-                    elif (reply[ replyofs] == 'I'):
+                    elif (reply[ replyofs] == ord('I')):
                         (docidlen,) = struct.unpack_from( ">H", reply, replyofs+1)
                         replyofs += struct.calcsize( ">H") + 1
                         (row_docid,) = struct.unpack_from( "%us" % docidlen, reply, replyofs)
                         replyofs += docidlen
-                    elif (reply[ replyofs] == 'T'):
+                    elif (reply[ replyofs] == ord('T')):
                         (titlelen,) = struct.unpack_from( ">H", reply, replyofs+1)
                         replyofs += struct.calcsize( ">H") + 1
                         (row_title,) = struct.unpack_from( "%us" % titlelen, reply, replyofs)
                         replyofs += titlelen
-                    elif (reply[ replyofs] == 'A'):
+                    elif (reply[ replyofs] == ord('A')):
                         (abstractlen,) = struct.unpack_from( ">H", reply, replyofs+1)
                         replyofs += struct.calcsize( ">H") + 1
                         (row_abstract,) = struct.unpack_from( "%us" % abstractlen, reply, replyofs)
                         replyofs += abstractlen
                     else:
-                        rt = (None, "storage server %s:%u protocol error: unknown result column name" % (host,port))
+                        rt = (None, "storage server %s:%u protocol error: "
+                                    "unknown result column name" % (host,port))
                         row_docid = None
-                        break;
+                        break
                 if (row_docid != None):
-                    result.append( ResultRow( row_docno, row_docid, row_weight, row_title, row_abstract))
+                    result.append( ResultRow(
+                              row_docno, row_docid, row_weight, row_title, row_abstract))
                 rt = (result, None)
             else:
-                rt = (None, "protocol error storage %s:%u query: unknown header %s" % (host,port,reply[0]))
+                rt = (None, "protocol error storage %s:%u query: "
+                            "unknown header %c" % (host,port,reply[0]))
         except Exception as e:
-            rt = (None, "storage server %s:%u connection error: %s" % (host, port, str(e)))
+            rt = (None, "storage server %s:%u connection error: %s"
+                               % (host, port, str(e)))
         raise tornado.gen.Return( rt)
 
     @tornado.gen.coroutine
@@ -155,11 +162,11 @@ class QueryHandler( tornado.web.RequestHandler ):
     # referenced in from http://wordaligned.org/articles/merging-sorted-streams-in-python:
     def mergeResultIter( self, resultlists):
         # prepare a priority queue whose items are pairs of the form (-weight, resultlistiter):
-        heap = [  ]
+        heap = []
         for resultlist in resultlists:
             resultlistiter = iter(resultlist)
             for result in resultlistiter:
-                # subseq is not empty, therefore add this subseq's pair
+                # subseq is not empty, therefore add this subseq pair
                 # (current-value, iterator) to the list
                 heap.append((-result.weight, result, resultlistiter))
                 break
@@ -200,28 +207,31 @@ class QueryHandler( tornado.web.RequestHandler ):
         rt = None
         try:
             maxnofresults = firstrank + nofranks
-            terms = analyzer.analyzePhrase( "text", querystr)
-            if len( terms) == 0:
-                # Return empty result for empty query:
-                raise tornado.gen.Return( [] )
-            # Get the global statistics:
-            dflist,collectionsize,error = yield self.queryStats( terms)
-            if (error != None):
-                raise Exception( error)
-            # Assemble the query:
-            qry = bytearray(b"Q")
-            qry += bytearray( b"S") + struct.pack( ">q", collectionsize)
-            qry += bytearray( b"I") + struct.pack( ">H", 0)
-            qry += bytearray( b"N") + struct.pack( ">H", maxnofresults)
-            for ii in range( 0, len( terms)):
-                qry += bytearray( b"T")
-                typesize = len(terms[ii].type())
-                valuesize = len(terms[ii].value())
-                qry += struct.pack( ">qHH", dflist[ii], typesize, valuesize)
-                qry += struct.pack( "%ds%ds" % (typesize,valuesize), terms[ii].type(), terms[ii].value())
-            # Query all storage servers:
-            results = yield self.issueQueries( storageservers, qry)
-            rt = self.mergeQueryResults( results, firstrank, nofranks)
+            terms = analyzer.analyzeTermExpression( ["text", querystr])
+            if len( terms) > 0:
+                # Get the global statistics:
+                dflist,collectionsize,error = yield self.queryStats( terms)
+                if (error != None):
+                    raise Exception( error)
+                # Assemble the query:
+                qry = b"Q"
+                qry += b"S"
+                qry += struct.pack( ">q", collectionsize)
+                qry += b"I"
+                qry += struct.pack( ">H", 0)
+                qry += b"N"
+                qry += struct.pack( ">H", maxnofresults)
+                for ii in range( 0, len( terms)):
+                    qry += b"T"
+                    type = terms[ii]['type'].encode('utf-8')
+                    typesize = len( type)
+                    value = terms[ii]['value'].encode('utf-8')
+                    valuesize = len( value)
+                    qry += struct.pack( ">qHH", dflist[ii], typesize, valuesize)
+                    qry += struct.pack( "%ds%ds" % (typesize,valuesize), type, value)
+                # Query all storage servers and merge the results:
+                results = yield self.issueQueries( storageservers, qry)
+                rt = self.mergeQueryResults( results, firstrank, nofranks)
         except Exception as e:
             rt = ([], ["error evaluation query: %s" % str(e)])
         raise tornado.gen.Return( rt)
@@ -250,16 +260,17 @@ class InsertHandler( tornado.web.RequestHandler ):
             # Insert documents:
             conn = yield msgclient.connect( 'localhost', int(port))
 
-            reply = yield msgclient.issueRequest( conn, b"I" + bytearray( self.request.body))
-            if (reply[0] == 'E'):
-                raise Exception( bytes( reply[1:]))
-            elif (reply[0] != 'Y'):
-                raise Exception( "protocol error server reply on insert")
+            cmd = b"I" + self.request.body
+            reply = yield msgclient.issueRequest( conn, cmd)
+            if (reply[0] == ord('E')):
+                raise Exception( reply[1:].decode('UTF-8'))
+            elif (reply[0] != ord('Y')):
+                raise Exception( "protocol error server reply on insert: %c" % reply[0])
 
             (nofDocuments,) = struct.unpack( ">I", reply[1:])
             self.write( "OK %u\n" % (nofDocuments))
         except Exception as e:
-            self.write( "ERR %s\n" % str(e))
+            self.write( "ERR " + str(e) + "\n")
 
 # [3] Dispatcher:
 application = tornado.web.Application([
@@ -287,7 +298,8 @@ if __name__ == "__main__":
                           help="Specify the port of this server as PORT (default %u)" % 80,
                           metavar="PORT")
         parser.add_option("-s", "--statserver", dest="statserver", default=statserver,
-                          help="Specify the address of the statistics server as ADDR (default %s" % statserver,
+                          help="Specify the address of the statistics server "
+                               "as ADDR (default %s" % statserver,
                           metavar="ADDR")
 
         (options, args) = parser.parse_args()
@@ -296,7 +308,8 @@ if __name__ == "__main__":
         if (statserver[0:].isdigit()):
             statserver = '{}:{}'.format( 'localhost', statserver)
 
-        # Positional arguments are storage server addresses, if empty use default at localhost:7184
+        # Positional arguments are storage server addresses,
+        # if empty use default at localhost:7184
         for arg in args:
             if (arg[0:].isdigit()):
                 storageservers.append( '{}:{}'.format( 'localhost', arg))
@@ -310,7 +323,8 @@ if __name__ == "__main__":
         application.listen( myport )
         print( "Listening on port %u\n" % myport )
         ioloop = tornado.ioloop.IOLoop.current()
-        signal.signal( signal.SIGINT, lambda sig, frame: ioloop.add_callback_from_signal(on_shutdown))
+        signal.signal( signal.SIGINT,
+                       lambda sig, frame: ioloop.add_callback_from_signal(on_shutdown))
         ioloop.start()
         print( "Terminated\n")
     except Exception as e:

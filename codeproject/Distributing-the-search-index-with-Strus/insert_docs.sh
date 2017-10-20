@@ -14,6 +14,6 @@ else
 fi
 for i in $(seq $start $end)
 do
-    curl -X POST -d @data/doc/$i.xml localhost:80/insert/$port --header "Content-Type:text/xml"
+    curl -X POST -H "Content-Type: application/xml; charset=UTF-8" -d @data/doc/$i.xml localhost:80/insert/$port
 done
 
