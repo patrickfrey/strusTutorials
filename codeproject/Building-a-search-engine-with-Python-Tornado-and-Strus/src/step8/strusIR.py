@@ -5,9 +5,8 @@ import re
 
 class Backend:
     # Create the document analyzer for our test collection:
-    # Create the document analyzer for our test collection:
     def createDocumentAnalyzer(self):
-        rt = self.context.createDocumentAnalyzer()
+        rt = self.context.createDocumentAnalyzer( {'mimetype':"application/xml", 'encoding':"UTF-8"} )
         # Define the sections that define a document (for multipart documents):
         rt.defineDocument( "doc", "/list/doc")
         # Define the terms to search for (inverted index or search index):
@@ -18,12 +17,12 @@ class Backend:
                                   ("punctuation","en","."), "empty")
         # Define the placeholders that are referencable by variables:
         rt.addSearchIndexFeature( "continent_var", "/list/doc/continent@id",
-                                  "content", "empty", "BindPosSucc")
+                                  "content", "empty", "succ")
         # Define the original terms in the document used for abstraction:
         rt.addForwardIndexFeature( "orig", "/list/doc//()", "split", "orig")
         # Define the contents that extracted by variables:
         rt.addForwardIndexFeature( "continent", "/list/doc/continent@id",
-                                   "content", "text", "BindPosSucc")
+                                   "content", "text", "succ")
         # Define the document identifier:
         rt.defineAttribute( "docid", "/list/doc@id", "content", "text")
         # Define the doclen attribute needed by BM25:
@@ -33,8 +32,8 @@ class Backend:
     # Create the query analyzer according to the document analyzer configuration:
     def createQueryAnalyzer(self):
         rt = self.context.createQueryAnalyzer()
-        rt.definePhraseType(
-            "text", "word", "word", 
+        rt.addElement(
+            "word", "text", "word", 
             ["lc", ["stem", "en"], ["convdia", "en"]]
         )
         return rt
@@ -49,14 +48,15 @@ class Backend:
         # Declare the feature used for selecting result candidates:
         rt.addSelectionFeature( "selfeat")
         # Query evaluation scheme:
-        rt.addWeightingFunction( 1.0, "BM25", {
-                     "k1": 0.75, "b": 2.1, "avgdoclen": 20, ".match": "docfeat" })
+        rt.addWeightingFunction( "BM25", {
+                     "k1": 1.2, "b": 0.75, "avgdoclen": 20, "match": {'feature':"docfeat"} })
         # Summarizer for getting the document title:
-        rt.addSummarizer( "TITLE", "attribute", { "name": "docid" })
+        rt.addSummarizer( "attribute", { "name": "docid" }, {"result":"TITLE"})
         # Summarizer for abstracting:
-        rt.addSummarizer( "CONTENT", "matchphrase", {
-                  "type": "orig", "len": 40, "nof": 3, "structseek": 30,
-                  "mark": '<b>$</b>', ".struct": "sentence", ".match": "docfeat" })
+        rt.addSummarizer( "matchphrase", {
+                  "type": "orig", "windowsize": 40, "sentencesize":30,
+                  "matchmark": '$<b>$</b>', "struct":{'feature':"sentence"}, "match": {'feature':"docfeat"} },
+                  {"phrase":"CONTENT"})
         return rt
 
     # Create a simple BM25 query evaluation scheme with fixed
@@ -70,17 +70,14 @@ class Backend:
         # Declare the feature used for selecting result candidates:
         rt.addSelectionFeature( "selfeat")
         # Query evaluation scheme for entity extraction candidate selection:
-        rt.addWeightingFunction( 1.0, "BM25", {
-                 "k1": 0.75, "b": 2.1, "avgdoclen": 500, ".match": "docfeat" })
+        rt.addWeightingFunction( "BM25", {"k1": 1.2, "b": 0.75, "avgdoclen": 20, "match": {'feature':"docfeat"} })
         # Summarizer to extract the weighted entities:
-        rt.addSummarizer(
-            "ENTITY", "accuvariable",
-                 { ".match": "sumfeat", "var": "CONTINENT", "type": "continent" })
+        rt.addSummarizer( "accuvar", { "match": {'feature':"sumfeat"}, "var": "CONTINENT", "type": "continent", "result":"ENTITY" } )
         return rt
 
     # Constructor. Initializes the query evaluation schemes and the query and document analyzers:
     def __init__(self, config):
-        if isinstance( config, ( int, long ) ):
+        if isinstance( config, ( int ) ):
             self.context = strus.Context( "localhost:%u" % config)
             self.storage = self.context.createStorageClient()
         else:
@@ -96,50 +93,43 @@ class Backend:
     # Insert a multipart document:
     def insertDocuments( self, content):
         rt = 0
-        docqueue = self.documentAnalyzer.createQueue()
-        docqueue.push( content)
-        while (docqueue.hasMore()):
-            doc = docqueue.fetch()
-            self.storage.insertDocument( doc.docid(), doc)
+        transaction = self.storage.createTransaction()
+        for doc in self.documentAnalyzer.analyzeMultiPart( content):
+            docid = doc['attribute']['docid']
+            transaction.insertDocument( docid, doc)
             rt += 1
-        self.storage.flush()
+        transaction.commit()
         return rt
 
     # Query evaluation scheme for a classical information retrieval query with BM25:
     def evaluateQueryText( self, querystr, firstrank, nofranks):
         queryeval = self.queryeval[ "BM25"]
         query = queryeval.createQuery( self.storage)
-        terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
+        terms = self.queryAnalyzer.analyzeTermExpression( [ "text", querystr ] )
         if len( terms) == 0:
             # Return empty result for empty query:
             return []
 
-        selexpr = ["contains"]
+        selexpr = ["contains", 0, 1]
         for term in terms:
-            selexpr.append( [term.type(), term.value()] )
-            query.defineFeature( "docfeat", [term.type(), term.value()], 1.0)
-        query.defineFeature( "selfeat", selexpr, 1.0 )
+            selexpr.append( term )
+            query.addFeature( "docfeat", term, 1.0)
+        query.addFeature( "selfeat", selexpr, 1.0 )
         query.setMaxNofRanks( nofranks)
         query.setMinRank( firstrank)
         # Evaluate the query:
         results = query.evaluate()
         # Rewrite the results:
         rt = []
-        for result in results:
+        for pos,result in enumerate(results['ranks']):
             content = ""
             title = ""
-            for attribute in result.attributes():
-                if attribute.name() == 'CONTENT':
-                    if content != "":
-                        content += ' ... '
-                    content += attribute.value()
-                elif attribute.name() == 'TITLE':
-                    title = attribute.value()
-            rt.append( {
-                   'docno':result.docno(),
-                   'title':title,
-                   'weight':result.weight(),
-                   'abstract':content })
+            for summary in result['summary']:
+                if summary['name'] == 'TITLE':
+                    title = summary['value']
+                elif summary['name'] == 'CONTENT':
+                    content = summary['value']
+            rt.append( { 'docno':result['docno'], 'title':title, 'weight':result['weight'], 'abstract':content })
         return rt
 
     # Helper method to define the query features created from terms 
@@ -157,42 +147,26 @@ class Backend:
         #        The summarizer extracts entities within
         #        a distance of 50 in the same sentence
         expr = [
-                [ "sequence_struct", 3,
-                    ["sent"],
-                    [term1.type(), term1.value()],
-                    [term2.type(), term2.value()]
-                ],
-                [ "sequence_struct", 3,
-                    ["sent"],
-                    [term2.type(), term2.value()],
-                    [term1.type(), term1.value()]
-                ],
-                [ "within_struct", 5,
-                    ["sent"],
-                    [term1.type(), term1.value()],
-                    [term2.type(), term2.value()]
-                ],
-                [ "within_struct", 20,
-                    ["sent"],
-                    [term1.type(), term1.value()],
-                    [term2.type(), term2.value()]
-                ]
+                [ "sequence_struct", 3, ["sent",''], term1, term2 ],
+                [ "sequence_struct", 3, ["sent",''], term2, term1 ],
+                [ "within_struct", 5, ["sent",''], term1, term2 ],
+                [ "within_struct", 20, term1, term2 ]
         ]
         weight = [ 3.0, 2.0, 2.0, 1.5 ]
         ii = 0
         while ii < 4:
             # The summarization expression attaches a variable referencing an
             # the entity to extract.
-            # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-            sumexpr = [ "chain_struct", 50, ["sent"],
-                          ["=CONTINENT", "continent_var"],
+            # CONTINENT terms of type 'continent_var':
+            sumexpr = [ "chain_struct", 50, ["sent",''],
+                          [{'variable':"CONTINENT"}, "continent_var", ""],
                           expr[ ii] ]
-            query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
-            sumexpr = [ "sequence_struct", -50, ["sent"],
+            query.addFeature( "sumfeat", sumexpr, weight[ ii] )
+            sumexpr = [ "sequence_struct", -50, ["sent",''],
                           expr[ ii],
-                          ["=CONTINENT", "continent_var"],
+                          [{'variable':"CONTINENT"}, "continent_var", ""],
                       ]
-            query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+            query.addFeature( "sumfeat", sumexpr, weight[ ii] )
             ii += 1
 
     # Helper method to define the query features created from terms 
@@ -211,58 +185,50 @@ class Backend:
         #        The summarizer extracts entities within a distance
         #        of 50 in the same sentence
         expr = [
-                [ "within_struct", 5,
-                    ["sent"],
-                    [term1.type(), term1.value()],
-                    [term2.type(), term2.value()]
-                ],
-                [ "within_struct", 20,
-                    ["sent"],
-                    [term1.type(), term1.value()],
-                    [term2.type(), term2.value()]
-                ]
+                [ "within_struct", 5, ["sent",''], term1, term2 ],
+                [ "within_struct", 20, ["sent",''], term1, term2 ]
         ]
         weight = [ 1.6, 1.2 ]
         ii = 0
         while ii < 2:
             # The summarization expression attaches a variable referencing
             # the entity to extract.
-            # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-            sumexpr = [ "chain_struct", 50, ["sent"],
-                              ["=CONTINENT", "continent_var"],
+            # CONTINENT terms of type 'continent_var':
+            sumexpr = [ "chain_struct", 50, ["sent",''],
+                              [{'variable':"CONTINENT"}, "continent_var", ""],
                               expr[ ii] ]
             query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
-            sumexpr = [ "sequence_struct", -50, ["sent"],
+            sumexpr = [ "sequence_struct", -50, ["sent",''],
                               expr[ ii],
-                              ["=CONTINENT", "continent_var"]
+                              [{'variable':"CONTINENT"}, "continent_var", ""]
                       ]
-            query.defineFeature( "sumfeat", sumexpr, weight[ ii] )
+            query.addFeature( "sumfeat", sumexpr, weight[ ii] )
             ii += 1
 
     # Helper method to define the query features created from a single
     # term query:
     def __defineSingleTermQueryFeatures( self, query, term):
         # Single term query:
-        expr = [ term.type(), term.value() ]
+        expr = [ term['type'], term['value'] ]
         # The summarization expression attaches a variable referencing an
         # the entity to extract.
-        # CONTINENT ("=CONTINENT") to continents (terms of type 'continent_var'):
-        sumexpr = [ "chain_struct", 50, ["sent"],
-                      ["=CONTINENT", "continent_var"],
+        # CONTINENT terms of type 'continent_var':
+        sumexpr = [ "chain_struct", 50, ["sent",''],
+                      [{'variable':"CONTINENT"}, "continent_var", ""],
                       expr ]
-        query.defineFeature( "sumfeat", sumexpr, 1.0 )
-        sumexpr = [ "sequence_struct", -50, ["sent"],
+        query.addFeature( "sumfeat", sumexpr, 1.0 )
+        sumexpr = [ "sequence_struct", -50, ["sent",''],
                       expr,
-                      ["=CONTINENT", "continent_var"]
+                      [{'variable':"CONTINENT"}, "continent_var", ""]
                   ]
-        query.defineFeature( "sumfeat", sumexpr, 1.0 )
+        query.addFeature( "sumfeat", sumexpr, 1.0 )
 
     # Query evaluation method that builds a ranked list from the best weighted entities
     # extracted from sentences with matches:
     def evaluateQueryEntities( self, querystr, firstrank, nofranks):
         queryeval = self.queryeval[ "NBLNK"]
         query = queryeval.createQuery( self.storage)
-        terms = self.queryAnalyzer.analyzePhrase( "text", querystr)
+        terms = self.queryAnalyzer.analyzeTermExpression( [ "text", querystr ] )
         if len( terms) == 0:
              # Return empty result for empty query:
              return []
@@ -282,36 +248,34 @@ class Backend:
             self.__defineSingleTermQueryFeatures( query, terms[0] )
         # Define the selector ("selfeat") as the set of documents that contain all query terms
         # and define the single term features for weighting and candidate evaluation ("docfeat"):
-        selexpr = ["contains"]
+        selexpr = ["contains", 0, 1]
         for term in terms:
-            selexpr.append( [term.type(), term.value()] )
-            query.defineFeature( "docfeat", [term.type(), term.value()], 1.0 )
-        query.defineFeature( "selfeat", selexpr, 1.0 )
+            selexpr.append( term )
+            query.addFeature( "docfeat", term, 1.0)
+        query.addFeature( "selfeat", selexpr, 1.0 )
+
         # Evaluate the ranked list for getting the documents to inspect for entities close to matches:
         query.setMaxNofRanks( 300)
         query.setMinRank( 0)
         results = query.evaluate()
         # Build the table of all entities with weight of the top ranked documents:
         entitytab = {}
-        for result in results:
-            for attribute in result.attributes():
-                if attribute.name() == 'ENTITY':
+        for pos,result in enumerate(results['ranks']):
+            for summary in result['summary']:
+                if summary['name'] == 'ENTITY':
                     weight = 0.0
-                    if attribute.value() in entitytab:
-                        weight = entitytab[ attribute.value()]
-                    entitytab[ attribute.value()] = weight + attribute.weight()
+                    if summary['value'] in entitytab:
+                        weight = entitytab[ summary['value'] ]
+                    entitytab[ summary['value']] = weight + summary['weight']
         # Extract the top weighted documents in entitytab as result:
         heap = []
-        for key, value in entitytab.iteritems():
-            heapq.heappush( heap, {'entity':key, 'weight':value})
-        topEntities = heapq.nlargest( firstrank + nofranks, heap, lambda k: k['weight'])
+        for key, value in entitytab.items():
+            heapq.heappush( heap, [value,key] )
+        topEntities = heapq.nlargest( firstrank + nofranks, heap, lambda k: k[0])
         rt = []
         idx = 0
         maxrank = firstrank + nofranks
         for elem in topEntities[firstrank:maxrank]:
-            rt.append({
-                'title':elem['entity'],
-                'weight':elem['weight']
-            })
+            rt.append({ 'weight':elem[0], 'title':elem[1] })
         return rt
 
